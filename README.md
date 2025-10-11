@@ -69,7 +69,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_DEFAULT_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
 | `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Full path to Chrome/Chromium executable |
 | `MCP_PRINTER_MARKDOWN_EXTENSIONS` | _(none)_ | File extensions to auto-render to PDF (e.g., `"md,markdown"`) |
-| `MCP_PRINTER_PRINT_ONLY` | `false` | Set to `"true"` to disable all printer management tools (only allow printing) |
+| `MCP_PRINTER_DISABLE_MANAGEMENT` | `false` | Set to `"true"` to disable write operations (`set_default_printer`, `cancel_print_job`) |
 | `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering, or `"all"` to disable |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
 | `MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS` | `true` | Show line numbers in code printouts (set to `"false"` to disable) |
@@ -114,7 +114,7 @@ MCP_PRINTER_ENABLE_DUPLEX: true
 MCP_PRINTER_DEFAULT_OPTIONS: (not set)
 MCP_PRINTER_CHROME_PATH: (auto-detected)
 MCP_PRINTER_MARKDOWN_EXTENSIONS: md, markdown
-MCP_PRINTER_PRINT_ONLY: false
+MCP_PRINTER_DISABLE_MANAGEMENT: false
 ```
 
 ### `list_printers`

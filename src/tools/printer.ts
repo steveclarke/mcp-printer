@@ -111,6 +111,7 @@ export async function handlePrinterTool(name: string, args: any) {
         MCP_PRINTER_MARKDOWN_EXTENSIONS: config.markdownExtensions.length > 0 
           ? config.markdownExtensions.join(", ") 
           : "(not set)",
+        MCP_PRINTER_DISABLE_MANAGEMENT: config.disableManagement ? "true" : "false",
         MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS: config.code.excludeExtensions.length > 0
           ? config.code.excludeExtensions.join(", ")
           : "(not set)",
