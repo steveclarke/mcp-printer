@@ -148,6 +148,15 @@ async function renderMarkdownToPdf(filePath: string): Promise<string> {
 // Tool definitions
 const tools: Tool[] = [
   {
+    name: "get_config",
+    description:
+      "Get the current MCP Printer configuration settings. Returns environment variables and their current values.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
     name: "list_printers",
     description:
       "List all available printers on the system with their status. Returns printer names, states, and whether they're accepting jobs.",
@@ -285,6 +294,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
+      case "get_config": {
+        // Only expose non-sensitive configuration values
+        // Never expose API keys, tokens, passwords, or other credentials
+        const config = {
+          MCP_PRINTER_DEFAULT: DEFAULT_PRINTER || "(not set)",
+          MCP_PRINTER_DUPLEX: DEFAULT_DUPLEX ? "true" : "false",
+          MCP_PRINTER_OPTIONS: DEFAULT_OPTIONS || "(not set)",
+          MCP_PRINTER_CHROME_PATH: CHROME_PATH || "(auto-detected)",
+          MCP_PRINTER_RENDER_EXTENSIONS: RENDER_EXTENSIONS.length > 0 
+            ? RENDER_EXTENSIONS.join(", ") 
+            : "(not set)"
+        };
+        
+        const configText = Object.entries(config)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\n");
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Current MCP Printer Configuration:\n\n${configText}`,
+            },
+          ],
+        };
+      }
+
       case "list_printers": {
         const output = await execCommand("lpstat -p -d");
         return {

@@ -99,6 +99,21 @@ User-specified options in prompts always override these defaults.
 
 ## Available Tools
 
+### `get_config`
+Get the current MCP Printer configuration settings. Only returns non-sensitive configuration values.
+
+**Example:**
+```
+User: What are my printer settings?
+AI: Current MCP Printer Configuration:
+
+MCP_PRINTER_DEFAULT: HP_LaserJet_4001
+MCP_PRINTER_DUPLEX: true
+MCP_PRINTER_OPTIONS: (not set)
+MCP_PRINTER_CHROME_PATH: (auto-detected)
+MCP_PRINTER_RENDER_EXTENSIONS: md, markdown
+```
+
 ### `list_printers`
 List all available printers with their status.
 
