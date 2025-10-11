@@ -1,0 +1,18 @@
+# Source files (only ship dist/)
+src/
+tsconfig.json
+.gitignore
+
+# Development files
+*.log
+.DS_Store
+*.tsbuildinfo
+
+# Documentation (keep README.md)
+CURSOR_SETUP.md
+
+# Git
+.git/
+.github/
+
+

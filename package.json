@@ -1,0 +1,55 @@
+{
+  "name": "mcp-printer",
+  "version": "1.0.0",
+  "description": "MCP server for printing documents on macOS/Linux via CUPS. Gives AI assistants the ability to print files, manage print queues, and control printers.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-printer": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "printer",
+    "printing",
+    "macos",
+    "linux",
+    "cups",
+    "ai",
+    "claude",
+    "cursor",
+    "anthropic"
+  ],
+  "author": "Steve Dennis",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myunio/mcp-printer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/myunio/mcp-printer/issues"
+  },
+  "homepage": "https://github.com/myunio/mcp-printer#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0"
+  }
+}
