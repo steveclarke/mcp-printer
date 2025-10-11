@@ -25,6 +25,7 @@ In the era of AI-assisted development, we're generating more documentation, spec
 
 - 📄 **Print files** - PDF, text, and other formats
 - 📝 **Render markdown** - Convert markdown to beautifully formatted PDFs before printing
+- 💻 **Syntax-highlighted code** - Automatically render code files with syntax highlighting, line numbers, and proper formatting
 - 🖨️ **List printers** - See all available printers and their status
 - 📋 **Manage queue** - View and cancel print jobs
 - ⚙️ **Configure** - Set default printers
@@ -79,6 +80,11 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
 | `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Full path to Chrome/Chromium executable |
 | `MCP_PRINTER_RENDER_EXTENSIONS` | _(none)_ | File extensions to auto-render to PDF (e.g., `"md,markdown"`) |
+| `MCP_PRINTER_CODE_EXCLUDE` | _(none)_ | Extensions to exclude from code rendering, or `"all"` to disable |
+| `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
+| `MCP_PRINTER_CODE_LINE_NUMBERS` | `"true"` | Show line numbers in code printouts (set to `"false"` to disable) |
+| `MCP_PRINTER_CODE_FONT_SIZE` | `"10pt"` | Font size for code (e.g., `"8pt"`, `"12pt"`) |
+| `MCP_PRINTER_CODE_LINE_SPACING` | `"1.5"` | Line spacing multiplier for code (e.g., `"1"`, `"1.5"`, `"2"`) |
 
 **Example configuration:**
 ```json
@@ -90,7 +96,9 @@ All configuration is optional. Add an `env` object to customize behavior:
         "MCP_PRINTER_DEFAULT": "HP_LaserJet_Pro",
         "MCP_PRINTER_DUPLEX": "true",
         "MCP_PRINTER_OPTIONS": "fit-to-page",
-        "MCP_PRINTER_RENDER_EXTENSIONS": "md,markdown"
+        "MCP_PRINTER_RENDER_EXTENSIONS": "md,markdown",
+        "MCP_PRINTER_CODE_COLOR_SCHEME": "github",
+        "MCP_PRINTER_CODE_FONT_SIZE": "9pt"
       }
     }
   }
@@ -221,6 +229,21 @@ If you set `MCP_PRINTER_RENDER_EXTENSIONS="md,markdown"` in your config, calling
 
 ## Usage Examples
 
+### Print Code with Syntax Highlighting
+
+```
+User: Print src/index.ts
+AI: *automatically renders with syntax highlighting*
+✓ File sent to printer: HP_LaserJet_Pro
+  Rendered: code → PDF (syntax highlighted)
+```
+
+Code files are automatically rendered with:
+- Syntax highlighting based on file type
+- Line numbers
+- Professional monospace font
+- Configurable color scheme and font size
+
 ### Print Documentation
 
 ```
@@ -259,6 +282,14 @@ The server uses CUPS, which natively supports:
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
 - ✅ Markdown (rendered to PDF with `render_and_print_markdown` or via `MCP_PRINTER_RENDER_EXTENSIONS`)
+- ✅ **Code files** (190+ languages automatically detected and rendered with syntax highlighting)
+
+### Auto-Rendered Code Languages
+
+Common languages that are automatically syntax-highlighted include:
+JavaScript, TypeScript, Python, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Ruby, PHP, Scala, Shell/Bash, SQL, R, Perl, Lua, HTML, CSS, SCSS, JSON, YAML, XML, and many more.
+
+To disable code rendering for specific extensions, use `MCP_PRINTER_CODE_EXCLUDE`. To disable all code rendering, set `MCP_PRINTER_CODE_EXCLUDE="all"`.
 
 Other document formats may need conversion to PDF first.
 
@@ -277,6 +308,35 @@ For a complete list of available options:
 - Run `lpoptions -l` in your terminal to see printer-specific options
 - See the [CUPS documentation](https://www.cups.org/doc/options.html) for standard printing options
 - Check `man lpr` for command-line options
+
+## Code Color Schemes
+
+The following syntax highlighting themes are available (set via `MCP_PRINTER_CODE_COLOR_SCHEME`):
+
+**Light themes (good for printing):**
+- `atom-one-light` (default)
+- `github`
+- `googlecode`
+- `xcode`
+- `vs`
+- `stackoverflow-light`
+- `ascetic`
+
+**Dark themes:**
+- `atom-one-dark`
+- `monokai`
+- `github-dark`
+- `vs2015`
+- `tomorrow-night`
+- `nord`
+
+**Other popular themes:**
+- `gruvbox-light`, `gruvbox-dark`
+- `solarized-light`, `solarized-dark`
+- `dracula`
+- `tokyo-night`
+
+For a complete list of available themes, see the [highlight.js demo](https://highlightjs.org/static/demo/).
 
 ## Troubleshooting
 
@@ -297,6 +357,30 @@ brew install pandoc
 
 # Chrome should be auto-detected, but you can specify the path:
 # Set MCP_PRINTER_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
+
+### Code not rendering with syntax highlighting
+1. Ensure Chrome/Chromium is installed (required for PDF generation)
+2. Check that the file extension is recognized (see [Auto-Rendered Code Languages](#auto-rendered-code-languages))
+3. Verify `MCP_PRINTER_CODE_EXCLUDE` is not set to `"all"`
+4. Try setting a different color scheme if the current one isn't working
+
+### Code prints but with wrong colors/theme
+The color scheme might not exist. Try these reliable options:
+- `atom-one-light` (default)
+- `github`
+- `vs`
+- `xcode`
+
+### Want to disable code rendering
+To print code as plain text without syntax highlighting:
+```json
+"MCP_PRINTER_CODE_EXCLUDE": "all"
+```
+
+Or exclude specific extensions:
+```json
+"MCP_PRINTER_CODE_EXCLUDE": "ts,js,py"
 ```
 
 ### Server not showing in Cursor
@@ -344,6 +428,8 @@ When developing, configure your MCP client to run from source:
   - Linux: Install CUPS if not present (`sudo apt install cups` on Ubuntu/Debian)
   - **Windows is not currently supported** (contributions welcome!)
 - **Node.js** 18+
+- **Google Chrome or Chromium** - Required for rendering markdown and code to PDF (auto-detected)
+- **pandoc** - Optional, only needed for markdown rendering (`brew install pandoc`)
 - Printers configured in your system
 
 ## ⚠️ Security Note

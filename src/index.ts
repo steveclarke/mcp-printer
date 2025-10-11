@@ -9,6 +9,14 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { readFileSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+import hljs from "highlight.js";
+
+// Get the directory of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const execAsync = promisify(exec);
 
@@ -20,6 +28,14 @@ const CHROME_PATH = process.env.MCP_PRINTER_CHROME_PATH || "";
 const RENDER_EXTENSIONS = process.env.MCP_PRINTER_RENDER_EXTENSIONS 
   ? process.env.MCP_PRINTER_RENDER_EXTENSIONS.split(',').map(e => e.trim().toLowerCase())
   : [];
+
+// Code rendering configuration
+const CODE_EXCLUDE = process.env.MCP_PRINTER_CODE_EXCLUDE || "";
+const CODE_EXCLUDE_LIST = CODE_EXCLUDE ? CODE_EXCLUDE.split(',').map(e => e.trim().toLowerCase()) : [];
+const CODE_COLOR_SCHEME = process.env.MCP_PRINTER_CODE_COLOR_SCHEME || "atom-one-light";
+const CODE_LINE_NUMBERS = process.env.MCP_PRINTER_CODE_LINE_NUMBERS !== "false";
+const CODE_FONT_SIZE = process.env.MCP_PRINTER_CODE_FONT_SIZE || "10pt";
+const CODE_LINE_SPACING = process.env.MCP_PRINTER_CODE_LINE_SPACING || "1.5";
 
 // MCP Server for macOS printing via CUPS
 const server = new Server(
@@ -106,6 +122,102 @@ function shouldRenderToPdf(filePath: string): boolean {
   return RENDER_EXTENSIONS.includes(ext);
 }
 
+// Check if file should be rendered as code with syntax highlighting
+function shouldRenderCode(filePath: string): boolean {
+  // If CODE_EXCLUDE is "all", disable all code rendering
+  if (CODE_EXCLUDE === "all") return false;
+  
+  const ext = filePath.split('.').pop()?.toLowerCase() || "";
+  
+  // Check if extension is in the exclusion list
+  if (CODE_EXCLUDE_LIST.includes(ext)) return false;
+  
+  // Try to get language from extension - if highlight.js knows it, render it
+  const language = getLanguageFromExtension(ext);
+  return language !== "";
+}
+
+// Map file extension to highlight.js language identifier
+function getLanguageFromExtension(ext: string): string {
+  const languageMap: { [key: string]: string } = {
+    'js': 'javascript',
+    'jsx': 'javascript',
+    'ts': 'typescript',
+    'tsx': 'typescript',
+    'py': 'python',
+    'rb': 'ruby',
+    'java': 'java',
+    'c': 'c',
+    'cpp': 'cpp',
+    'cc': 'cpp',
+    'cxx': 'cpp',
+    'h': 'c',
+    'hpp': 'cpp',
+    'cs': 'csharp',
+    'php': 'php',
+    'go': 'go',
+    'rs': 'rust',
+    'swift': 'swift',
+    'kt': 'kotlin',
+    'scala': 'scala',
+    'sh': 'bash',
+    'bash': 'bash',
+    'zsh': 'bash',
+    'fish': 'bash',
+    'ps1': 'powershell',
+    'sql': 'sql',
+    'r': 'r',
+    'lua': 'lua',
+    'perl': 'perl',
+    'pl': 'perl',
+    'vim': 'vim',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'json': 'json',
+    'xml': 'xml',
+    'html': 'html',
+    'css': 'css',
+    'scss': 'scss',
+    'sass': 'sass',
+    'less': 'less',
+    'md': 'markdown',
+    'dockerfile': 'dockerfile',
+    'makefile': 'makefile',
+    'mk': 'makefile',
+  };
+  
+  return languageMap[ext] || ext;
+}
+
+// Fix multiline spans - ensure spans don't break across lines
+function fixMultilineSpans(text: string): string {
+  let classes: string[] = [];
+  const spanRegex = /<(\/?)span(.*?)>/g;
+  const tagAttrRegex = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|\s*\/?[>"']))+.)["']?/g;
+
+  return text.split("\n").map(line => {
+    const pre = classes.map(classVal => `<span class="${classVal}">`);
+
+    let spanMatch;
+    spanRegex.lastIndex = 0;
+    while ((spanMatch = spanRegex.exec(line)) !== null) {
+      if (spanMatch[1] !== "") {
+        classes.pop();
+        continue;
+      }
+      let attrMatch;
+      tagAttrRegex.lastIndex = 0;
+      while ((attrMatch = tagAttrRegex.exec(spanMatch[2])) !== null) {
+        if (attrMatch[1].toLowerCase().trim() === "class") {
+          classes.push(attrMatch[2]);
+        }
+      }
+    }
+
+    return `${pre.join("")}${line}${"</span>".repeat(classes.length)}`;
+  }).join("\n");
+}
+
 // Core markdown rendering logic
 async function renderMarkdownToPdf(filePath: string): Promise<string> {
   // Check dependencies
@@ -133,6 +245,175 @@ async function renderMarkdownToPdf(filePath: string): Promise<string> {
       throw new Error(`Failed to render PDF: ${error.message}`);
     }
     // Success - Chrome wrote the PDF and reported to stderr
+  }
+  
+  // Clean up HTML file
+  try {
+    await execCommand(`rm -f "${tmpHtml}"`);
+  } catch {
+    // Ignore cleanup errors
+  }
+
+  return tmpPdf;
+}
+
+// Core code rendering logic with syntax highlighting
+async function renderCodeToPdf(filePath: string): Promise<string> {
+  const chromePath = await findChrome();
+  if (!chromePath) {
+    throw new Error("Chrome not found. Install Google Chrome or set MCP_PRINTER_CHROME_PATH environment variable.");
+  }
+
+  // Read source code file
+  const sourceCode = readFileSync(filePath, 'utf-8');
+  
+  // Get file extension and language
+  const ext = filePath.split('.').pop()?.toLowerCase() || "";
+  const language = getLanguageFromExtension(ext);
+  
+  // Syntax highlight the code
+  let highlightedCode = "";
+  try {
+    highlightedCode = hljs.highlight(sourceCode, { language }).value;
+    // If no keywords were highlighted, try auto-detect
+    if (!highlightedCode.includes('hljs-')) {
+      highlightedCode = hljs.highlightAuto(sourceCode).value;
+    }
+  } catch (error) {
+    // Fall back to auto-detect
+    highlightedCode = hljs.highlightAuto(sourceCode).value;
+  }
+  
+  // Fix multiline spans
+  highlightedCode = fixMultilineSpans(highlightedCode);
+  
+  // Build table rows with optional line numbers
+  let tableRows = "";
+  const lines = highlightedCode.split("\n");
+  
+  if (CODE_LINE_NUMBERS) {
+    tableRows = lines
+      .map(line => line || "&nbsp;")
+      .map((line, i) => `<tr><td class="line-number">${i + 1}</td><td class="line-text">${line}</td></tr>`)
+      .join("\n");
+  } else {
+    tableRows = lines
+      .map(line => line || "&nbsp;")
+      .map(line => `<tr><td class="line-text">${line}</td></tr>`)
+      .join("\n");
+  }
+  
+  // Get color scheme CSS
+  let colorSchemeCSS = "";
+  try {
+    // Find highlight.js styles directory (node_modules relative to this module)
+    const stylesDir = join(__dirname, '../node_modules/highlight.js/styles');
+    const themeFileName = CODE_COLOR_SCHEME + '.css';
+    const themePath = join(stylesDir, themeFileName);
+    
+    try {
+      colorSchemeCSS = readFileSync(themePath, 'utf-8');
+    } catch {
+      // Try .min.css version
+      const minThemePath = join(stylesDir, `${CODE_COLOR_SCHEME}.min.css`);
+      colorSchemeCSS = readFileSync(minThemePath, 'utf-8');
+    }
+  } catch (error) {
+    // Fall back to default if theme not found
+    try {
+      const defaultPath = join(__dirname, '../node_modules/highlight.js/styles/default.css');
+      colorSchemeCSS = readFileSync(defaultPath, 'utf-8');
+    } catch {
+      // If all else fails, use minimal inline CSS
+      colorSchemeCSS = `
+        .hljs { display: block; overflow-x: auto; padding: 0.5em; background: #f0f0f0; }
+        .hljs-keyword { color: #0000ff; font-weight: bold; }
+        .hljs-string { color: #008000; }
+        .hljs-comment { color: #808080; font-style: italic; }
+        .hljs-number { color: #ff0000; }
+        .hljs-function { color: #0000ff; }
+      `;
+    }
+  }
+  
+  // Build complete HTML document
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    /* Print page setup - standard margins */
+    @page {
+      margin: 0.5in;
+    }
+    
+    /* Highlight.js color scheme */
+    ${colorSchemeCSS}
+    
+    /* Custom styling */
+    * {
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Menlo, Monaco, 'Courier New', monospace;
+      font-size: ${CODE_FONT_SIZE};
+      line-height: ${CODE_LINE_SPACING}em;
+    }
+    
+    table {
+      border-collapse: collapse;
+    }
+    
+    .hljs {
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+    
+    .line-number {
+      border-right: thin solid silver;
+      padding-right: 0.3em;
+      text-align: right;
+      vertical-align: top;
+    }
+    
+    .line-text {
+      padding-left: 0.7em;
+      white-space: pre-wrap;
+    }
+    
+    h3.filepath {
+      margin: 0 0 1em 0;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <h3 class="filepath">${filePath}</h3>
+  <table class="hljs">
+    ${tableRows}
+  </table>
+</body>
+</html>`;
+
+  // Create temp files
+  const tmpHtml = `/tmp/mcp-printer-code-${Date.now()}.html`;
+  const tmpPdf = `/tmp/mcp-printer-code-${Date.now()}.pdf`;
+  
+  // Write HTML to temp file
+  await execCommand(`cat > "${tmpHtml}" << 'EOFHTML'\n${html}\nEOFHTML`);
+  
+  // Convert HTML to PDF with Chrome
+  try {
+    await execAsync(`"${chromePath}" --headless --disable-gpu --print-to-pdf="${tmpPdf}" "${tmpHtml}"`);
+  } catch (error: any) {
+    // Chrome might output to stderr even on success
+    const { stderr } = error;
+    if (!stderr || !stderr.includes('written to file')) {
+      throw new Error(`Failed to render PDF: ${error.message}`);
+    }
   }
   
   // Clean up HTML file
@@ -304,7 +585,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           MCP_PRINTER_CHROME_PATH: CHROME_PATH || "(auto-detected)",
           MCP_PRINTER_RENDER_EXTENSIONS: RENDER_EXTENSIONS.length > 0 
             ? RENDER_EXTENSIONS.join(", ") 
-            : "(not set)"
+            : "(not set)",
+          MCP_PRINTER_CODE_EXCLUDE: CODE_EXCLUDE || "(not set)",
+          MCP_PRINTER_CODE_COLOR_SCHEME: CODE_COLOR_SCHEME,
+          MCP_PRINTER_CODE_LINE_NUMBERS: CODE_LINE_NUMBERS ? "true" : "false",
+          MCP_PRINTER_CODE_FONT_SIZE: CODE_FONT_SIZE,
+          MCP_PRINTER_CODE_LINE_SPACING: CODE_LINE_SPACING
         };
         
         const configText = Object.entries(config)
@@ -343,15 +629,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         let actualFilePath = file_path;
         let renderedPdf: string | null = null;
+        let renderType = "";
 
-        // Check if file should be auto-rendered to PDF
+        // Check if file should be auto-rendered to PDF (markdown)
         if (shouldRenderToPdf(file_path)) {
           try {
             renderedPdf = await renderMarkdownToPdf(file_path);
             actualFilePath = renderedPdf;
+            renderType = "markdown → PDF";
           } catch (error) {
             // If rendering fails, fall back to printing original file
             console.error(`Warning: Failed to render ${file_path}, printing as-is:`, error);
+          }
+        }
+        // Check if file should be rendered as code with syntax highlighting
+        else if (shouldRenderCode(file_path)) {
+          try {
+            renderedPdf = await renderCodeToPdf(file_path);
+            actualFilePath = renderedPdf;
+            renderType = "code → PDF (syntax highlighted)";
+          } catch (error) {
+            // If rendering fails, fall back to printing original file
+            console.error(`Warning: Failed to render code ${file_path}, printing as-is:`, error);
           }
         }
 
@@ -401,7 +700,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             optionsInfo = `\n  Options: ${allOptions.join(", ")}`;
           }
 
-          const renderedNote = renderedPdf ? "\n  Rendered: markdown → PDF" : "";
+          const renderedNote = renderType ? `\n  Rendered: ${renderType}` : "";
           
           return {
             content: [
