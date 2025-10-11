@@ -64,14 +64,15 @@ All configuration is optional. Add an `env` object to customize behavior:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MCP_PRINTER_DEFAULT` | _(none)_ | Default printer to use when none specified |
-| `MCP_PRINTER_DUPLEX` | `false` | Set to `"true"` to print double-sided by default |
-| `MCP_PRINTER_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
+| `MCP_PRINTER_DEFAULT_PRINTER` | _(none)_ | Default printer to use when none specified |
+| `MCP_PRINTER_ENABLE_DUPLEX` | `false` | Set to `"true"` to print double-sided by default |
+| `MCP_PRINTER_DEFAULT_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
 | `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Full path to Chrome/Chromium executable |
-| `MCP_PRINTER_RENDER_EXTENSIONS` | _(none)_ | File extensions to auto-render to PDF (e.g., `"md,markdown"`) |
-| `MCP_PRINTER_CODE_EXCLUDE` | _(none)_ | Extensions to exclude from code rendering, or `"all"` to disable |
+| `MCP_PRINTER_MARKDOWN_EXTENSIONS` | _(none)_ | File extensions to auto-render to PDF (e.g., `"md,markdown"`) |
+| `MCP_PRINTER_PRINT_ONLY` | `false` | Set to `"true"` to disable all printer management tools (only allow printing) |
+| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering, or `"all"` to disable |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
-| `MCP_PRINTER_CODE_LINE_NUMBERS` | `"true"` | Show line numbers in code printouts (set to `"false"` to disable) |
+| `MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS` | `true` | Show line numbers in code printouts (set to `"false"` to disable) |
 | `MCP_PRINTER_CODE_FONT_SIZE` | `"10pt"` | Font size for code (e.g., `"8pt"`, `"12pt"`) |
 | `MCP_PRINTER_CODE_LINE_SPACING` | `"1.5"` | Line spacing multiplier for code (e.g., `"1"`, `"1.5"`, `"2"`) |
 
@@ -82,10 +83,10 @@ All configuration is optional. Add an `env` object to customize behavior:
     "printer": {
       "command": "mcp-printer",
       "env": {
-        "MCP_PRINTER_DEFAULT": "HP_LaserJet_Pro",
-        "MCP_PRINTER_DUPLEX": "true",
-        "MCP_PRINTER_OPTIONS": "fit-to-page",
-        "MCP_PRINTER_RENDER_EXTENSIONS": "md,markdown",
+        "MCP_PRINTER_DEFAULT_PRINTER": "HP_LaserJet_Pro",
+        "MCP_PRINTER_ENABLE_DUPLEX": "true",
+        "MCP_PRINTER_DEFAULT_OPTIONS": "fit-to-page",
+        "MCP_PRINTER_MARKDOWN_EXTENSIONS": "md,markdown",
         "MCP_PRINTER_CODE_COLOR_SCHEME": "github",
         "MCP_PRINTER_CODE_FONT_SIZE": "9pt"
       }
@@ -108,11 +109,12 @@ Get the current MCP Printer configuration settings. Only returns non-sensitive c
 User: What are my printer settings?
 AI: Current MCP Printer Configuration:
 
-MCP_PRINTER_DEFAULT: HP_LaserJet_4001
-MCP_PRINTER_DUPLEX: true
-MCP_PRINTER_OPTIONS: (not set)
+MCP_PRINTER_DEFAULT_PRINTER: HP_LaserJet_4001
+MCP_PRINTER_ENABLE_DUPLEX: true
+MCP_PRINTER_DEFAULT_OPTIONS: (not set)
 MCP_PRINTER_CHROME_PATH: (auto-detected)
-MCP_PRINTER_RENDER_EXTENSIONS: md, markdown
+MCP_PRINTER_MARKDOWN_EXTENSIONS: md, markdown
+MCP_PRINTER_PRINT_ONLY: false
 ```
 
 ### `list_printers`
@@ -214,7 +216,7 @@ AI: *converts markdown → HTML → PDF → prints*
 ```
 
 **Auto-rendering:**
-If you set `MCP_PRINTER_RENDER_EXTENSIONS="md,markdown"` in your config, calling `print_file` on `.md` files will automatically render them to PDF first!
+If you set `MCP_PRINTER_MARKDOWN_EXTENSIONS="md,markdown"` in your config, calling `print_file` on `.md` files will automatically render them to PDF first!
 
 ## Usage Examples
 
@@ -270,7 +272,7 @@ The server uses CUPS, which natively supports:
 - ✅ Plain text
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
-- ✅ Markdown (rendered to PDF with `render_and_print_markdown` or via `MCP_PRINTER_RENDER_EXTENSIONS`)
+- ✅ Markdown (rendered to PDF with `render_and_print_markdown` or via `MCP_PRINTER_MARKDOWN_EXTENSIONS`)
 - ✅ **Code files** (190+ languages automatically detected and rendered with syntax highlighting)
 
 ### Auto-Rendered Code Languages
@@ -278,7 +280,7 @@ The server uses CUPS, which natively supports:
 Common languages that are automatically syntax-highlighted include:
 JavaScript, TypeScript, Python, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Ruby, PHP, Scala, Shell/Bash, SQL, R, Perl, Lua, HTML, CSS, SCSS, JSON, YAML, XML, and many more.
 
-To disable code rendering for specific extensions, use `MCP_PRINTER_CODE_EXCLUDE`. To disable all code rendering, set `MCP_PRINTER_CODE_EXCLUDE="all"`.
+To disable code rendering for specific extensions, use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS`. To disable all code rendering, set `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="all"`.
 
 Other document formats may need conversion to PDF first.
 
@@ -351,7 +353,7 @@ brew install pandoc
 ### Code not rendering with syntax highlighting
 1. Ensure Chrome/Chromium is installed (required for PDF generation)
 2. Check that the file extension is recognized (see [Auto-Rendered Code Languages](#auto-rendered-code-languages))
-3. Verify `MCP_PRINTER_CODE_EXCLUDE` is not set to `"all"`
+3. Verify `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` is not set to `"all"`
 4. Try setting a different color scheme if the current one isn't working
 
 ### Code prints but with wrong colors/theme
@@ -362,7 +364,7 @@ The color scheme might not exist. Try these reliable options:
 - `xcode`
 
 ### Want to disable code rendering
-Set `MCP_PRINTER_CODE_EXCLUDE` to `"all"` to disable all code rendering, or specify extensions to exclude (e.g., `"ts,js,py"`). See [Configuration Options](#configuration-options) for details.
+Set `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to `"all"` to disable all code rendering, or specify extensions to exclude (e.g., `"ts,js,py"`). See [Configuration Options](#configuration-options) for details.
 
 ### Server not showing in Cursor
 1. Restart Cursor after updating MCP config
@@ -405,8 +407,8 @@ Configure your MCP client to run from your local directory:
       "command": "node",
       "args": ["/absolute/path/to/mcp-printer/dist/index.js"],
       "env": {
-        "MCP_PRINTER_DEFAULT": "Your_Printer_Name",
-        "MCP_PRINTER_DUPLEX": "true"
+        "MCP_PRINTER_DEFAULT_PRINTER": "Your_Printer_Name",
+        "MCP_PRINTER_ENABLE_DUPLEX": "true"
       }
     }
   }

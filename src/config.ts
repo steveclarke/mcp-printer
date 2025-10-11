@@ -14,6 +14,8 @@ export interface Config {
   chromePath: string;
   /** File extensions that should be auto-rendered to PDF before printing (primarily markdown) */
   markdownExtensions: string[];
+  /** Restrict to print-only mode (disable all printer management tools) */
+  printOnly: boolean;
   /** Code rendering configuration */
   code: {
     /** File extensions to exclude from code rendering */
@@ -41,6 +43,7 @@ export const config: Config = {
   markdownExtensions: process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS 
     ? process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS.split(',').map(e => e.trim().toLowerCase())
     : [],
+  printOnly: yn(process.env.MCP_PRINTER_PRINT_ONLY, { default: false }),
   code: {
     excludeExtensions: process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS 
       ? process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS.split(',').map(e => e.trim().toLowerCase()) 
