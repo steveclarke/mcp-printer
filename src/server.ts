@@ -3,54 +3,22 @@
  * Provides a Model Context Protocol server that exposes printing tools via CUPS.
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
-import { tools, handleToolCall } from "./tools/index.js";
+import { registerAllTools } from "./tools/index.js";
 import packageJson from "../package.json" with { type: "json" };
 
 /**
  * MCP Server instance for macOS printing via CUPS.
  * Handles printer management, print jobs, and document rendering.
  */
-const server = new Server(
-  {
-    name: "mcp-printer",
-    version: packageJson.version,
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
-
-// List available tools
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools,
-}));
-
-// Handle tool execution
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  try {
-    return await handleToolCall(name, args);
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
-  }
+const mcpServer = new McpServer({
+  name: "mcp-printer",
+  version: packageJson.version,
 });
+
+// Register all tools with the server
+registerAllTools(mcpServer);
 
 /**
  * Starts the MCP Printer server and connects it to stdio transport.
@@ -72,7 +40,6 @@ export async function startServer() {
   console.error(`MCP Printer Server starting on ${process.platform}...`);
   
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  await mcpServer.connect(transport);
   console.error("MCP Printer Server running on stdio");
 }
-
