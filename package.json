@@ -11,8 +11,8 @@
     "clean": "rm -rf dist",
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm run build"
+    "prepare": "pnpm run build",
+    "prepublishOnly": "pnpm run build"
   },
   "keywords": [
     "mcp",
