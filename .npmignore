@@ -7,6 +7,14 @@ tsconfig.json
 *.log
 .DS_Store
 *.tsbuildinfo
+node_modules/
+
+# Temporary files
+/tmp/
+
+# Lock files (using pnpm)
+package-lock.json
+yarn.lock
 
 # Documentation (keep README.md)
 CURSOR_SETUP.md
@@ -14,6 +22,3 @@ CURSOR_SETUP.md
 # Git
 .git/
 .github/
-
-
-
