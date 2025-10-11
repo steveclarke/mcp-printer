@@ -20,6 +20,9 @@ importers:
       yn:
         specifier: ^5.1.0
         version: 5.1.0
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^24.7.2

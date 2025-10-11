@@ -8,6 +8,7 @@
     "mcp-printer": "./dist/index.js"
   },
   "scripts": {
+    "clean": "rm -rf dist",
     "build": "tsc",
     "dev": "tsc --watch",
     "prepare": "npm run build",
@@ -49,7 +50,8 @@
     "@modelcontextprotocol/sdk": "^1.2.0",
     "execa": "^9.6.0",
     "highlight.js": "^11.11.1",
-    "yn": "^5.1.0"
+    "yn": "^5.1.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.7.2",
