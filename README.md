@@ -10,6 +10,7 @@ In the era of AI-assisted development, we're generating more documentation, spec
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Available Tools](#available-tools)
+- [Available Prompts](#available-prompts)
 - [Usage Examples](#usage-examples)
 - [Supported File Types](#supported-file-types)
 - [CUPS Options](#cups-options)
@@ -219,6 +220,45 @@ AI: *converts markdown → HTML → PDF → prints*
 **Auto-rendering:**
 If you set `MCP_PRINTER_MARKDOWN_EXTENSIONS="md,markdown"` in your config, calling `print_file` on `.md` files will automatically render them to PDF first!
 
+## Available Prompts
+
+Prompts are workflow templates that appear as slash commands in your AI assistant (e.g., Cursor). They provide guided workflows for common printing tasks.
+
+### `/print-review-package`
+Print a complete code review package for offline review.
+
+**What it does:**
+- Finds all source code and documentation files in a directory
+- Organizes them logically (docs first, then source files)
+- Prints everything with proper syntax highlighting and formatting
+- Perfect for reviewing code on paper or away from your computer
+
+**Parameters:**
+- `directory` - Directory to review (default: current directory `.`)
+- `include_source` - Include source code files (default: yes)
+- `include_docs` - Include documentation files (default: yes)
+- `include_tests` - Include test files (default: no)
+- `copies` - Number of copies to print (default: 1)
+
+**Example:**
+```
+User: /print-review-package
+[Form appears with defaults]
+directory: .
+include_source: yes
+include_docs: yes
+copies: 1
+
+AI: [Finds all files, prints README.md, then all .ts files with syntax highlighting]
+✓ Printed 15 files: 2 docs + 13 source files
+```
+
+**Use cases:**
+- Review your entire codebase before release
+- Prepare documentation for offline reading
+- Create review packages for code reviews
+- Print feature code for offline debugging
+
 ## Usage Examples
 
 ### Print Code with Syntax Highlighting
@@ -422,7 +462,7 @@ Configure your MCP client to run from your local directory:
   - macOS: CUPS is built-in
   - Linux: Install CUPS if not present (`sudo apt install cups` on Ubuntu/Debian)
   - **Windows is not currently supported** (contributions welcome!)
-- **Node.js** 18+
+- **Node.js** 22+
 - **Google Chrome or Chromium** - Required for rendering markdown and code to PDF (auto-detected)
 - **pandoc** - Optional, only needed for markdown rendering (`brew install pandoc`)
 - Printers configured in your system
