@@ -92,7 +92,7 @@ export async function handlePrintFile(args: any) {
     let command = "lpr";
     
     // Use configured default printer if none specified
-    const targetPrinter = printer || config.DEFAULT_PRINTER;
+    const targetPrinter = printer || config.defaultPrinter;
     if (targetPrinter) {
       command += ` -P "${targetPrinter}"`;
     }
@@ -105,13 +105,13 @@ export async function handlePrintFile(args: any) {
     let allOptions = [];
     
     // Add default duplex if configured and not overridden
-    if (config.DEFAULT_DUPLEX && !options?.includes("sides=")) {
+    if (config.enableDuplex && !options?.includes("sides=")) {
       allOptions.push("sides=two-sided-long-edge");
     }
     
     // Add default options if configured (split by spaces to handle multiple options)
-    if (config.DEFAULT_OPTIONS) {
-      allOptions.push(...config.DEFAULT_OPTIONS.split(/\s+/));
+    if (config.defaultOptions) {
+      allOptions.push(...config.defaultOptions.split(/\s+/));
     }
     
     // Add user-specified options (these override defaults, split by spaces)

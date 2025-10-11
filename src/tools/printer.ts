@@ -104,18 +104,20 @@ export async function handlePrinterTool(name: string, args: any) {
   switch (name) {
     case "get_config": {
       const configData = {
-        MCP_PRINTER_DEFAULT: config.DEFAULT_PRINTER || "(not set)",
-        MCP_PRINTER_DUPLEX: config.DEFAULT_DUPLEX ? "true" : "false",
-        MCP_PRINTER_OPTIONS: config.DEFAULT_OPTIONS || "(not set)",
-        MCP_PRINTER_CHROME_PATH: config.CHROME_PATH || "(auto-detected)",
-        MCP_PRINTER_RENDER_EXTENSIONS: config.RENDER_EXTENSIONS.length > 0 
-          ? config.RENDER_EXTENSIONS.join(", ") 
+        MCP_PRINTER_DEFAULT_PRINTER: config.defaultPrinter || "(not set)",
+        MCP_PRINTER_ENABLE_DUPLEX: config.enableDuplex ? "true" : "false",
+        MCP_PRINTER_DEFAULT_OPTIONS: config.defaultOptions || "(not set)",
+        MCP_PRINTER_CHROME_PATH: config.chromePath || "(auto-detected)",
+        MCP_PRINTER_MARKDOWN_EXTENSIONS: config.markdownExtensions.length > 0 
+          ? config.markdownExtensions.join(", ") 
           : "(not set)",
-        MCP_PRINTER_CODE_EXCLUDE: config.CODE_EXCLUDE || "(not set)",
-        MCP_PRINTER_CODE_COLOR_SCHEME: config.CODE_COLOR_SCHEME,
-        MCP_PRINTER_CODE_LINE_NUMBERS: config.CODE_LINE_NUMBERS ? "true" : "false",
-        MCP_PRINTER_CODE_FONT_SIZE: config.CODE_FONT_SIZE,
-        MCP_PRINTER_CODE_LINE_SPACING: config.CODE_LINE_SPACING
+        MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS: config.code.excludeExtensions.length > 0
+          ? config.code.excludeExtensions.join(", ")
+          : "(not set)",
+        MCP_PRINTER_CODE_COLOR_SCHEME: config.code.colorScheme,
+        MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS: config.code.enableLineNumbers ? "true" : "false",
+        MCP_PRINTER_CODE_FONT_SIZE: config.code.fontSize,
+        MCP_PRINTER_CODE_LINE_SPACING: config.code.lineSpacing
       };
       
       const configText = Object.entries(configData)

@@ -60,7 +60,7 @@ export async function renderCodeToPdf(filePath: string): Promise<string> {
   let tableRows = "";
   const lines = highlightedCode.split("\n");
   
-  if (config.CODE_LINE_NUMBERS) {
+  if (config.code.enableLineNumbers) {
     tableRows = lines
       .map(line => line || "&nbsp;")
       .map((line, i) => `<tr><td class="line-number">${i + 1}</td><td class="line-text">${line}</td></tr>`)
@@ -77,14 +77,14 @@ export async function renderCodeToPdf(filePath: string): Promise<string> {
   try {
     // Find highlight.js styles directory (node_modules relative to this module)
     const stylesDir = join(__dirname, '../../node_modules/highlight.js/styles');
-    const themeFileName = config.CODE_COLOR_SCHEME + '.css';
+    const themeFileName = config.code.colorScheme + '.css';
     const themePath = join(stylesDir, themeFileName);
     
     try {
       colorSchemeCSS = readFileSync(themePath, 'utf-8');
     } catch {
       // Try .min.css version
-      const minThemePath = join(stylesDir, `${config.CODE_COLOR_SCHEME}.min.css`);
+      const minThemePath = join(stylesDir, `${config.code.colorScheme}.min.css`);
       colorSchemeCSS = readFileSync(minThemePath, 'utf-8');
     }
   } catch (error) {
@@ -128,8 +128,8 @@ export async function renderCodeToPdf(filePath: string): Promise<string> {
       margin: 0;
       padding: 0;
       font-family: Menlo, Monaco, 'Courier New', monospace;
-      font-size: ${config.CODE_FONT_SIZE};
-      line-height: ${config.CODE_LINE_SPACING}em;
+      font-size: ${config.code.fontSize};
+      line-height: ${config.code.lineSpacing}em;
     }
     
     table {

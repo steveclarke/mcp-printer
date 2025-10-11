@@ -52,10 +52,10 @@ export async function checkDependency(command: string, name: string): Promise<vo
  */
 export async function findChrome(): Promise<string | null> {
   // Check environment variable first
-  if (config.CHROME_PATH) {
+  if (config.chromePath) {
     try {
-      await execCommand(`test -f "${config.CHROME_PATH}"`);
-      return config.CHROME_PATH;
+      await execCommand(`test -f "${config.chromePath}"`);
+      return config.chromePath;
     } catch {
       // If specified path doesn't exist, continue to auto-detection
     }
@@ -93,33 +93,33 @@ export async function findChrome(): Promise<string | null> {
 
 /**
  * Determines if a file should be automatically rendered to PDF before printing.
- * Checks if the file extension is in the RENDER_EXTENSIONS configuration.
+ * Checks if the file extension is in the markdownExtensions configuration.
  * 
  * @param filePath - Path to the file to check
  * @returns True if the file should be rendered to PDF, false otherwise
  */
 export function shouldRenderToPdf(filePath: string): boolean {
-  if (config.RENDER_EXTENSIONS.length === 0) return false;
+  if (config.markdownExtensions.length === 0) return false;
   
   const ext = filePath.split('.').pop()?.toLowerCase() || "";
-  return config.RENDER_EXTENSIONS.includes(ext);
+  return config.markdownExtensions.includes(ext);
 }
 
 /**
  * Determines if a file should be rendered with syntax highlighting.
- * Checks CODE_EXCLUDE configuration and whether highlight.js supports the file type.
+ * Checks code.excludeExtensions configuration and whether highlight.js supports the file type.
  * 
  * @param filePath - Path to the file to check
  * @returns True if the file should be syntax-highlighted, false otherwise
  */
 export function shouldRenderCode(filePath: string): boolean {
-  // If CODE_EXCLUDE is "all", disable all code rendering
-  if (config.CODE_EXCLUDE === "all") return false;
+  // If excludeExtensions includes "all", disable all code rendering
+  if (config.code.excludeExtensions.includes("all")) return false;
   
   const ext = filePath.split('.').pop()?.toLowerCase() || "";
   
   // Check if extension is in the exclusion list
-  if (config.CODE_EXCLUDE_LIST.includes(ext)) return false;
+  if (config.code.excludeExtensions.includes(ext)) return false;
   
   // Try to get language from extension - if highlight.js knows it, render it
   const language = getLanguageFromExtension(ext);

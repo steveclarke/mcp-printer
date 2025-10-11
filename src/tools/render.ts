@@ -63,7 +63,7 @@ export async function handleRenderMarkdown(args: any) {
     renderedPdf = await renderMarkdownToPdf(file_path);
     
     // Print the PDF
-    const targetPrinter = printer || config.DEFAULT_PRINTER;
+    const targetPrinter = printer || config.defaultPrinter;
     let command = "lpr";
     
     if (targetPrinter) {
@@ -75,11 +75,11 @@ export async function handleRenderMarkdown(args: any) {
     }
     
     let allOptions = [];
-    if (config.DEFAULT_DUPLEX && !options?.includes("sides=")) {
+    if (config.enableDuplex && !options?.includes("sides=")) {
       allOptions.push("sides=two-sided-long-edge");
     }
-    if (config.DEFAULT_OPTIONS) {
-      allOptions.push(...config.DEFAULT_OPTIONS.split(/\s+/));
+    if (config.defaultOptions) {
+      allOptions.push(...config.defaultOptions.split(/\s+/));
     }
     if (options) {
       allOptions.push(...options.split(/\s+/));
