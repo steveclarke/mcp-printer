@@ -1,10 +1,18 @@
+/**
+ * @fileoverview File printing tool implementation.
+ * Handles printing of various file types with optional rendering for markdown and code files.
+ */
+
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { execCommand, shouldRenderToPdf, shouldRenderCode } from "../utils.js";
 import { config } from "../config.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
 import { renderCodeToPdf } from "../renderers/code.js";
 
-// Tool definition for printing files
+/**
+ * MCP tool definition for printing files to printers.
+ * Supports automatic rendering of markdown and code files to PDF before printing.
+ */
 export const printTool: Tool = {
   name: "print_file",
   description:
@@ -36,7 +44,15 @@ export const printTool: Tool = {
   },
 };
 
-// Handler for print_file tool
+/**
+ * Handles the print_file tool invocation.
+ * Automatically renders markdown and code files to PDF with appropriate formatting.
+ * Sends the file to the specified or default printer using CUPS (lpr).
+ * 
+ * @param args - Tool arguments containing file_path, optional printer, copies, and options
+ * @returns Tool result with success message and print details
+ * @throws {Error} If printing fails
+ */
 export async function handlePrintFile(args: any) {
   const { file_path, printer, copies = 1, options } = args as {
     file_path: string;

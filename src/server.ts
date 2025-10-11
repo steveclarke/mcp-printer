@@ -1,3 +1,8 @@
+/**
+ * @fileoverview MCP Server implementation for macOS printing operations.
+ * Provides a Model Context Protocol server that exposes printing tools via CUPS.
+ */
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -6,7 +11,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { tools, handleToolCall } from "./tools/index.js";
 
-// MCP Server for macOS printing via CUPS
+/**
+ * MCP Server instance for macOS printing via CUPS.
+ * Handles printer management, print jobs, and document rendering.
+ */
 const server = new Server(
   {
     name: "mcp-printer-server",
@@ -43,7 +51,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Start the server
+/**
+ * Starts the MCP Printer server and connects it to stdio transport.
+ * The server will handle tool requests for printer operations via stdin/stdout.
+ * 
+ * @throws {Error} If server connection fails
+ */
 export async function startServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);

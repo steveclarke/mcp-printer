@@ -1,8 +1,16 @@
+/**
+ * @fileoverview Printer management tools implementation.
+ * Provides tools for querying printers, managing print queues, and configuring defaults.
+ */
+
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { execCommand } from "../utils.js";
 import { config } from "../config.js";
 
-// Tool definitions for printer operations
+/**
+ * Array of MCP tool definitions for printer management operations.
+ * Includes tools for listing printers, managing queues, and configuration.
+ */
 export const printerTools: Tool[] = [
   {
     name: "get_config",
@@ -83,7 +91,15 @@ export const printerTools: Tool[] = [
   },
 ];
 
-// Handler for printer tool calls
+/**
+ * Handles printer management tool invocations.
+ * Routes to appropriate CUPS commands for printer operations.
+ * 
+ * @param name - The printer tool name to invoke
+ * @param args - Tool-specific arguments
+ * @returns Tool result with requested printer information or confirmation
+ * @throws {Error} If the tool name is unknown or the operation fails
+ */
 export async function handlePrinterTool(name: string, args: any) {
   switch (name) {
     case "get_config": {

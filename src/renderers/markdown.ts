@@ -1,10 +1,22 @@
+/**
+ * @fileoverview Markdown file renderer.
+ * Converts markdown files to PDF using pandoc and Chrome.
+ */
+
 import { exec } from "child_process";
 import { promisify } from "util";
 import { checkDependency, findChrome, execCommand } from "../utils.js";
 
 const execAsync = promisify(exec);
 
-// Core markdown rendering logic
+/**
+ * Renders a markdown file to PDF.
+ * Uses pandoc to convert markdown to HTML, then Chrome to render HTML to PDF.
+ * 
+ * @param filePath - Path to the markdown file to render
+ * @returns Path to the generated temporary PDF file
+ * @throws {Error} If pandoc or Chrome is not found, or if rendering fails
+ */
 export async function renderMarkdownToPdf(filePath: string): Promise<string> {
   // Check dependencies
   await checkDependency("pandoc", "pandoc");

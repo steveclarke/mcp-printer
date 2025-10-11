@@ -1,9 +1,17 @@
+/**
+ * @fileoverview Markdown rendering and printing tool implementation.
+ * Explicitly renders markdown files to PDF and prints them.
+ */
+
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { execCommand } from "../utils.js";
 import { config } from "../config.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
 
-// Tool definition for rendering and printing markdown
+/**
+ * MCP tool definition for explicitly rendering and printing markdown files.
+ * Uses pandoc and Chrome for high-quality PDF rendering.
+ */
 export const renderTool: Tool = {
   name: "render_and_print_markdown",
   description: "Render a markdown file to PDF and print it. Uses pandoc and Chrome for high-quality rendering. Requires pandoc and Chrome/Chromium to be installed.",
@@ -32,7 +40,14 @@ export const renderTool: Tool = {
   },
 };
 
-// Handler for render_and_print_markdown tool
+/**
+ * Handles the render_and_print_markdown tool invocation.
+ * Renders a markdown file to PDF using pandoc and Chrome, then prints it.
+ * 
+ * @param args - Tool arguments containing file_path, optional printer, copies, and options
+ * @returns Tool result with success message and print details
+ * @throws {Error} If rendering or printing fails
+ */
 export async function handleRenderMarkdown(args: any) {
   const { file_path, printer, copies = 1, options } = args as {
     file_path: string;

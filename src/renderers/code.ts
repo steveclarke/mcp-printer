@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Code file renderer with syntax highlighting.
+ * Converts source code files to PDF with syntax highlighting using highlight.js and Chrome.
+ */
+
 import { exec } from "child_process";
 import { promisify } from "util";
 import { readFileSync } from "fs";
@@ -13,7 +18,15 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Core code rendering logic with syntax highlighting
+/**
+ * Renders a source code file to PDF with syntax highlighting.
+ * Uses highlight.js for syntax highlighting and Chrome for PDF generation.
+ * Supports configurable color schemes, line numbers, font size, and line spacing.
+ * 
+ * @param filePath - Path to the source code file to render
+ * @returns Path to the generated temporary PDF file
+ * @throws {Error} If Chrome is not found or PDF generation fails
+ */
 export async function renderCodeToPdf(filePath: string): Promise<string> {
   const chromePath = await findChrome();
   if (!chromePath) {

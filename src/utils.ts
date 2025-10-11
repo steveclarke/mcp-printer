@@ -1,10 +1,21 @@
+/**
+ * @fileoverview Utility functions for command execution, dependency checking,
+ * and file type detection for the MCP Printer server.
+ */
+
 import { exec } from "child_process";
 import { promisify } from "util";
 import { config } from "./config.js";
 
 const execAsync = promisify(exec);
 
-// Helper function to execute shell commands
+/**
+ * Executes a shell command and returns its stdout output.
+ * 
+ * @param command - The shell command to execute
+ * @returns The trimmed stdout output from the command
+ * @throws {Error} If the command fails or returns an error
+ */
 export async function execCommand(command: string): Promise<string> {
   try {
     const { stdout, stderr } = await execAsync(command);
@@ -17,7 +28,13 @@ export async function execCommand(command: string): Promise<string> {
   }
 }
 
-// Check if a command/dependency exists
+/**
+ * Checks if a command-line tool is available in the system PATH.
+ * 
+ * @param command - The command to check (e.g., "pandoc")
+ * @param name - Human-readable name for error messages
+ * @throws {Error} If the command is not found, with installation instructions
+ */
 export async function checkDependency(command: string, name: string): Promise<void> {
   try {
     await execCommand(`which ${command}`);
@@ -26,7 +43,13 @@ export async function checkDependency(command: string, name: string): Promise<vo
   }
 }
 
-// Find Chrome/Chromium installation
+/**
+ * Locates a Chrome or Chromium installation on the system.
+ * First checks the MCP_PRINTER_CHROME_PATH environment variable,
+ * then searches common macOS and Linux installation paths.
+ * 
+ * @returns Path to Chrome/Chromium executable, or null if not found
+ */
 export async function findChrome(): Promise<string | null> {
   // Check environment variable first
   if (config.CHROME_PATH) {
@@ -68,7 +91,13 @@ export async function findChrome(): Promise<string | null> {
   return null;
 }
 
-// Check if file extension should be auto-rendered to PDF
+/**
+ * Determines if a file should be automatically rendered to PDF before printing.
+ * Checks if the file extension is in the RENDER_EXTENSIONS configuration.
+ * 
+ * @param filePath - Path to the file to check
+ * @returns True if the file should be rendered to PDF, false otherwise
+ */
 export function shouldRenderToPdf(filePath: string): boolean {
   if (config.RENDER_EXTENSIONS.length === 0) return false;
   
@@ -76,7 +105,13 @@ export function shouldRenderToPdf(filePath: string): boolean {
   return config.RENDER_EXTENSIONS.includes(ext);
 }
 
-// Check if file should be rendered as code with syntax highlighting
+/**
+ * Determines if a file should be rendered with syntax highlighting.
+ * Checks CODE_EXCLUDE configuration and whether highlight.js supports the file type.
+ * 
+ * @param filePath - Path to the file to check
+ * @returns True if the file should be syntax-highlighted, false otherwise
+ */
 export function shouldRenderCode(filePath: string): boolean {
   // If CODE_EXCLUDE is "all", disable all code rendering
   if (config.CODE_EXCLUDE === "all") return false;
@@ -91,7 +126,12 @@ export function shouldRenderCode(filePath: string): boolean {
   return language !== "";
 }
 
-// Map file extension to highlight.js language identifier
+/**
+ * Maps a file extension to a highlight.js language identifier.
+ * 
+ * @param ext - File extension (without the dot, e.g., "ts")
+ * @returns Highlight.js language identifier, or the original extension if no mapping exists
+ */
 export function getLanguageFromExtension(ext: string): string {
   const languageMap: { [key: string]: string } = {
     'js': 'javascript',
@@ -143,7 +183,14 @@ export function getLanguageFromExtension(ext: string): string {
   return languageMap[ext] || ext;
 }
 
-// Fix multiline spans - ensure spans don't break across lines
+/**
+ * Fixes multiline HTML span elements by ensuring spans don't break across lines.
+ * Closes all open spans at the end of each line and reopens them at the start of the next.
+ * This ensures proper rendering in PDF output where line breaks can cause display issues.
+ * 
+ * @param text - HTML text with span elements
+ * @returns HTML text with spans properly closed and reopened at line boundaries
+ */
 export function fixMultilineSpans(text: string): string {
   let classes: string[] = [];
   const spanRegex = /<(\/?)span(.*?)>/g;
