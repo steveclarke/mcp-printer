@@ -33,8 +33,6 @@ In the era of AI-assisted development, we're generating more documentation, spec
 
 ## Installation
 
-### Option 1: Package Manager (Recommended)
-
 ```bash
 # npm
 npm install -g mcp-printer
@@ -44,15 +42,6 @@ pnpm add -g mcp-printer
 
 # yarn
 yarn global add mcp-printer
-```
-
-### Option 2: From Source
-
-```bash
-git clone https://github.com/myunio/mcp-printer.git
-cd mcp-printer
-pnpm install
-pnpm run build
 ```
 
 ## Configuration
@@ -373,15 +362,7 @@ The color scheme might not exist. Try these reliable options:
 - `xcode`
 
 ### Want to disable code rendering
-To print code as plain text without syntax highlighting:
-```json
-"MCP_PRINTER_CODE_EXCLUDE": "all"
-```
-
-Or exclude specific extensions:
-```json
-"MCP_PRINTER_CODE_EXCLUDE": "ts,js,py"
-```
+Set `MCP_PRINTER_CODE_EXCLUDE` to `"all"` to disable all code rendering, or specify extensions to exclude (e.g., `"ts,js,py"`). See [Configuration Options](#configuration-options) for details.
 
 ### Server not showing in Cursor
 1. Restart Cursor after updating MCP config
@@ -390,8 +371,19 @@ Or exclude specific extensions:
 
 ## Development
 
+### Setup
+
 ```bash
-# Watch mode
+git clone https://github.com/myunio/mcp-printer.git
+cd mcp-printer
+pnpm install
+pnpm run build
+```
+
+### Commands
+
+```bash
+# Watch mode for development
 pnpm run dev
 
 # Build
@@ -402,9 +394,9 @@ echo "Hello from MCP Printer Server!" > test.txt
 # Then ask AI to print test.txt
 ```
 
-### Running from Source in MCP
+### Running Locally in MCP
 
-When developing, configure your MCP client to run from source:
+Configure your MCP client to run from your local directory:
 
 ```json
 {
