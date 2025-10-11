@@ -138,13 +138,21 @@ export async function handlePrintFile(args: any) {
 
     await execa('lpr', args);
     
+    // Determine the printer name used: prefer the specified targetPrinter, else
+    // get the system default printer via 'lpstat -d', else fallback to
+    // 'default'
     const printerName = targetPrinter || (await execCommand('lpstat', ['-d'])).split(": ")[1] || "default";
     
+    // Construct a string that lists all print options if any are specified.
+    // This will be displayed to inform the user about what options were used in
+    // the print job.
     let optionsInfo = "";
     if (allOptions.length > 0) {
       optionsInfo = `\n  Options: ${allOptions.join(", ")}`;
     }
 
+    // If a renderType is provided, note what kind of rendering (e.g.,
+    // "markdown", "code") was performed before printing.
     const renderedNote = renderType ? `\n  Rendered: ${renderType}` : "";
     
     return {

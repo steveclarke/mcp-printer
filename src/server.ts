@@ -10,6 +10,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { tools, handleToolCall } from "./tools/index.js";
+import packageJson from "../package.json" with { type: "json" };
 
 /**
  * MCP Server instance for macOS printing via CUPS.
@@ -18,7 +19,7 @@ import { tools, handleToolCall } from "./tools/index.js";
 const server = new Server(
   {
     name: "mcp-printer",
-    version: "1.0.0",
+    version: packageJson.version,
   },
   {
     capabilities: {
