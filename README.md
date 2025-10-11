@@ -1,10 +1,26 @@
 # MCP Printer Server 🖨️
 
-The **first** MCP server for printing documents on macOS/Linux! Provides AI assistants with the ability to print files, manage print queues, and control printers via the CUPS printing system.
+An MCP server for printing documents on macOS/Linux. Provides AI assistants with the ability to print files, manage print queues, and control printers via the CUPS printing system.
+
+- [Features](#features)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Available Tools](#available-tools)
+- [Usage Examples](#usage-examples)
+- [Supported File Types](#supported-file-types)
+- [CUPS Options](#cups-options)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Requirements](#requirements)
+- [Contributing](#contributing)
+
+
+> **Note:** This tool requires a local MCP client (e.g., Claude Desktop, Cursor) and cannot be used with web-based AI interfaces.
 
 ## Features
 
 - 📄 **Print files** - PDF, text, and other formats
+- 📝 **Render markdown** - Convert markdown to beautifully formatted PDFs before printing
 - 🖨️ **List printers** - See all available printers and their status
 - 📋 **Manage queue** - View and cancel print jobs
 - ⚙️ **Configure** - Set default printers
@@ -36,39 +52,13 @@ pnpm run build
 
 ## Configuration
 
-Add to your MCP settings file:
-
-**Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
-**Cursor**: Settings → Features → MCP Servers → Edit Config
-
-### If installed globally (recommended):
+Add to your MCP configuration:
 
 ```json
 {
   "mcpServers": {
     "printer": {
-      "command": "mcp-printer",
-      "env": {
-        "MCP_PRINTER_DEFAULT": "Your_Printer_Name",
-        "MCP_PRINTER_DUPLEX": "true"
-      }
-    }
-  }
-}
-```
-
-### If running from source:
-
-```json
-{
-  "mcpServers": {
-    "printer": {
-      "command": "node",
-      "args": ["/path/to/mcp-printer/dist/index.js"],
-      "env": {
-        "MCP_PRINTER_DEFAULT": "Your_Printer_Name",
-        "MCP_PRINTER_DUPLEX": "true"
-      }
+      "command": "mcp-printer"
     }
   }
 }
@@ -76,18 +66,30 @@ Add to your MCP settings file:
 
 ### Configuration Options
 
-Configure via environment variables (all optional):
+All configuration is optional. Add an `env` object to customize behavior:
 
-- **`MCP_PRINTER_DEFAULT`**: Default printer to use when none specified
-- **`MCP_PRINTER_DUPLEX`**: Set to `"true"` to print double-sided by default
-- **`MCP_PRINTER_OPTIONS`**: Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`)
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_PRINTER_DEFAULT` | _(none)_ | Default printer to use when none specified |
+| `MCP_PRINTER_DUPLEX` | `false` | Set to `"true"` to print double-sided by default |
+| `MCP_PRINTER_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
+| `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Full path to Chrome/Chromium executable |
+| `MCP_PRINTER_RENDER_EXTENSIONS` | _(none)_ | File extensions to auto-render to PDF (e.g., `"md,markdown"`) |
 
-**Example with all options:**
+**Example configuration:**
 ```json
-"env": {
-  "MCP_PRINTER_DEFAULT": "HP_LaserJet_Pro",
-  "MCP_PRINTER_DUPLEX": "true",
-  "MCP_PRINTER_OPTIONS": "fit-to-page"
+{
+  "mcpServers": {
+    "printer": {
+      "command": "mcp-printer",
+      "env": {
+        "MCP_PRINTER_DEFAULT": "HP_LaserJet_Pro",
+        "MCP_PRINTER_DUPLEX": "true",
+        "MCP_PRINTER_OPTIONS": "fit-to-page",
+        "MCP_PRINTER_RENDER_EXTENSIONS": "md,markdown"
+      }
+    }
+  }
 }
 ```
 
@@ -172,6 +174,32 @@ User: Make HP LaserJet my default printer
 AI: ✓ Set default printer to: HP_LaserJet_4001
 ```
 
+### `render_and_print_markdown`
+Render a markdown file to PDF and print it with proper formatting.
+
+**Requirements:**
+- `pandoc` - Install with `brew install pandoc`
+- Google Chrome or Chromium browser
+
+**Parameters:**
+- `file_path` (required) - Full path to markdown file
+- `printer` (optional) - Printer name
+- `copies` (optional) - Number of copies (default: 1)
+- `options` (optional) - CUPS options
+
+**Example:**
+```
+User: Render and print README.md
+AI: *converts markdown → HTML → PDF → prints*
+✓ Rendered and printed markdown file
+  Printer: HP_LaserJet_4001
+  Copies: 1
+  Source: /path/to/README.md
+```
+
+**Auto-rendering:**
+If you set `MCP_PRINTER_RENDER_EXTENSIONS="md,markdown"` in your config, calling `print_file` on `.md` files will automatically render them to PDF first!
+
 ## Usage Examples
 
 ### Print Documentation
@@ -206,16 +234,18 @@ AI: ✓ Cancelled job: 126
 
 ## Supported File Types
 
-The server uses CUPS, which supports:
+The server uses CUPS, which natively supports:
 - ✅ PDF
 - ✅ Plain text
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
-- ⚠️ Office docs (may need conversion to PDF first)
+- ✅ Markdown (rendered to PDF with `render_and_print_markdown` or via `MCP_PRINTER_RENDER_EXTENSIONS`)
+
+Other document formats may need conversion to PDF first.
 
 ## CUPS Options
 
-Common options you can pass via the `options` parameter:
+Any valid CUPS/lpr options can be passed via the `options` parameter. Common examples:
 
 - `landscape` - Print in landscape orientation
 - `sides=two-sided-long-edge` - Double-sided (long edge)
@@ -223,6 +253,11 @@ Common options you can pass via the `options` parameter:
 - `page-ranges=1-5` - Print specific pages
 - `media=Letter` or `media=A4` - Paper size
 - `fit-to-page` - Scale to fit page
+
+For a complete list of available options:
+- Run `lpoptions -l` in your terminal to see printer-specific options
+- See the [CUPS documentation](https://www.cups.org/doc/options.html) for standard printing options
+- Check `man lpr` for command-line options
 
 ## Troubleshooting
 
@@ -233,7 +268,17 @@ Run `lpstat -p` in terminal to see exact printer names. They often have undersco
 Ensure CUPS is running: `sudo cupsctl`
 
 ### "File format not supported"
-Convert to PDF first: `cupsfilter -i application/pdf -o output.pdf input.docx`
+Some file formats need to be converted to PDF before printing. Export to PDF from the original application or use a conversion tool.
+
+### "pandoc not found" or "Chrome not found"
+For markdown rendering, install dependencies:
+```bash
+# Install pandoc
+brew install pandoc
+
+# Chrome should be auto-detected, but you can specify the path:
+# Set MCP_PRINTER_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
 
 ### Server not showing in Cursor
 1. Restart Cursor after updating MCP config
@@ -254,31 +299,46 @@ echo "Hello from MCP Printer Server!" > test.txt
 # Then ask AI to print test.txt
 ```
 
+### Running from Source in MCP
+
+When developing, configure your MCP client to run from source:
+
+```json
+{
+  "mcpServers": {
+    "printer": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-printer/dist/index.js"],
+      "env": {
+        "MCP_PRINTER_DEFAULT": "Your_Printer_Name",
+        "MCP_PRINTER_DUPLEX": "true"
+      }
+    }
+  }
+}
+```
+
 ## Requirements
 
 - **macOS or Linux** - Uses CUPS printing system
   - macOS: CUPS is built-in
   - Linux: Install CUPS if not present (`sudo apt install cups` on Ubuntu/Debian)
+  - **Windows is not currently supported** (contributions welcome!)
 - **Node.js** 18+
 - Printers configured in your system
 
-## Security Note
+## ⚠️ Security Note
 
-This server executes system print commands. Only use with trusted AI assistants in secure environments.
+**This server executes system print commands.** Only use with trusted AI assistants in secure environments.
+
+## Contributing
+
+Contributions welcome! Areas for improvement:
+- Windows support (using Windows Print Spooler)
+- More print options and formats
+- Better error handling
+- Testing on various Linux distributions
 
 ## License
 
 MIT
-
-## Contributing
-
-This is the first MCP printer server! Contributions welcome:
-- Windows support (using Windows Print Spooler)
-- More print options
-- Better error handling
-- Testing on various Linux distributions
-
----
-
-**You're now the first person with an AI that can print!** 🎉🖨️
-

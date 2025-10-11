@@ -16,6 +16,10 @@ const execAsync = promisify(exec);
 const DEFAULT_PRINTER = process.env.MCP_PRINTER_DEFAULT || "";
 const DEFAULT_DUPLEX = process.env.MCP_PRINTER_DUPLEX === "true";
 const DEFAULT_OPTIONS = process.env.MCP_PRINTER_OPTIONS || "";
+const CHROME_PATH = process.env.MCP_PRINTER_CHROME_PATH || "";
+const RENDER_EXTENSIONS = process.env.MCP_PRINTER_RENDER_EXTENSIONS 
+  ? process.env.MCP_PRINTER_RENDER_EXTENSIONS.split(',').map(e => e.trim().toLowerCase())
+  : [];
 
 // MCP Server for macOS printing via CUPS
 const server = new Server(
@@ -41,6 +45,104 @@ async function execCommand(command: string): Promise<string> {
   } catch (error) {
     throw new Error(`Command failed: ${error}`);
   }
+}
+
+// Check if a command/dependency exists
+async function checkDependency(command: string, name: string): Promise<void> {
+  try {
+    await execCommand(`which ${command}`);
+  } catch {
+    throw new Error(`${name} not found. Install with: brew install ${command}`);
+  }
+}
+
+// Find Chrome/Chromium installation
+async function findChrome(): Promise<string | null> {
+  // Check environment variable first
+  if (CHROME_PATH) {
+    try {
+      await execCommand(`test -f "${CHROME_PATH}"`);
+      return CHROME_PATH;
+    } catch {
+      // If specified path doesn't exist, continue to auto-detection
+    }
+  }
+
+  // macOS paths
+  const macPaths = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+  ];
+
+  for (const path of macPaths) {
+    try {
+      await execCommand(`test -f "${path}"`);
+      return path;
+    } catch {
+      // Continue to next path
+    }
+  }
+
+  // Linux paths
+  const linuxCommands = ["google-chrome", "chromium", "chromium-browser"];
+  for (const cmd of linuxCommands) {
+    try {
+      const path = await execCommand(`which ${cmd}`);
+      if (path) return path;
+    } catch {
+      // Continue to next command
+    }
+  }
+
+  return null;
+}
+
+// Check if file extension should be auto-rendered to PDF
+function shouldRenderToPdf(filePath: string): boolean {
+  if (RENDER_EXTENSIONS.length === 0) return false;
+  
+  const ext = filePath.split('.').pop()?.toLowerCase() || "";
+  return RENDER_EXTENSIONS.includes(ext);
+}
+
+// Core markdown rendering logic
+async function renderMarkdownToPdf(filePath: string): Promise<string> {
+  // Check dependencies
+  await checkDependency("pandoc", "pandoc");
+  const chromePath = await findChrome();
+  if (!chromePath) {
+    throw new Error("Chrome not found. Install Google Chrome or set MCP_PRINTER_CHROME_PATH environment variable.");
+  }
+
+  // Create temp files
+  const tmpHtml = `/tmp/mcp-printer-${Date.now()}.html`;
+  const tmpPdf = `/tmp/mcp-printer-${Date.now()}.pdf`;
+
+  // Convert markdown to HTML
+  await execCommand(`pandoc "${filePath}" -o "${tmpHtml}"`);
+  
+  // Convert HTML to PDF with Chrome
+  // Note: Chrome outputs success messages to stderr, so we use execAsync directly
+  try {
+    await execAsync(`"${chromePath}" --headless --disable-gpu --print-to-pdf="${tmpPdf}" "${tmpHtml}"`);
+  } catch (error: any) {
+    // Chrome might output to stderr even on success, check if PDF was created
+    const { stdout, stderr } = error;
+    if (!stderr || !stderr.includes('written to file')) {
+      throw new Error(`Failed to render PDF: ${error.message}`);
+    }
+    // Success - Chrome wrote the PDF and reported to stderr
+  }
+  
+  // Clean up HTML file
+  try {
+    await execCommand(`rm -f "${tmpHtml}"`);
+  } catch {
+    // Ignore cleanup errors
+  }
+
+  return tmpPdf;
 }
 
 // Tool definitions
@@ -143,6 +245,33 @@ const tools: Tool[] = [
       required: ["printer"],
     },
   },
+  {
+    name: "render_and_print_markdown",
+    description: "Render a markdown file to PDF and print it. Uses pandoc and Chrome for high-quality rendering. Requires pandoc and Chrome/Chromium to be installed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file_path: {
+          type: "string",
+          description: "Full path to the markdown file to render and print",
+        },
+        printer: {
+          type: "string",
+          description: "Printer name (optional, uses default if not specified)",
+        },
+        copies: {
+          type: "number",
+          description: "Number of copies to print (default: 1)",
+          default: 1,
+        },
+        options: {
+          type: "string",
+          description: "Additional CUPS options (e.g., 'landscape', 'sides=two-sided-long-edge')",
+        },
+      },
+      required: ["file_path"],
+    },
+  },
 ];
 
 // List available tools
@@ -176,61 +305,88 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           options?: string;
         };
 
-        let command = "lpr";
-        
-        // Use configured default printer if none specified
-        const targetPrinter = printer || DEFAULT_PRINTER;
-        if (targetPrinter) {
-          command += ` -P "${targetPrinter}"`;
-        }
-        
-        if (copies > 1) {
-          command += ` -#${copies}`;
-        }
-        
-        // Build options string with defaults
-        let allOptions = [];
-        
-        // Add default duplex if configured and not overridden
-        if (DEFAULT_DUPLEX && !options?.includes("sides=")) {
-          allOptions.push("sides=two-sided-long-edge");
-        }
-        
-        // Add default options if configured
-        if (DEFAULT_OPTIONS) {
-          allOptions.push(DEFAULT_OPTIONS);
-        }
-        
-        // Add user-specified options (these override defaults)
-        if (options) {
-          allOptions.push(options);
-        }
-        
-        if (allOptions.length > 0) {
-          command += ` -o ${allOptions.join(" -o ")}`;
-        }
-        
-        command += ` "${file_path}"`;
+        let actualFilePath = file_path;
+        let renderedPdf: string | null = null;
 
-        await execCommand(command);
-        
-        const printerName = targetPrinter || (await execCommand("lpstat -d")).split(": ")[1] || "default";
-        
-        let optionsInfo = "";
-        if (allOptions.length > 0) {
-          optionsInfo = `\n  Options: ${allOptions.join(", ")}`;
+        // Check if file should be auto-rendered to PDF
+        if (shouldRenderToPdf(file_path)) {
+          try {
+            renderedPdf = await renderMarkdownToPdf(file_path);
+            actualFilePath = renderedPdf;
+          } catch (error) {
+            // If rendering fails, fall back to printing original file
+            console.error(`Warning: Failed to render ${file_path}, printing as-is:`, error);
+          }
         }
-        
-        return {
-          content: [
-            {
-              type: "text",
-              text: `✓ File sent to printer: ${printerName}\n` +
-                    `  Copies: ${copies}${optionsInfo}\n` +
-                    `  File: ${file_path}`,
-            },
-          ],
-        };
+
+        try {
+          let command = "lpr";
+          
+          // Use configured default printer if none specified
+          const targetPrinter = printer || DEFAULT_PRINTER;
+          if (targetPrinter) {
+            command += ` -P "${targetPrinter}"`;
+          }
+          
+          if (copies > 1) {
+            command += ` -#${copies}`;
+          }
+          
+          // Build options string with defaults
+          let allOptions = [];
+          
+          // Add default duplex if configured and not overridden
+          if (DEFAULT_DUPLEX && !options?.includes("sides=")) {
+            allOptions.push("sides=two-sided-long-edge");
+          }
+          
+          // Add default options if configured
+          if (DEFAULT_OPTIONS) {
+            allOptions.push(DEFAULT_OPTIONS);
+          }
+          
+          // Add user-specified options (these override defaults)
+          if (options) {
+            allOptions.push(options);
+          }
+          
+          if (allOptions.length > 0) {
+            command += ` -o ${allOptions.join(" -o ")}`;
+          }
+          
+          command += ` "${actualFilePath}"`;
+
+          await execCommand(command);
+          
+          const printerName = targetPrinter || (await execCommand("lpstat -d")).split(": ")[1] || "default";
+          
+          let optionsInfo = "";
+          if (allOptions.length > 0) {
+            optionsInfo = `\n  Options: ${allOptions.join(", ")}`;
+          }
+
+          const renderedNote = renderedPdf ? "\n  Rendered: markdown → PDF" : "";
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: `✓ File sent to printer: ${printerName}\n` +
+                      `  Copies: ${copies}${optionsInfo}\n` +
+                      `  File: ${file_path}${renderedNote}`,
+              },
+            ],
+          };
+        } finally {
+          // Clean up rendered PDF if it was created
+          if (renderedPdf) {
+            try {
+              await execCommand(`rm -f "${renderedPdf}"`);
+            } catch {
+              // Ignore cleanup errors
+            }
+          }
+        }
       }
 
       case "get_print_queue": {
@@ -310,6 +466,78 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             },
           ],
         };
+      }
+
+      case "render_and_print_markdown": {
+        const { file_path, printer, copies = 1, options } = args as {
+          file_path: string;
+          printer?: string;
+          copies?: number;
+          options?: string;
+        };
+
+        let renderedPdf: string | null = null;
+
+        try {
+          // Render markdown to PDF
+          renderedPdf = await renderMarkdownToPdf(file_path);
+          
+          // Print the PDF
+          const targetPrinter = printer || DEFAULT_PRINTER;
+          let command = "lpr";
+          
+          if (targetPrinter) {
+            command += ` -P "${targetPrinter}"`;
+          }
+          
+          if (copies > 1) {
+            command += ` -#${copies}`;
+          }
+          
+          let allOptions = [];
+          if (DEFAULT_DUPLEX && !options?.includes("sides=")) {
+            allOptions.push("sides=two-sided-long-edge");
+          }
+          if (DEFAULT_OPTIONS) {
+            allOptions.push(DEFAULT_OPTIONS);
+          }
+          if (options) {
+            allOptions.push(options);
+          }
+          
+          if (allOptions.length > 0) {
+            command += ` -o ${allOptions.join(" -o ")}`;
+          }
+          
+          command += ` "${renderedPdf}"`;
+          await execCommand(command);
+          
+          const printerName = targetPrinter || (await execCommand("lpstat -d")).split(": ")[1] || "default";
+          
+          let optionsInfo = "";
+          if (allOptions.length > 0) {
+            optionsInfo = `\n  Options: ${allOptions.join(", ")}`;
+          }
+          
+          return {
+            content: [{
+              type: "text",
+              text: `✓ Rendered and printed markdown file\n` +
+                    `  Printer: ${printerName}\n` +
+                    `  Copies: ${copies}${optionsInfo}\n` +
+                    `  Source: ${file_path}`,
+            }],
+          };
+        } finally {
+          // Clean up temp files
+          if (renderedPdf) {
+            try {
+              await execCommand(`rm -f "${renderedPdf}"`);
+            } catch {
+              // Ignore cleanup errors
+            }
+          }
+        }
       }
 
       default:
