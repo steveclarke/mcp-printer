@@ -376,14 +376,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             allOptions.push("sides=two-sided-long-edge");
           }
           
-          // Add default options if configured
+          // Add default options if configured (split by spaces to handle multiple options)
           if (DEFAULT_OPTIONS) {
-            allOptions.push(DEFAULT_OPTIONS);
+            allOptions.push(...DEFAULT_OPTIONS.split(/\s+/));
           }
           
-          // Add user-specified options (these override defaults)
+          // Add user-specified options (these override defaults, split by spaces)
           if (options) {
-            allOptions.push(options);
+            allOptions.push(...options.split(/\s+/));
           }
           
           if (allOptions.length > 0) {
@@ -535,10 +535,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             allOptions.push("sides=two-sided-long-edge");
           }
           if (DEFAULT_OPTIONS) {
-            allOptions.push(DEFAULT_OPTIONS);
+            allOptions.push(...DEFAULT_OPTIONS.split(/\s+/));
           }
           if (options) {
-            allOptions.push(options);
+            allOptions.push(...options.split(/\s+/));
           }
           
           if (allOptions.length > 0) {
