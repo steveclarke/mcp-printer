@@ -2,6 +2,10 @@
 
 An MCP server for printing documents on macOS/Linux. Provides AI assistants with the ability to print files, manage print queues, and control printers via the CUPS printing system.
 
+## Why?
+
+In the era of AI-assisted development, we're generating more documentation, specs, guides, and code than ever before. When working with AI on complex projects, it's often valuable to review generated artifacts offline on paper. This tool makes it effortless to ask your AI assistant: *"Print all the markdown files you just created"* or *"Print the README and all TypeScript files in this directory"* — streamlining the workflow from AI generation to offline review.
+
 - [Features](#features)
 - [Installation](#installation)
 - [Configuration](#configuration)
