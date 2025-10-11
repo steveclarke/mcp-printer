@@ -12,7 +12,7 @@ import { execa } from "execa";
 /**
  * Registers printer management tools with the MCP server.
  * Includes read-only tools (list, query, get) and optionally write tools (cancel, set default)
- * based on the MCP_PRINTER_DISABLE_MANAGEMENT configuration.
+ * based on the MCP_PRINTER_ENABLE_MANAGEMENT configuration.
  * 
  * @param server - The McpServer instance to register tools with
  */
@@ -34,7 +34,9 @@ export function registerPrinterTools(server: McpServer) {
         MCP_PRINTER_MARKDOWN_EXTENSIONS: config.markdownExtensions.length > 0 
           ? config.markdownExtensions.join(", ") 
           : "(not set)",
-        MCP_PRINTER_DISABLE_MANAGEMENT: config.disableManagement ? "true" : "false",
+        MCP_PRINTER_ENABLE_MANAGEMENT: config.enableManagement ? "true" : "false",
+        MCP_PRINTER_ALLOWED_PATHS: config.allowedPaths.join(":"),
+        MCP_PRINTER_DENIED_PATHS: config.deniedPaths.join(":"),
         MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS: config.code.excludeExtensions.length > 0
           ? config.code.excludeExtensions.join(", ")
           : "(not set)",
@@ -131,7 +133,7 @@ export function registerPrinterTools(server: McpServer) {
   );
 
   // Only register write operations if management is enabled
-  if (!config.disableManagement) {
+  if (config.enableManagement) {
     // cancel_print_job - Cancel print jobs
     server.registerTool(
       "cancel_print_job",

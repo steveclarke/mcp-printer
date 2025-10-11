@@ -3,11 +3,13 @@
  * Converts source code files to PDF with syntax highlighting using highlight.js and Chrome.
  */
 
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, mkdtempSync, unlinkSync } from "fs";
 import { dirname, join } from "path";
+import { tmpdir } from "os";
 import { fileURLToPath } from "url";
 import hljs from "highlight.js";
-import { findChrome, getLanguageFromExtension, fixMultilineSpans } from "../utils.js";
+import he from "he";
+import { findChrome, getLanguageFromExtension, fixMultilineSpans, validateFilePath } from "../utils.js";
 import { config } from "../config.js";
 import { execa } from "execa";
 
@@ -25,6 +27,9 @@ const __dirname = dirname(__filename);
  * @throws {Error} If Chrome is not found or PDF generation fails
  */
 export async function renderCodeToPdf(filePath: string): Promise<string> {
+  // Validate file path security
+  validateFilePath(filePath);
+  
   const chromePath = await findChrome();
   if (!chromePath) {
     throw new Error("Chrome not found. Install Google Chrome or set MCP_PRINTER_CHROME_PATH environment variable.");
@@ -157,42 +162,54 @@ export async function renderCodeToPdf(filePath: string): Promise<string> {
   </style>
 </head>
 <body>
-  <h3 class="filepath">${filePath}</h3>
+  <h3 class="filepath">${he.encode(filePath)}</h3>
   <table class="hljs">
     ${tableRows}
   </table>
 </body>
 </html>`;
 
-  // Create temp files
-  const tmpHtml = `/tmp/mcp-printer-code-${Date.now()}.html`;
-  const tmpPdf = `/tmp/mcp-printer-code-${Date.now()}.pdf`;
+  // Create secure temp directory
+  const tmpDir = mkdtempSync(join(tmpdir(), 'mcp-printer-code-'));
+  const tmpHtml = join(tmpDir, 'input.html');
+  const tmpPdf = join(tmpDir, 'output.pdf');
   
-  // Write HTML to temp file
-  writeFileSync(tmpHtml, html, 'utf-8');
-  
-  // Convert HTML to PDF with Chrome
   try {
-    await execa(chromePath, [
-      '--headless',
-      '--disable-gpu',
-      `--print-to-pdf=${tmpPdf}`,
-      tmpHtml
-    ]);
-  } catch (error: any) {
-    // Chrome might output to stderr even on success
-    if (!error.stderr || !error.stderr.includes('written to file')) {
-      throw new Error(`Failed to render PDF: ${error.message}`);
+    // Write HTML to temp file
+    writeFileSync(tmpHtml, html, 'utf-8');
+    
+    // Convert HTML to PDF with Chrome
+    try {
+      await execa(chromePath, [
+        '--headless',
+        '--disable-gpu',
+        `--print-to-pdf=${tmpPdf}`,
+        tmpHtml
+      ]);
+    } catch (error: any) {
+      // Chrome might output to stderr even on success
+      if (!error.stderr || !error.stderr.includes('written to file')) {
+        throw new Error(`Failed to render PDF: ${error.message}`);
+      }
     }
-  }
-  
-  // Clean up HTML file
-  try {
-    await execa('rm', ['-f', tmpHtml]);
-  } catch {
-    // Ignore cleanup errors
-  }
+    
+    // Clean up HTML file
+    try {
+      unlinkSync(tmpHtml);
+    } catch {
+      // Ignore cleanup errors
+    }
 
-  return tmpPdf;
+    return tmpPdf;
+  } catch (error) {
+    // Clean up temp directory on error
+    try {
+      unlinkSync(tmpHtml);
+    } catch {}
+    try {
+      unlinkSync(tmpPdf);
+    } catch {}
+    throw error;
+  }
 }
 

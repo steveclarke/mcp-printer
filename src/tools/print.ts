@@ -5,7 +5,8 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { execCommand, shouldRenderToPdf, shouldRenderCode } from "../utils.js";
+import { unlinkSync } from "fs";
+import { execCommand, shouldRenderToPdf, shouldRenderCode, validateFilePath } from "../utils.js";
 import { config } from "../config.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
 import { renderCodeToPdf } from "../renderers/code.js";
@@ -31,6 +32,9 @@ export function registerPrintTools(server: McpServer) {
       }
     },
     async ({ file_path, printer, copies = 1, options }) => {
+      // Validate file path security
+      validateFilePath(file_path);
+      
       let actualFilePath = file_path;
       let renderedPdf: string | null = null;
       let renderType = "";
@@ -138,7 +142,7 @@ export function registerPrintTools(server: McpServer) {
         // Clean up rendered PDF if it was created
         if (renderedPdf) {
           try {
-            await execa('rm', ['-f', renderedPdf]);
+            unlinkSync(renderedPdf);
           } catch {
             // Ignore cleanup errors
           }

@@ -13,7 +13,7 @@ import { registerPrompts } from "./prompts.js";
  * Registers all available MCP tools and prompts with the given server.
  * Includes printer management tools, file printing, markdown rendering, and workflow prompts.
  * Write operations (set_default_printer, cancel_print_job) are conditionally
- * registered based on the MCP_PRINTER_DISABLE_MANAGEMENT configuration.
+ * registered based on the MCP_PRINTER_ENABLE_MANAGEMENT configuration.
  * 
  * @param server - The McpServer instance to register tools and prompts with
  */

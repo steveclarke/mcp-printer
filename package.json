@@ -49,11 +49,13 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.2.0",
     "execa": "^9.6.0",
+    "he": "^1.2.0",
     "highlight.js": "^11.11.1",
     "yn": "^5.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/he": "^1.2.3",
     "@types/node": "^24.7.2",
     "typescript": "^5.9.3"
   }

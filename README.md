@@ -9,6 +9,7 @@ In the era of AI-assisted development, we're generating more documentation, spec
 - [Features](#features)
 - [Installation](#installation)
 - [Configuration](#configuration)
+- [Security](#security)
 - [Available Tools](#available-tools)
 - [Available Prompts](#available-prompts)
 - [Usage Examples](#usage-examples)
@@ -60,7 +61,9 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_DEFAULT_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
 | `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Full path to Chrome/Chromium executable |
 | `MCP_PRINTER_MARKDOWN_EXTENSIONS` | _(none)_ | File extensions to auto-render to PDF (e.g., `"md,markdown"`) |
-| `MCP_PRINTER_DISABLE_MANAGEMENT` | `false` | Set to `"true"` to disable write operations (`set_default_printer`, `cancel_print_job`) |
+| `MCP_PRINTER_ENABLE_MANAGEMENT` | `false` | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` |
+| `MCP_PRINTER_ALLOWED_PATHS` | _(home directory)_ | Colon-separated paths allowed for printing. **Merged with** home directory default (e.g., `"/mnt/shared:/opt/documents"`) |
+| `MCP_PRINTER_DENIED_PATHS` | _(sensitive dirs)_ | Colon-separated paths denied for printing. **Merged with** defaults like `.ssh`, `.aws`, etc. (e.g., `"/home/user/private"`) |
 | `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false` | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead |
 | `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering, or `"all"` to disable |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
@@ -92,6 +95,90 @@ All configuration is optional. Add an `env` object to customize behavior:
 
 User-specified options in prompts always override these defaults.
 
+## Security
+
+MCP Printer includes multiple security protections to prevent unauthorized file access and system modifications:
+
+### File Access Control
+
+By default, the server only allows printing files within your home directory and blocks access to sensitive subdirectories:
+
+**Default Allowed:**
+- All files under your home directory (`~`)
+
+**Default Blocked:**
+- `~/.ssh` (SSH keys)
+- `~/.gnupg` (GPG keys)
+- `~/.aws` (AWS credentials)
+- `~/.config/gcloud` (Google Cloud credentials)
+- Any files named `.env*` (environment variables)
+- System directories: `/etc`, `/var`, `/root`, `/sys`, `/proc`, `/private/etc`, `/private/var`
+
+### Custom Security Configuration
+
+You can add custom allowed or denied paths using environment variables. Your custom paths are **merged with** the defaults (not replaced), so you never lose the built-in protections.
+
+**Add custom allowed paths:**
+```json
+{
+  "mcpServers": {
+    "Printer": {
+      "command": "npx",
+      "args": ["-y", "mcp-printer"],
+      "env": {
+        "MCP_PRINTER_ALLOWED_PATHS": "/mnt/shared:/opt/documents"
+      }
+    }
+  }
+}
+```
+
+**Add custom denied paths:**
+```json
+{
+  "mcpServers": {
+    "Printer": {
+      "command": "npx",
+      "args": ["-y", "mcp-printer"],
+      "env": {
+        "MCP_PRINTER_DENIED_PATHS": "/home/user/private:/home/user/secrets"
+      }
+    }
+  }
+}
+```
+
+Use colon (`:`) to separate multiple paths, just like the Unix `PATH` variable.
+
+✅ **Safe:** Your additions are merged with defaults - home directory and sensitive path protections remain active.
+
+### Management Operations
+
+Management operations (`set_default_printer` and `cancel_print_job`) are **disabled by default** for security. These operations can affect other users' print jobs and system settings.
+
+To enable them, set the environment variable:
+```json
+{
+  "mcpServers": {
+    "Printer": {
+      "command": "npx",
+      "args": ["-y", "mcp-printer"],
+      "env": {
+        "MCP_PRINTER_ENABLE_MANAGEMENT": "true"
+      }
+    }
+  }
+}
+```
+
+⚠️ **Security Note:** Only enable management operations if you trust all MCP clients that will connect to this server.
+
+### Other Security Features
+
+- **Secure temporary files:** All temporary files are created in randomly-named directories to prevent race conditions and symlink attacks
+- **HTML injection protection:** File paths are properly escaped when rendered to prevent script injection
+- **Symlink protection:** File paths are resolved to their real paths before validation to prevent bypassing security checks
+
 ## Available Tools
 
 ### `get_config`
@@ -107,7 +194,7 @@ MCP_PRINTER_ENABLE_DUPLEX: true
 MCP_PRINTER_DEFAULT_OPTIONS: (not set)
 MCP_PRINTER_CHROME_PATH: (auto-detected)
 MCP_PRINTER_MARKDOWN_EXTENSIONS: md, markdown
-MCP_PRINTER_DISABLE_MANAGEMENT: false
+MCP_PRINTER_ENABLE_MANAGEMENT: false
 ```
 
 ### `list_printers`

@@ -6,6 +6,8 @@
 import { execa } from "execa";
 import { access } from "fs/promises";
 import { constants } from "fs";
+import { realpathSync } from "fs";
+import { resolve, basename } from "path";
 import { config } from "./config.js";
 
 /**
@@ -37,6 +39,60 @@ export async function fileExists(filePath: string): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Validates that a file path is allowed to be accessed based on security configuration.
+ * Resolves symlinks and checks against allowlist and denylist.
+ * 
+ * @param filePath - The file path to validate
+ * @throws {Error} If the file path is not allowed with a descriptive message
+ */
+export function validateFilePath(filePath: string): void {
+  // Resolve to absolute path and follow symlinks
+  let absolutePath: string;
+  try {
+    absolutePath = realpathSync(resolve(filePath));
+  } catch (error: any) {
+    // If file doesn't exist yet or can't be resolved, use resolved path without following symlinks
+    absolutePath = resolve(filePath);
+  }
+
+  // Check if file or any of its parent directories match denied paths
+  for (const deniedPath of config.deniedPaths) {
+    const resolvedDeniedPath = resolve(deniedPath);
+    if (absolutePath.startsWith(resolvedDeniedPath + '/') || absolutePath === resolvedDeniedPath) {
+      throw new Error(
+        `Access denied: File path "${filePath}" is in a restricted directory (${deniedPath}). ` +
+        `This path is blocked for security reasons.`
+      );
+    }
+    
+    // Also check for .env files anywhere
+    if (basename(absolutePath).startsWith('.env')) {
+      throw new Error(
+        `Access denied: Environment files (.env*) are blocked for security reasons.`
+      );
+    }
+  }
+
+  // Check if file is under at least one allowed path
+  let isAllowed = false;
+  for (const allowedPath of config.allowedPaths) {
+    const resolvedAllowedPath = resolve(allowedPath);
+    if (absolutePath.startsWith(resolvedAllowedPath + '/') || absolutePath === resolvedAllowedPath) {
+      isAllowed = true;
+      break;
+    }
+  }
+
+  if (!isAllowed) {
+    throw new Error(
+      `Access denied: File path "${filePath}" is outside allowed directories. ` +
+      `By default, only files under your home directory are accessible. ` +
+      `To allow other paths, set MCP_PRINTER_ALLOWED_PATHS environment variable.`
+    );
   }
 }
 
