@@ -16,6 +16,8 @@ export interface Config {
   markdownExtensions: string[];
   /** Disable management operations (set_default_printer, cancel_print_job) */
   disableManagement: boolean;
+  /** Fallback to printing original file if PDF rendering fails (for markdown and code) */
+  fallbackOnRenderError: boolean;
   /** Code rendering configuration */
   code: {
     /** File extensions to exclude from code rendering */
@@ -44,6 +46,7 @@ export const config: Config = {
     ? process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS.split(',').map(e => e.trim().toLowerCase())
     : [],
   disableManagement: yn(process.env.MCP_PRINTER_DISABLE_MANAGEMENT, { default: false }),
+  fallbackOnRenderError: yn(process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR, { default: false }),
   code: {
     excludeExtensions: process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS 
       ? process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS.split(',').map(e => e.trim().toLowerCase()) 

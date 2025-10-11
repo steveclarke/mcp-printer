@@ -73,8 +73,12 @@ export async function handlePrintFile(args: any) {
       actualFilePath = renderedPdf;
       renderType = "markdown → PDF";
     } catch (error) {
-      // If rendering fails, fall back to printing original file
-      console.error(`Warning: Failed to render ${file_path}, printing as-is:`, error);
+      // If fallback is enabled, print original file; otherwise throw error
+      if (config.fallbackOnRenderError) {
+        console.error(`Warning: Failed to render ${file_path}, printing as-is:`, error);
+      } else {
+        throw error;
+      }
     }
   }
   // Check if file should be rendered as code with syntax highlighting
@@ -84,8 +88,12 @@ export async function handlePrintFile(args: any) {
       actualFilePath = renderedPdf;
       renderType = "code → PDF (syntax highlighted)";
     } catch (error) {
-      // If rendering fails, fall back to printing original file
-      console.error(`Warning: Failed to render code ${file_path}, printing as-is:`, error);
+      // If fallback is enabled, print original file; otherwise throw error
+      if (config.fallbackOnRenderError) {
+        console.error(`Warning: Failed to render code ${file_path}, printing as-is:`, error);
+      } else {
+        throw error;
+      }
     }
   }
 
