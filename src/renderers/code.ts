@@ -3,16 +3,13 @@
  * Converts source code files to PDF with syntax highlighting using highlight.js and Chrome.
  */
 
-import { exec } from "child_process";
-import { promisify } from "util";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import hljs from "highlight.js";
-import { findChrome, getLanguageFromExtension, fixMultilineSpans, execCommand } from "../utils.js";
+import { findChrome, getLanguageFromExtension, fixMultilineSpans } from "../utils.js";
 import { config } from "../config.js";
-
-const execAsync = promisify(exec);
+import { execa } from "execa";
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -172,22 +169,26 @@ export async function renderCodeToPdf(filePath: string): Promise<string> {
   const tmpPdf = `/tmp/mcp-printer-code-${Date.now()}.pdf`;
   
   // Write HTML to temp file
-  await execCommand(`cat > "${tmpHtml}" << 'EOFHTML'\n${html}\nEOFHTML`);
+  writeFileSync(tmpHtml, html, 'utf-8');
   
   // Convert HTML to PDF with Chrome
   try {
-    await execAsync(`"${chromePath}" --headless --disable-gpu --print-to-pdf="${tmpPdf}" "${tmpHtml}"`);
+    await execa(chromePath, [
+      '--headless',
+      '--disable-gpu',
+      `--print-to-pdf=${tmpPdf}`,
+      tmpHtml
+    ]);
   } catch (error: any) {
     // Chrome might output to stderr even on success
-    const { stderr } = error;
-    if (!stderr || !stderr.includes('written to file')) {
+    if (!error.stderr || !error.stderr.includes('written to file')) {
       throw new Error(`Failed to render PDF: ${error.message}`);
     }
   }
   
   // Clean up HTML file
   try {
-    await execCommand(`rm -f "${tmpHtml}"`);
+    await execa('rm', ['-f', tmpHtml]);
   } catch {
     // Ignore cleanup errors
   }

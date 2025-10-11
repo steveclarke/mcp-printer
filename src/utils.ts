@@ -3,28 +3,40 @@
  * and file type detection for the MCP Printer server.
  */
 
-import { exec } from "child_process";
-import { promisify } from "util";
+import { execa } from "execa";
+import { access } from "fs/promises";
+import { constants } from "fs";
 import { config } from "./config.js";
 
-const execAsync = promisify(exec);
-
 /**
- * Executes a shell command and returns its stdout output.
+ * Executes a command safely without spawning a shell.
  * 
- * @param command - The shell command to execute
+ * @param command - The command binary to execute
+ * @param args - Array of arguments to pass to the command
  * @returns The trimmed stdout output from the command
  * @throws {Error} If the command fails or returns an error
  */
-export async function execCommand(command: string): Promise<string> {
+export async function execCommand(command: string, args: string[] = []): Promise<string> {
   try {
-    const { stdout, stderr } = await execAsync(command);
-    if (stderr && !stdout) {
-      throw new Error(stderr);
-    }
+    const { stdout } = await execa(command, args);
     return stdout.trim();
-  } catch (error) {
-    throw new Error(`Command failed: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Command failed: ${error.message}`);
+  }
+}
+
+/**
+ * Checks if a file exists at the given path.
+ * 
+ * @param filePath - Path to check
+ * @returns True if file exists and is accessible, false otherwise
+ */
+export async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath, constants.F_OK);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -37,7 +49,7 @@ export async function execCommand(command: string): Promise<string> {
  */
 export async function checkDependency(command: string, name: string): Promise<void> {
   try {
-    await execCommand(`which ${command}`);
+    await execCommand('which', [command]);
   } catch {
     throw new Error(`${name} not found. Install with: brew install ${command}`);
   }
@@ -53,12 +65,10 @@ export async function checkDependency(command: string, name: string): Promise<vo
 export async function findChrome(): Promise<string | null> {
   // Check environment variable first
   if (config.chromePath) {
-    try {
-      await execCommand(`test -f "${config.chromePath}"`);
+    if (await fileExists(config.chromePath)) {
       return config.chromePath;
-    } catch {
-      // If specified path doesn't exist, continue to auto-detection
     }
+    // If specified path doesn't exist, continue to auto-detection
   }
 
   // macOS paths
@@ -69,11 +79,8 @@ export async function findChrome(): Promise<string | null> {
   ];
 
   for (const path of macPaths) {
-    try {
-      await execCommand(`test -f "${path}"`);
+    if (await fileExists(path)) {
       return path;
-    } catch {
-      // Continue to next path
     }
   }
 
@@ -81,7 +88,7 @@ export async function findChrome(): Promise<string | null> {
   const linuxCommands = ["google-chrome", "chromium", "chromium-browser"];
   for (const cmd of linuxCommands) {
     try {
-      const path = await execCommand(`which ${cmd}`);
+      const path = await execCommand('which', [cmd]);
       if (path) return path;
     } catch {
       // Continue to next command

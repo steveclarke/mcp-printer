@@ -6,6 +6,7 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { execCommand } from "../utils.js";
 import { config } from "../config.js";
+import { execa } from "execa";
 
 /**
  * Array of MCP tool definitions for printer management operations.
@@ -136,7 +137,7 @@ export async function handlePrinterTool(name: string, args: any) {
     }
 
     case "list_printers": {
-      const output = await execCommand("lpstat -p -d");
+      const output = await execCommand('lpstat', ['-p', '-d']);
       return {
         content: [
           {
@@ -150,12 +151,12 @@ export async function handlePrinterTool(name: string, args: any) {
     case "get_print_queue": {
       const { printer } = args as { printer?: string };
       
-      let command = "lpq";
+      const lpqArgs: string[] = [];
       if (printer) {
-        command += ` -P "${printer}"`;
+        lpqArgs.push('-P', printer);
       }
 
-      const output = await execCommand(command);
+      const output = await execCommand('lpq', lpqArgs);
       return {
         content: [
           {
@@ -173,20 +174,20 @@ export async function handlePrinterTool(name: string, args: any) {
         cancel_all?: boolean;
       };
 
-      let command = "lprm";
+      const lprmArgs: string[] = [];
       
       if (cancel_all && printer) {
-        command += ` -P "${printer}" -`;
+        lprmArgs.push('-P', printer, '-');
       } else if (job_id) {
         if (printer) {
-          command += ` -P "${printer}"`;
+          lprmArgs.push('-P', printer);
         }
-        command += ` ${job_id}`;
+        lprmArgs.push(job_id);
       } else {
         throw new Error("Must provide either job_id or set cancel_all=true with printer");
       }
 
-      await execCommand(command);
+      await execa('lprm', lprmArgs);
       
       return {
         content: [
@@ -201,7 +202,7 @@ export async function handlePrinterTool(name: string, args: any) {
     }
 
     case "get_default_printer": {
-      const output = await execCommand("lpstat -d");
+      const output = await execCommand('lpstat', ['-d']);
       const defaultPrinter = output.split(": ")[1] || "No default printer set";
       return {
         content: [
@@ -215,7 +216,7 @@ export async function handlePrinterTool(name: string, args: any) {
 
     case "set_default_printer": {
       const { printer } = args as { printer: string };
-      await execCommand(`lpoptions -d "${printer}"`);
+      await execa('lpoptions', ['-d', printer]);
       return {
         content: [
           {

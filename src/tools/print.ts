@@ -8,6 +8,7 @@ import { execCommand, shouldRenderToPdf, shouldRenderCode } from "../utils.js";
 import { config } from "../config.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
 import { renderCodeToPdf } from "../renderers/code.js";
+import { execa } from "execa";
 
 /**
  * MCP tool definition for printing files to printers.
@@ -89,19 +90,19 @@ export async function handlePrintFile(args: any) {
   }
 
   try {
-    let command = "lpr";
+    const args: string[] = [];
     
     // Use configured default printer if none specified
     const targetPrinter = printer || config.defaultPrinter;
     if (targetPrinter) {
-      command += ` -P "${targetPrinter}"`;
+      args.push('-P', targetPrinter);
     }
     
     if (copies > 1) {
-      command += ` -#${copies}`;
+      args.push(`-#${copies}`);
     }
     
-    // Build options string with defaults
+    // Build options with defaults
     let allOptions = [];
     
     // Add default duplex if configured and not overridden
@@ -119,15 +120,17 @@ export async function handlePrintFile(args: any) {
       allOptions.push(...options.split(/\s+/));
     }
     
-    if (allOptions.length > 0) {
-      command += ` -o ${allOptions.join(" -o ")}`;
+    // Add each option with -o flag
+    for (const option of allOptions) {
+      args.push('-o', option);
     }
     
-    command += ` "${actualFilePath}"`;
+    // Add file path
+    args.push(actualFilePath);
 
-    await execCommand(command);
+    await execa('lpr', args);
     
-    const printerName = targetPrinter || (await execCommand("lpstat -d")).split(": ")[1] || "default";
+    const printerName = targetPrinter || (await execCommand('lpstat', ['-d'])).split(": ")[1] || "default";
     
     let optionsInfo = "";
     if (allOptions.length > 0) {
@@ -150,7 +153,7 @@ export async function handlePrintFile(args: any) {
     // Clean up rendered PDF if it was created
     if (renderedPdf) {
       try {
-        await execCommand(`rm -f "${renderedPdf}"`);
+        await execa('rm', ['-f', renderedPdf]);
       } catch {
         // Ignore cleanup errors
       }

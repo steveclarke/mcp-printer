@@ -7,6 +7,7 @@ import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { execCommand } from "../utils.js";
 import { config } from "../config.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
+import { execa } from "execa";
 
 /**
  * MCP tool definition for explicitly rendering and printing markdown files.
@@ -64,14 +65,14 @@ export async function handleRenderMarkdown(args: any) {
     
     // Print the PDF
     const targetPrinter = printer || config.defaultPrinter;
-    let command = "lpr";
+    const args: string[] = [];
     
     if (targetPrinter) {
-      command += ` -P "${targetPrinter}"`;
+      args.push('-P', targetPrinter);
     }
     
     if (copies > 1) {
-      command += ` -#${copies}`;
+      args.push(`-#${copies}`);
     }
     
     let allOptions = [];
@@ -85,14 +86,15 @@ export async function handleRenderMarkdown(args: any) {
       allOptions.push(...options.split(/\s+/));
     }
     
-    if (allOptions.length > 0) {
-      command += ` -o ${allOptions.join(" -o ")}`;
+    // Add each option with -o flag
+    for (const option of allOptions) {
+      args.push('-o', option);
     }
     
-    command += ` "${renderedPdf}"`;
-    await execCommand(command);
+    args.push(renderedPdf);
+    await execa('lpr', args);
     
-    const printerName = targetPrinter || (await execCommand("lpstat -d")).split(": ")[1] || "default";
+    const printerName = targetPrinter || (await execCommand('lpstat', ['-d'])).split(": ")[1] || "default";
     
     let optionsInfo = "";
     if (allOptions.length > 0) {
@@ -112,7 +114,7 @@ export async function handleRenderMarkdown(args: any) {
     // Clean up temp files
     if (renderedPdf) {
       try {
-        await execCommand(`rm -f "${renderedPdf}"`);
+        await execa('rm', ['-f', renderedPdf]);
       } catch {
         // Ignore cleanup errors
       }
