@@ -34,32 +34,22 @@ In the era of AI-assisted development, we're generating more documentation, spec
 
 ## Installation
 
-```bash
-# npm
-npm install -g mcp-printer
-
-# pnpm
-pnpm add -g mcp-printer
-
-# yarn
-yarn global add mcp-printer
-```
-
-## Configuration
-
-Add to your MCP configuration:
+Add to your MCP configuration file (e.g., `~/.cursor/mcp.json` for Cursor):
 
 ```json
 {
   "mcpServers": {
     "Printer": {
-      "command": "mcp-printer"
+      "command": "npx",
+      "args": ["-y", "mcp-printer"]
     }
   }
 }
 ```
 
-### Configuration Options
+That's it! The package will be automatically downloaded from npm on first use.
+
+## Configuration
 
 All configuration is optional. Add an `env` object to customize behavior:
 
@@ -83,7 +73,8 @@ All configuration is optional. Add an `env` object to customize behavior:
 {
   "mcpServers": {
     "Printer": {
-      "command": "mcp-printer",
+      "command": "npx",
+      "args": ["-y", "mcp-printer"],
       "env": {
         "MCP_PRINTER_DEFAULT_PRINTER": "HP_LaserJet_Pro",
         "MCP_PRINTER_ENABLE_DUPLEX": "true",
@@ -439,7 +430,7 @@ echo "Hello from MCP Printer Server!" > test.txt
 
 ### Running Locally in MCP
 
-Configure your MCP client to run from your local directory:
+Configure your MCP client to run from your local development directory:
 
 ```json
 {
@@ -451,6 +442,32 @@ Configure your MCP client to run from your local directory:
         "MCP_PRINTER_DEFAULT_PRINTER": "Your_Printer_Name",
         "MCP_PRINTER_ENABLE_DUPLEX": "true"
       }
+    }
+  }
+}
+```
+
+### Alternative Installation Methods
+
+If you prefer not to use npx, you can install globally:
+
+```bash
+# npm
+npm install -g mcp-printer
+
+# pnpm
+pnpm add -g mcp-printer
+
+# yarn
+yarn global add mcp-printer
+```
+
+Then use in MCP config:
+```json
+{
+  "mcpServers": {
+    "Printer": {
+      "command": "mcp-printer"
     }
   }
 }
