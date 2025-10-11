@@ -17,7 +17,7 @@ import { tools, handleToolCall } from "./tools/index.js";
  */
 const server = new Server(
   {
-    name: "mcp-printer-server",
+    name: "mcp-printer",
     version: "1.0.0",
   },
   {

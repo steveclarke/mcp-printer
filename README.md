@@ -51,7 +51,7 @@ Add to your MCP configuration:
 ```json
 {
   "mcpServers": {
-    "printer": {
+    "Printer": {
       "command": "mcp-printer"
     }
   }
@@ -80,7 +80,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 ```json
 {
   "mcpServers": {
-    "printer": {
+    "Printer": {
       "command": "mcp-printer",
       "env": {
         "MCP_PRINTER_DEFAULT_PRINTER": "HP_LaserJet_Pro",
@@ -403,7 +403,7 @@ Configure your MCP client to run from your local directory:
 ```json
 {
   "mcpServers": {
-    "printer": {
+    "Printer": {
       "command": "node",
       "args": ["/absolute/path/to/mcp-printer/dist/index.js"],
       "env": {
