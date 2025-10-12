@@ -53,7 +53,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.2.0",
+    "@modelcontextprotocol/sdk": "^1.20.0",
     "crossnote": "^0.9.15",
     "execa": "^9.6.0",
     "he": "^1.2.0",
