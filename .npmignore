@@ -22,3 +22,5 @@ CURSOR_SETUP.md
 # Git
 .git/
 .github/
+
+release/
