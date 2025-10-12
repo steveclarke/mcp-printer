@@ -6,8 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { homedir } from 'os';
 import { join } from 'path';
 
-// Mock the config and fs modules before importing
-vi.mock('../../src/config.js', () => {
+function createDefaultConfigMock() {
   const homeDir = homedir();
   return {
     config: {
@@ -22,7 +21,62 @@ vi.mock('../../src/config.js', () => {
       ],
     },
   };
-});
+}
+
+// Mock the config and fs modules before importing
+vi.mock('../../src/config.js', createDefaultConfigMock);
+
+type WindowsConfig = {
+  allowedPaths: string[];
+  deniedPaths: string[];
+};
+
+/**
+ * Imports file-security module with Windows-style path semantics.
+ * Restores real modules once import is complete to avoid leaking mocks.
+ */
+async function importFileSecurityWithWindows(configOverride?: WindowsConfig) {
+  vi.resetModules();
+
+  const actualPath = await import('path');
+  const windowsConfig: WindowsConfig = configOverride ?? {
+    allowedPaths: ['C:\\Users\\alice'],
+    deniedPaths: [],
+  };
+
+  vi.doMock('path', () => {
+    const win = actualPath.win32;
+    return {
+      ...win,
+      sep: '\\',
+      resolve: win.resolve,
+      join: win.join,
+      normalize: win.normalize,
+      dirname: win.dirname,
+      basename: win.basename,
+      extname: win.extname,
+      parse: win.parse,
+      format: win.format,
+      isAbsolute: win.isAbsolute,
+      relative: win.relative,
+      toNamespacedPath: win.toNamespacedPath,
+      posix: actualPath.posix,
+      win32: win,
+    };
+  });
+
+  vi.doMock('../../src/config.js', () => ({
+    config: windowsConfig,
+  }));
+
+  const module = await import('../../src/file-security.js');
+
+  vi.doUnmock('path');
+  vi.doUnmock('../../src/config.js');
+  vi.doMock('../../src/config.js', createDefaultConfigMock);
+
+  return module;
+}
 
 describe('validateFilePath', () => {
   beforeEach(() => {
@@ -84,6 +138,9 @@ describe('validateFilePath', () => {
       expect(error.message).toContain('outside allowed directories');
       expect(error.message).toContain('MCP_PRINTER_ALLOWED_PATHS');
     }
+
+    vi.doUnmock('../../src/config.js');
+    vi.doMock('../../src/config.js', createDefaultConfigMock);
   });
 
   it('should deny subdirectories of denied paths', async () => {
@@ -96,3 +153,44 @@ describe('validateFilePath', () => {
   });
 });
 
+describe('cross-platform path handling - Windows simulation', () => {
+  it('should detect dotfiles in Windows-style paths', async () => {
+    const { validateFilePath } = await importFileSecurityWithWindows({
+      allowedPaths: ['C:\\Users\\alice'],
+      deniedPaths: [],
+    });
+    
+    // Test Windows dotfile paths - should be blocked
+    expect(() => validateFilePath('C:\\Users\\alice\\.env')).toThrow(/Dotfiles and hidden directories/);
+    expect(() => validateFilePath('C:\\Users\\alice\\.ssh\\id_rsa')).toThrow(/Dotfiles and hidden directories/);
+    expect(() => validateFilePath('C:\\Users\\alice\\Documents\\.secret')).toThrow(/Dotfiles and hidden directories/);
+    expect(() => validateFilePath('C:\\Users\\alice\\.config\\app\\settings.json')).toThrow(/Dotfiles and hidden directories/);
+  });
+
+  it('should allow normal Windows paths without dotfiles', async () => {
+    const { validateFilePath } = await importFileSecurityWithWindows({
+      allowedPaths: ['C:\\Users\\alice\\Documents'],
+      deniedPaths: [],
+    });
+    
+    // Test normal Windows paths - should be allowed
+    expect(() => validateFilePath('C:\\Users\\alice\\Documents\\report.pdf')).not.toThrow();
+    expect(() => validateFilePath('C:\\Users\\alice\\Documents\\folder\\file.txt')).not.toThrow();
+  });
+
+  it('should correctly check path prefixes with Windows backslashes', async () => {
+    const { validateFilePath } = await importFileSecurityWithWindows({
+      allowedPaths: ['C:\\Users\\alice\\Documents'],
+      deniedPaths: ['C:\\Users\\alice\\Documents\\private'],
+    });
+    
+    // Test allowed path
+    expect(() => validateFilePath('C:\\Users\\alice\\Documents\\report.pdf')).not.toThrow();
+    
+    // Test denied subdirectory
+    expect(() => validateFilePath('C:\\Users\\alice\\Documents\\private\\secret.txt')).toThrow(/restricted directory/);
+    
+    // Test outside allowed paths
+    expect(() => validateFilePath('C:\\Users\\alice\\Downloads\\file.pdf')).toThrow(/outside allowed directories/);
+  });
+});
