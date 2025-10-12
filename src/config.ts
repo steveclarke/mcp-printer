@@ -9,16 +9,16 @@ import { parseDelimitedString } from "./utils.js";
 export interface Config {
   /** Default printer name for print operations */
   defaultPrinter: string;
-  /** Enable duplex (two-sided) printing by default */
-  enableDuplex: boolean;
+  /** Automatically enable duplex (two-sided) printing by default (can be overridden per-call) */
+  autoDuplex: boolean;
   /** Default CUPS printing options (array of option strings) */
   defaultOptions: string[];
   /** Path to Chrome/Chromium executable for PDF rendering */
   chromePath: string;
-  /** Enable automatic markdown rendering to PDF */
-  enableMarkdownRender: boolean;
-  /** Enable automatic code syntax highlighting rendering to PDF */
-  enableCodeRender: boolean;
+  /** Automatically render markdown files to PDF (can be overridden per-call) */
+  autoRenderMarkdown: boolean;
+  /** Automatically render code files to PDF with syntax highlighting (can be overridden per-call) */
+  autoRenderCode: boolean;
   /** Enable management operations (set_default_printer, cancel_print_job) */
   enableManagement: boolean;
   /** Fallback to printing original file if PDF rendering fails (for markdown and code) */
@@ -55,11 +55,11 @@ export const MARKDOWN_EXTENSIONS = ['md', 'markdown'] as const;
  * These are used when environment variables are not set.
  */
 const DEFAULT_PRINTER = "";
-const DEFAULT_ENABLE_DUPLEX = false;
+const DEFAULT_AUTO_DUPLEX = false;
 const DEFAULT_OPTIONS: string[] = [];
 const DEFAULT_CHROME_PATH = "";
-const DEFAULT_ENABLE_MARKDOWN_RENDER = false;
-const DEFAULT_ENABLE_CODE_RENDER = true;
+const DEFAULT_AUTO_RENDER_MARKDOWN = false;
+const DEFAULT_AUTO_RENDER_CODE = true;
 const DEFAULT_ENABLE_MANAGEMENT = false;
 const DEFAULT_FALLBACK_ON_RENDER_ERROR = false;
 const DEFAULT_MAX_COPIES = 10;
@@ -105,11 +105,11 @@ const userDeniedPaths = parseDelimitedString(process.env.MCP_PRINTER_DENIED_PATH
  */
 export const config: Config = {
   defaultPrinter: process.env.MCP_PRINTER_DEFAULT_PRINTER || DEFAULT_PRINTER,
-  enableDuplex: yn(process.env.MCP_PRINTER_ENABLE_DUPLEX, { default: DEFAULT_ENABLE_DUPLEX }),
+  autoDuplex: yn(process.env.MCP_PRINTER_AUTO_DUPLEX, { default: DEFAULT_AUTO_DUPLEX }),
   defaultOptions: parseDelimitedString(process.env.MCP_PRINTER_DEFAULT_OPTIONS, /\s+/),
   chromePath: process.env.MCP_PRINTER_CHROME_PATH || DEFAULT_CHROME_PATH,
-  enableMarkdownRender: yn(process.env.MCP_PRINTER_ENABLE_MARKDOWN_RENDER, { default: DEFAULT_ENABLE_MARKDOWN_RENDER }),
-  enableCodeRender: yn(process.env.MCP_PRINTER_ENABLE_CODE_RENDER, { default: DEFAULT_ENABLE_CODE_RENDER }),
+  autoRenderMarkdown: yn(process.env.MCP_PRINTER_AUTO_RENDER_MARKDOWN, { default: DEFAULT_AUTO_RENDER_MARKDOWN }),
+  autoRenderCode: yn(process.env.MCP_PRINTER_AUTO_RENDER_CODE, { default: DEFAULT_AUTO_RENDER_CODE }),
   enableManagement: yn(process.env.MCP_PRINTER_ENABLE_MANAGEMENT, { default: DEFAULT_ENABLE_MANAGEMENT }),
   fallbackOnRenderError: yn(process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR, { default: DEFAULT_FALLBACK_ON_RENDER_ERROR }),
   // Merge default paths with user-provided paths

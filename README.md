@@ -57,11 +57,11 @@ All configuration is optional. Add an `env` object to customize behavior:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MCP_PRINTER_DEFAULT_PRINTER` | _(none)_ | Default printer to use when none specified (falls back to system default) |
-| `MCP_PRINTER_ENABLE_DUPLEX` | `false` | Set to `"true"` to print double-sided by default |
+| `MCP_PRINTER_AUTO_DUPLEX` | `false` | Set to `"true"` to automatically print double-sided by default (can be overridden per-call) |
 | `MCP_PRINTER_DEFAULT_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
 | `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Path to Chrome/Chromium for PDF rendering (override if auto-detection fails) |
-| `MCP_PRINTER_ENABLE_MARKDOWN_RENDER` | `false` | Enable automatic markdown rendering to PDF for `.md` and `.markdown` files |
-| `MCP_PRINTER_ENABLE_CODE_RENDER` | `true` | Enable automatic code syntax highlighting rendering to PDF |
+| `MCP_PRINTER_AUTO_RENDER_MARKDOWN` | `false` | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`) |
+| `MCP_PRINTER_AUTO_RENDER_CODE` | `true` | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`) |
 | `MCP_PRINTER_ENABLE_MANAGEMENT` | `false` | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` |
 | `MCP_PRINTER_ALLOWED_PATHS` | _(home directory)_ | Colon-separated paths allowed for printing. **Merged with** home directory default (e.g., `"/mnt/shared:/opt/documents"`) |
 | `MCP_PRINTER_DENIED_PATHS` | _(sensitive dirs)_ | Colon-separated paths denied for printing. **Merged with** defaults like `.ssh`, `.aws`, etc. (e.g., `"/home/user/private"`) |
@@ -81,10 +81,10 @@ All configuration is optional. Add an `env` object to customize behavior:
       "args": ["-y", "mcp-printer"],
       "env": {
         "MCP_PRINTER_DEFAULT_PRINTER": "HP_LaserJet_Pro",
-        "MCP_PRINTER_ENABLE_DUPLEX": "true",
+        "MCP_PRINTER_AUTO_DUPLEX": "true",
         "MCP_PRINTER_DEFAULT_OPTIONS": "fit-to-page",
-        "MCP_PRINTER_ENABLE_MARKDOWN_RENDER": "true",
-        "MCP_PRINTER_ENABLE_CODE_RENDER": "true",
+        "MCP_PRINTER_AUTO_RENDER_MARKDOWN": "true",
+        "MCP_PRINTER_AUTO_RENDER_CODE": "true",
         "MCP_PRINTER_CODE_COLOR_SCHEME": "github",
         "MCP_PRINTER_CODE_FONT_SIZE": "9pt"
       }
@@ -108,11 +108,11 @@ User: What are my printer settings?
 AI: Current MCP Printer Configuration:
 
 MCP_PRINTER_DEFAULT_PRINTER: HP_LaserJet_4001
-MCP_PRINTER_ENABLE_DUPLEX: true
+MCP_PRINTER_AUTO_DUPLEX: true
 MCP_PRINTER_DEFAULT_OPTIONS: (not set)
 MCP_PRINTER_CHROME_PATH: (auto-detected)
-MCP_PRINTER_ENABLE_MARKDOWN_RENDER: false
-MCP_PRINTER_ENABLE_CODE_RENDER: true
+MCP_PRINTER_AUTO_RENDER_MARKDOWN: false
+MCP_PRINTER_AUTO_RENDER_CODE: true
 MCP_PRINTER_ENABLE_MANAGEMENT: false
 ```
 
@@ -200,7 +200,7 @@ AI: ✓ Set default printer to: HP_LaserJet_4001
 ```
 
 **Auto-rendering markdown:**
-Set `MCP_PRINTER_ENABLE_MARKDOWN_RENDER="true"` in your config to automatically render `.md` and `.markdown` files to PDF when using `print_file`. You can also use the `force_markdown_render` parameter to override this behavior on a per-call basis.
+Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN="true"` in your config to automatically render `.md` and `.markdown` files to PDF when using `print_file`. You can also use the `force_markdown_render` parameter to override this behavior on a per-call basis.
 
 ## Available Prompts
 
@@ -323,7 +323,7 @@ The server uses CUPS, which natively supports:
 - ✅ Plain text
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
-- ✅ Markdown (automatically rendered to PDF when `MCP_PRINTER_ENABLE_MARKDOWN_RENDER` is enabled, or via `force_markdown_render` parameter)
+- ✅ Markdown (automatically rendered to PDF when `MCP_PRINTER_AUTO_RENDER_MARKDOWN` is enabled, or via `force_markdown_render` parameter)
 - ✅ Code files (see [Code Rendering](#code-rendering) for details)
 
 Other document formats may need conversion to PDF first.
@@ -340,7 +340,7 @@ JavaScript, TypeScript, Python, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Ruby,
 The system uses highlight.js for syntax highlighting, which supports a wide range of programming languages. Files are automatically detected by extension and rendered accordingly.
 
 **Configuration:**
-- To enable/disable all code rendering: Set `MCP_PRINTER_ENABLE_CODE_RENDER` to `"true"` or `"false"` (default: true)
+- To enable/disable all code rendering: Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"true"` or `"false"` (default: true)
 - To disable code rendering for specific extensions: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="ts,js,py"`
 
 ### Color Schemes
@@ -397,7 +397,7 @@ brew install pandoc
 
 ### Code not rendering with syntax highlighting
 1. Ensure Chrome/Chromium is installed (required for PDF generation)
-2. Verify `MCP_PRINTER_ENABLE_CODE_RENDER` is set to `"true"` (it's enabled by default)
+2. Verify `MCP_PRINTER_AUTO_RENDER_CODE` is set to `"true"` (it's enabled by default)
 3. Check that the file extension is recognized (see [Code Rendering](#code-rendering))
 4. Verify `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` does not include your file's extension
 5. Try setting a different color scheme if the current one isn't working
@@ -410,7 +410,7 @@ The color scheme might not exist. Try these reliable options:
 - `xcode`
 
 ### Want to disable code rendering
-Set `MCP_PRINTER_ENABLE_CODE_RENDER` to `"false"` to disable all code rendering, or use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to exclude specific extensions (e.g., `"ts,js,py"`). See [Configuration](#configuration) for details.
+Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"false"` to disable all code rendering, or use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to exclude specific extensions (e.g., `"ts,js,py"`). See [Configuration](#configuration) for details.
 
 ### Server not showing in Cursor
 1. Restart Cursor after updating MCP config
@@ -516,7 +516,7 @@ Configure your MCP client to run from your local development directory:
       "args": ["/absolute/path/to/mcp-printer/dist/index.js"],
       "env": {
         "MCP_PRINTER_DEFAULT_PRINTER": "Your_Printer_Name",
-        "MCP_PRINTER_ENABLE_DUPLEX": "true"
+        "MCP_PRINTER_AUTO_DUPLEX": "true"
       }
     }
   }

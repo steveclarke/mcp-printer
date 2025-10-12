@@ -9,8 +9,8 @@ import { shouldRenderToPdf, shouldRenderCode } from '../../src/utils.js';
 vi.mock('../../src/config.js', () => ({
   MARKDOWN_EXTENSIONS: ['md', 'markdown'],
   config: {
-    enableMarkdownRender: false,
-    enableCodeRender: true,
+    autoRenderMarkdown: false,
+    autoRenderCode: true,
     code: {
       excludeExtensions: [],
       enableLineNumbers: true,
@@ -27,12 +27,12 @@ describe('shouldRenderToPdf', () => {
     vi.resetModules();
   });
 
-  it('should return false when enableMarkdownRender is false', async () => {
+  it('should return false when autoRenderMarkdown is false', async () => {
     vi.doMock('../../src/config.js', () => ({
       MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        enableMarkdownRender: false,
-        enableCodeRender: true,
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -45,8 +45,8 @@ describe('shouldRenderToPdf', () => {
     vi.doMock('../../src/config.js', () => ({
       MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        enableMarkdownRender: true,
-        enableCodeRender: true,
+        autoRenderMarkdown: true,
+        autoRenderCode: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -60,8 +60,8 @@ describe('shouldRenderToPdf', () => {
     vi.doMock('../../src/config.js', () => ({
       MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        enableMarkdownRender: true,
-        enableCodeRender: true,
+        autoRenderMarkdown: true,
+        autoRenderCode: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -75,8 +75,8 @@ describe('shouldRenderToPdf', () => {
     vi.doMock('../../src/config.js', () => ({
       MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        enableMarkdownRender: true,
-        enableCodeRender: true,
+        autoRenderMarkdown: true,
+        autoRenderCode: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -91,8 +91,8 @@ describe('shouldRenderToPdf', () => {
     vi.doMock('../../src/config.js', () => ({
       MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        enableMarkdownRender: true,
-        enableCodeRender: true,
+        autoRenderMarkdown: true,
+        autoRenderCode: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -107,11 +107,11 @@ describe('shouldRenderCode', () => {
     vi.resetModules();
   });
 
-  it('should return false when enableCodeRender is false', async () => {
+  it('should return false when autoRenderCode is false', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
-        enableMarkdownRender: false,
-        enableCodeRender: false,
+        autoRenderMarkdown: false,
+        autoRenderCode: false,
         code: {
           excludeExtensions: [],
           enableLineNumbers: true,
@@ -130,8 +130,8 @@ describe('shouldRenderCode', () => {
   it('should return false for excluded extensions', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
-        enableMarkdownRender: false,
-        enableCodeRender: true,
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
         code: {
           excludeExtensions: ['txt', 'log'],
           enableLineNumbers: true,
@@ -150,8 +150,8 @@ describe('shouldRenderCode', () => {
   it('should return true for known and unknown code extensions when enabled', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
-        enableMarkdownRender: false,
-        enableCodeRender: true,
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
         code: {
           excludeExtensions: [],
           enableLineNumbers: true,
@@ -177,8 +177,8 @@ describe('shouldRenderCode', () => {
   it('should handle case sensitivity in exclusions', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
-        enableMarkdownRender: false,
-        enableCodeRender: true,
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
         code: {
           excludeExtensions: ['txt'],
           enableLineNumbers: true,

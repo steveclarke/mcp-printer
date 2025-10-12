@@ -190,13 +190,13 @@ export async function findChrome(): Promise<string | null> {
 
 /**
  * Determines if a file should be automatically rendered to PDF before printing.
- * Checks enableMarkdownRender master switch and standard markdown extensions (.md, .markdown).
+ * Checks autoRenderMarkdown setting and standard markdown extensions (.md, .markdown).
  * 
  * @param filePath - Path to the file to check
  * @returns True if the file should be rendered to PDF, false otherwise
  */
 export function shouldRenderToPdf(filePath: string): boolean {
-  if (!config.enableMarkdownRender) {
+  if (!config.autoRenderMarkdown) {
     return false;
   }
   const ext = filePath.split('.').pop()?.toLowerCase() || "";
@@ -205,7 +205,7 @@ export function shouldRenderToPdf(filePath: string): boolean {
 
 /**
  * Determines if a file should be rendered with syntax highlighting.
- * Checks enableCodeRender master switch, code.excludeExtensions configuration,
+ * Checks autoRenderCode setting, code.excludeExtensions configuration,
  * and whether highlight.js supports the file type.
  * 
  * @param filePath - Path to the file to check
@@ -213,7 +213,7 @@ export function shouldRenderToPdf(filePath: string): boolean {
  */
 export function shouldRenderCode(filePath: string): boolean {
   // Master switch check
-  if (!config.enableCodeRender) {
+  if (!config.autoRenderCode) {
     return false;
   }
   
@@ -366,8 +366,8 @@ export async function executePrintJob(
   // Build options with defaults
   let allOptions = [];
   
-  // Add default duplex if configured and not overridden
-  if (config.enableDuplex && !options?.includes("sides=")) {
+  // Add default duplex if auto-enabled in config and not already specified
+  if (config.autoDuplex && !options?.includes("sides=")) {
     allOptions.push("sides=two-sided-long-edge");
   }
   

@@ -39,31 +39,31 @@ describe('config', () => {
 
   it('should parse boolean configs from environment', async () => {
     // Test defaults
-    delete process.env.MCP_PRINTER_ENABLE_DUPLEX;
+    delete process.env.MCP_PRINTER_AUTO_DUPLEX;
     delete process.env.MCP_PRINTER_ENABLE_MANAGEMENT;
     delete process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR;
     const { config: defaultConfig } = await import('../../src/config.js');
-    expect(defaultConfig.enableDuplex).toBe(false);
+    expect(defaultConfig.autoDuplex).toBe(false);
     expect(defaultConfig.enableManagement).toBe(false);
     expect(defaultConfig.fallbackOnRenderError).toBe(false);
     
     vi.resetModules();
     
     // Test truthy values (true, yes, 1)
-    process.env.MCP_PRINTER_ENABLE_DUPLEX = 'true';
+    process.env.MCP_PRINTER_AUTO_DUPLEX = 'true';
     process.env.MCP_PRINTER_ENABLE_MANAGEMENT = 'yes';
     process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR = '1';
     const { config: truthyConfig } = await import('../../src/config.js');
-    expect(truthyConfig.enableDuplex).toBe(true);
+    expect(truthyConfig.autoDuplex).toBe(true);
     expect(truthyConfig.enableManagement).toBe(true);
     expect(truthyConfig.fallbackOnRenderError).toBe(true);
     
     vi.resetModules();
     
     // Test false value
-    process.env.MCP_PRINTER_ENABLE_DUPLEX = 'false';
+    process.env.MCP_PRINTER_AUTO_DUPLEX = 'false';
     const { config: falseConfig } = await import('../../src/config.js');
-    expect(falseConfig.enableDuplex).toBe(false);
+    expect(falseConfig.autoDuplex).toBe(false);
   });
 
   it('should parse array configs with appropriate delimiters and lowercasing', async () => {
