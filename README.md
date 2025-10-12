@@ -12,8 +12,9 @@ In the era of AI-assisted development, we're generating more documentation, spec
 - [Available Tools](#available-tools)
 - [Available Prompts](#available-prompts)
 - [Usage Examples](#usage-examples)
-- [Supported File Types](#supported-file-types)
 - [CUPS Options](#cups-options)
+- [Supported File Types](#supported-file-types)
+- [Code Rendering](#code-rendering)
 - [Troubleshooting](#troubleshooting)
 - [Security](#security)
 - [Development](#development)
@@ -305,6 +306,22 @@ User: Cancel job 126
 AI: ✓ Cancelled job: 126
 ```
 
+## CUPS Options
+
+Any valid CUPS/lpr options can be passed via the `options` parameter. Common examples:
+
+- `landscape` - Print in landscape orientation
+- `sides=two-sided-long-edge` - Double-sided (long edge)
+- `sides=two-sided-short-edge` - Double-sided (short edge)
+- `page-ranges=1-5` - Print specific pages
+- `media=Letter` or `media=A4` - Paper size
+- `fit-to-page` - Scale to fit page
+
+For a complete list of available options:
+- Run `lpoptions -l` in your terminal to see printer-specific options
+- See the [CUPS documentation](https://www.cups.org/doc/options.html) for standard printing options
+- Check `man lpr` for command-line options
+
 ## Supported File Types
 
 The server uses CUPS, which natively supports:
@@ -313,16 +330,26 @@ The server uses CUPS, which natively supports:
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
 - ✅ Markdown (rendered to PDF with `render_and_print_markdown` or via `MCP_PRINTER_MARKDOWN_EXTENSIONS`)
-- ✅ **Code files** (common languages automatically detected and rendered with syntax highlighting via highlight.js)
+- ✅ Code files (see [Code Rendering](#code-rendering) for details)
 
-### Auto-Rendered Code Languages
+Other document formats may need conversion to PDF first.
+
+## Code Rendering
+
+Code files are automatically rendered to PDF with syntax highlighting, line numbers, and proper formatting for optimal printing quality.
+
+### Supported Languages
 
 Common languages that are automatically syntax-highlighted include:
 JavaScript, TypeScript, Python, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Ruby, PHP, Scala, Shell/Bash, SQL, R, Perl, Lua, HTML, CSS, SCSS, JSON, YAML, XML, and many more.
 
-To disable code rendering for specific extensions, use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS`. To disable all code rendering, set `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="all"`.
+The system uses highlight.js for syntax highlighting, which supports a wide range of programming languages. Files are automatically detected by extension and rendered accordingly.
 
-### Code Color Schemes
+**Configuration:**
+- To disable code rendering for specific extensions: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="ts,js,py"`
+- To disable all code rendering: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="all"`
+
+### Color Schemes
 
 The following syntax highlighting themes are available (set via `MCP_PRINTER_CODE_COLOR_SCHEME`):
 
@@ -349,25 +376,7 @@ The following syntax highlighting themes are available (set via `MCP_PRINTER_COD
 - `dracula`
 - `tokyo-night`
 
-For a complete list of available themes, see the [highlight.js demo](https://highlightjs.org/static/demo/).
-
-Other document formats may need conversion to PDF first.
-
-## CUPS Options
-
-Any valid CUPS/lpr options can be passed via the `options` parameter. Common examples:
-
-- `landscape` - Print in landscape orientation
-- `sides=two-sided-long-edge` - Double-sided (long edge)
-- `sides=two-sided-short-edge` - Double-sided (short edge)
-- `page-ranges=1-5` - Print specific pages
-- `media=Letter` or `media=A4` - Paper size
-- `fit-to-page` - Scale to fit page
-
-For a complete list of available options:
-- Run `lpoptions -l` in your terminal to see printer-specific options
-- See the [CUPS documentation](https://www.cups.org/doc/options.html) for standard printing options
-- Check `man lpr` for command-line options
+For a complete list of available themes, see the [highlight.js demo](https://highlightjs.org/static/demo/)
 
 ## Troubleshooting
 
@@ -392,7 +401,7 @@ brew install pandoc
 
 ### Code not rendering with syntax highlighting
 1. Ensure Chrome/Chromium is installed (required for PDF generation)
-2. Check that the file extension is recognized (see [Auto-Rendered Code Languages](#auto-rendered-code-languages))
+2. Check that the file extension is recognized (see [Code Rendering](#code-rendering))
 3. Verify `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` is not set to `"all"` or does not include your file's extension
 4. Try setting a different color scheme if the current one isn't working
 
@@ -404,7 +413,7 @@ The color scheme might not exist. Try these reliable options:
 - `xcode`
 
 ### Want to disable code rendering
-Set `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to `"all"` to disable all code rendering, or specify extensions to exclude (e.g., `"ts,js,py"`). See [Configuration Options](#configuration-options) for details.
+Set `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to `"all"` to disable all code rendering, or specify extensions to exclude (e.g., `"ts,js,py"`). See [Configuration](#configuration) for details.
 
 ### Server not showing in Cursor
 1. Restart Cursor after updating MCP config
