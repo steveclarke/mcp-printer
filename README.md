@@ -9,19 +9,16 @@ In the era of AI-assisted development, we're generating more documentation, spec
 - [Features](#features)
 - [Installation](#installation)
 - [Configuration](#configuration)
-- [Security](#security)
 - [Available Tools](#available-tools)
 - [Available Prompts](#available-prompts)
 - [Usage Examples](#usage-examples)
 - [Supported File Types](#supported-file-types)
 - [CUPS Options](#cups-options)
 - [Troubleshooting](#troubleshooting)
+- [Security](#security)
 - [Development](#development)
 - [Requirements](#requirements)
 - [Contributing](#contributing)
-
-
-> **Note:** This tool requires a local MCP client (e.g., Claude Desktop, Cursor) and cannot be used with web-based AI interfaces.
 
 ## Features
 
@@ -50,16 +47,18 @@ Add to your MCP configuration file (e.g., `~/.cursor/mcp.json` for Cursor):
 
 That's it! The package will be automatically downloaded from npm on first use.
 
+> **⚠️ Security:** This server allows AI assistants to print files from within allowed directories. Only use with trusted AI assistants on your local machine. The server attempts to block common sensitive directories (`.ssh`, `.aws`, etc.) by default, but this is not exhaustive. Configure additional restrictions as needed. See [Security](#security) for details.
+
 ## Configuration
 
 All configuration is optional. Add an `env` object to customize behavior:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MCP_PRINTER_DEFAULT_PRINTER` | _(none)_ | Default printer to use when none specified |
+| `MCP_PRINTER_DEFAULT_PRINTER` | _(none)_ | Default printer to use when none specified (falls back to system default) |
 | `MCP_PRINTER_ENABLE_DUPLEX` | `false` | Set to `"true"` to print double-sided by default |
 | `MCP_PRINTER_DEFAULT_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
-| `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Full path to Chrome/Chromium executable |
+| `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Path to Chrome/Chromium for PDF rendering (override if auto-detection fails) |
 | `MCP_PRINTER_MARKDOWN_EXTENSIONS` | _(none)_ | File extensions to auto-render to PDF (e.g., `"md,markdown"`) |
 | `MCP_PRINTER_ENABLE_MANAGEMENT` | `false` | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` |
 | `MCP_PRINTER_ALLOWED_PATHS` | _(home directory)_ | Colon-separated paths allowed for printing. **Merged with** home directory default (e.g., `"/mnt/shared:/opt/documents"`) |
@@ -94,90 +93,6 @@ All configuration is optional. Add an `env` object to customize behavior:
 💡 **Tip:** Run `lpstat -p` in your terminal to see your exact printer names.
 
 User-specified options in prompts always override these defaults.
-
-## Security
-
-MCP Printer includes multiple security protections to prevent unauthorized file access and system modifications:
-
-### File Access Control
-
-By default, the server only allows printing files within your home directory and blocks access to sensitive subdirectories:
-
-**Default Allowed:**
-- All files under your home directory (`~`)
-
-**Default Blocked:**
-- `~/.ssh` (SSH keys)
-- `~/.gnupg` (GPG keys)
-- `~/.aws` (AWS credentials)
-- `~/.config/gcloud` (Google Cloud credentials)
-- Any files named `.env*` (environment variables)
-- System directories: `/etc`, `/var`, `/root`, `/sys`, `/proc`, `/private/etc`, `/private/var`
-
-### Custom Security Configuration
-
-You can add custom allowed or denied paths using environment variables. Your custom paths are **merged with** the defaults (not replaced), so you never lose the built-in protections.
-
-**Add custom allowed paths:**
-```json
-{
-  "mcpServers": {
-    "Printer": {
-      "command": "npx",
-      "args": ["-y", "mcp-printer"],
-      "env": {
-        "MCP_PRINTER_ALLOWED_PATHS": "/mnt/shared:/opt/documents"
-      }
-    }
-  }
-}
-```
-
-**Add custom denied paths:**
-```json
-{
-  "mcpServers": {
-    "Printer": {
-      "command": "npx",
-      "args": ["-y", "mcp-printer"],
-      "env": {
-        "MCP_PRINTER_DENIED_PATHS": "/home/user/private:/home/user/secrets"
-      }
-    }
-  }
-}
-```
-
-Use colon (`:`) to separate multiple paths, just like the Unix `PATH` variable.
-
-✅ **Safe:** Your additions are merged with defaults - home directory and sensitive path protections remain active.
-
-### Management Operations
-
-Management operations (`set_default_printer` and `cancel_print_job`) are **disabled by default** for security. These operations can affect other users' print jobs and system settings.
-
-To enable them, set the environment variable:
-```json
-{
-  "mcpServers": {
-    "Printer": {
-      "command": "npx",
-      "args": ["-y", "mcp-printer"],
-      "env": {
-        "MCP_PRINTER_ENABLE_MANAGEMENT": "true"
-      }
-    }
-  }
-}
-```
-
-⚠️ **Security Note:** Only enable management operations if you trust all MCP clients that will connect to this server.
-
-### Other Security Features
-
-- **Secure temporary files:** All temporary files are created in randomly-named directories to prevent race conditions and symlink attacks
-- **HTML injection protection:** File paths are properly escaped when rendered to prevent script injection
-- **Symlink protection:** File paths are resolved to their real paths before validation to prevent bypassing security checks
 
 ## Available Tools
 
@@ -259,7 +174,7 @@ AI: ✓ Cancelled job: 123
 ```
 
 ### `get_default_printer`
-Get the current default printer.
+Get the system's default printer (not the MCP_PRINTER_DEFAULT_PRINTER config setting).
 
 **Example:**
 ```
@@ -398,7 +313,7 @@ The server uses CUPS, which natively supports:
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
 - ✅ Markdown (rendered to PDF with `render_and_print_markdown` or via `MCP_PRINTER_MARKDOWN_EXTENSIONS`)
-- ✅ **Code files** (190+ languages automatically detected and rendered with syntax highlighting)
+- ✅ **Code files** (common languages automatically detected and rendered with syntax highlighting via highlight.js)
 
 ### Auto-Rendered Code Languages
 
@@ -407,25 +322,7 @@ JavaScript, TypeScript, Python, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Ruby,
 
 To disable code rendering for specific extensions, use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS`. To disable all code rendering, set `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="all"`.
 
-Other document formats may need conversion to PDF first.
-
-## CUPS Options
-
-Any valid CUPS/lpr options can be passed via the `options` parameter. Common examples:
-
-- `landscape` - Print in landscape orientation
-- `sides=two-sided-long-edge` - Double-sided (long edge)
-- `sides=two-sided-short-edge` - Double-sided (short edge)
-- `page-ranges=1-5` - Print specific pages
-- `media=Letter` or `media=A4` - Paper size
-- `fit-to-page` - Scale to fit page
-
-For a complete list of available options:
-- Run `lpoptions -l` in your terminal to see printer-specific options
-- See the [CUPS documentation](https://www.cups.org/doc/options.html) for standard printing options
-- Check `man lpr` for command-line options
-
-## Code Color Schemes
+### Code Color Schemes
 
 The following syntax highlighting themes are available (set via `MCP_PRINTER_CODE_COLOR_SCHEME`):
 
@@ -454,6 +351,24 @@ The following syntax highlighting themes are available (set via `MCP_PRINTER_COD
 
 For a complete list of available themes, see the [highlight.js demo](https://highlightjs.org/static/demo/).
 
+Other document formats may need conversion to PDF first.
+
+## CUPS Options
+
+Any valid CUPS/lpr options can be passed via the `options` parameter. Common examples:
+
+- `landscape` - Print in landscape orientation
+- `sides=two-sided-long-edge` - Double-sided (long edge)
+- `sides=two-sided-short-edge` - Double-sided (short edge)
+- `page-ranges=1-5` - Print specific pages
+- `media=Letter` or `media=A4` - Paper size
+- `fit-to-page` - Scale to fit page
+
+For a complete list of available options:
+- Run `lpoptions -l` in your terminal to see printer-specific options
+- See the [CUPS documentation](https://www.cups.org/doc/options.html) for standard printing options
+- Check `man lpr` for command-line options
+
 ## Troubleshooting
 
 ### "Printer not found"
@@ -478,7 +393,7 @@ brew install pandoc
 ### Code not rendering with syntax highlighting
 1. Ensure Chrome/Chromium is installed (required for PDF generation)
 2. Check that the file extension is recognized (see [Auto-Rendered Code Languages](#auto-rendered-code-languages))
-3. Verify `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` is not set to `"all"`
+3. Verify `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` is not set to `"all"` or does not include your file's extension
 4. Try setting a different color scheme if the current one isn't working
 
 ### Code prints but with wrong colors/theme
@@ -496,12 +411,74 @@ Set `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to `"all"` to disable all code renderi
 2. Check Developer Tools → Console for errors
 3. Verify the path to `dist/index.js` is correct
 
+## Security
+
+MCP Printer includes multiple security protections to prevent unauthorized file access and system modifications:
+
+### File Access Control
+
+By default, the server only allows printing files within your home directory and blocks access to well-known sensitive subdirectories:
+
+**Default Allowed:**
+- All files under your home directory (`~`)
+
+**Default Blocked:**
+- `~/.ssh` (SSH keys)
+- `~/.gnupg` (GPG keys)
+- `~/.aws` (AWS credentials)
+- `~/.config/gcloud` (Google Cloud credentials)
+- Any files named `.env*` (environment variables)
+- System directories: `/etc`, `/var`, `/root`, `/sys`, `/proc`, `/private/etc`, `/private/var`
+
+### Custom Security Configuration
+
+You can add custom allowed or denied paths using environment variables. Your custom paths are **merged with** the defaults (not replaced), so you never lose the built-in protections.
+
+**Example:**
+```json
+"env": {
+  "MCP_PRINTER_ALLOWED_PATHS": "/mnt/shared:/opt/documents",
+  "MCP_PRINTER_DENIED_PATHS": "/home/user/private:/home/user/secrets"
+}
+```
+
+Use colon (`:`) to separate multiple paths, just like the Unix `PATH` variable.
+
+**Note:** Your custom paths are merged with the built-in defaults, so the default protections (home directory access and blocked sensitive directories) remain active.
+
+### Management Operations
+
+Management operations (`set_default_printer` and `cancel_print_job`) are **disabled by default** for security. These operations can affect other users' print jobs and system settings.
+
+To enable them, set the environment variable:
+```json
+{
+  "mcpServers": {
+    "Printer": {
+      "command": "npx",
+      "args": ["-y", "mcp-printer"],
+      "env": {
+        "MCP_PRINTER_ENABLE_MANAGEMENT": "true"
+      }
+    }
+  }
+}
+```
+
+**Note:** Only enable management operations if you understand the implications, as they can affect system-wide printer settings and other users' print jobs.
+
+### Other Security Features
+
+- **Secure temporary files:** All temporary files are created in randomly-named directories to prevent race conditions and symlink attacks
+- **HTML injection protection:** File paths are properly escaped when rendered to prevent script injection
+- **Symlink protection:** File paths are resolved to their real paths before validation to prevent bypassing security checks
+
 ## Development
 
 ### Setup
 
 ```bash
-git clone https://github.com/myunio/mcp-printer.git
+git clone https://github.com/steveclarke/mcp-printer.git
 cd mcp-printer
 pnpm install
 pnpm run build
@@ -542,7 +519,7 @@ Configure your MCP client to run from your local development directory:
 
 ### Alternative Installation Methods
 
-If you prefer not to use npx, you can install globally:
+If you prefer not to use the `npx` approach in your MCP config, you can install the package globally first:
 
 ```bash
 # npm
@@ -555,7 +532,7 @@ pnpm add -g mcp-printer
 yarn global add mcp-printer
 ```
 
-Then use in MCP config:
+Then reference it directly in your MCP config (without npx):
 ```json
 {
   "mcpServers": {
@@ -576,10 +553,6 @@ Then use in MCP config:
 - **Google Chrome or Chromium** - Required for rendering markdown and code to PDF (auto-detected)
 - **pandoc** - Optional, only needed for markdown rendering (`brew install pandoc`)
 - Printers configured in your system
-
-## ⚠️ Security Note
-
-**This server executes system print commands.** Only use with trusted AI assistants in secure environments.
 
 ## Contributing
 

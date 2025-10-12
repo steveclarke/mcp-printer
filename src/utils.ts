@@ -222,10 +222,17 @@ export function shouldRenderCode(filePath: string): boolean {
 /**
  * Maps a file extension to a highlight.js language identifier.
  * 
+ * This mapping is necessary because file extensions often don't match highlight.js language names
+ * (e.g., ".py" → "python", ".rs" → "rust"). The explicit mapping provides faster and more accurate
+ * highlighting for common languages. Extensions not in this map are passed through as-is and will
+ * either be recognized by highlight.js directly or handled by auto-detection as a fallback.
+ * 
  * @param ext - File extension (without the dot, e.g., "ts")
  * @returns Highlight.js language identifier, or the original extension if no mapping exists
  */
 export function getLanguageFromExtension(ext: string): string {
+  // Map common file extensions to their highlight.js language names
+  // This avoids relying on auto-detection for better performance and accuracy
   const languageMap: { [key: string]: string } = {
     'js': 'javascript',
     'jsx': 'javascript',
