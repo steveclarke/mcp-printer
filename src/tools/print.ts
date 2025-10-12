@@ -95,9 +95,9 @@ export function registerPrintTools(server: McpServer) {
           allOptions.push("sides=two-sided-long-edge");
         }
         
-        // Add default options if configured (split by spaces to handle multiple options)
-        if (config.defaultOptions) {
-          allOptions.push(...config.defaultOptions.split(/\s+/));
+        // Add default options if configured
+        if (config.defaultOptions.length > 0) {
+          allOptions.push(...config.defaultOptions);
         }
         
         // Add user-specified options (these override defaults, split by spaces)

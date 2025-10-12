@@ -1,6 +1,7 @@
 import yn from "yn";
 import { homedir } from "os";
 import { join } from "path";
+import { parseDelimitedString } from "./utils.js";
 
 /**
  * Configuration interface for MCP Printer settings loaded from environment variables.
@@ -10,13 +11,13 @@ export interface Config {
   defaultPrinter: string;
   /** Enable duplex (two-sided) printing by default */
   enableDuplex: boolean;
-  /** Default CUPS printing options */
-  defaultOptions: string;
+  /** Default CUPS printing options (array of option strings) */
+  defaultOptions: string[];
   /** Path to Chrome/Chromium executable for PDF rendering */
   chromePath: string;
   /** File extensions that should be auto-rendered to PDF before printing (primarily markdown) */
   markdownExtensions: string[];
-  /** Enable management operations (set_default_printer, cancel_print_job) - disabled by default for security */
+  /** Enable management operations (set_default_printer, cancel_print_job) */
   enableManagement: boolean;
   /** Fallback to printing original file if PDF rendering fails (for markdown and code) */
   fallbackOnRenderError: boolean;
@@ -26,7 +27,7 @@ export interface Config {
   deniedPaths: string[];
   /** Code rendering configuration */
   code: {
-    /** File extensions to exclude from code rendering */
+    /** File extensions to exclude from code rendering. All enabled by default. */
     excludeExtensions: string[];
     /** Highlight.js color scheme for syntax highlighting */
     colorScheme: string;
@@ -39,6 +40,23 @@ export interface Config {
   };
 }
 
+/**
+ * Default configuration values.
+ * These are used when environment variables are not set.
+ */
+const DEFAULT_PRINTER = "";
+const DEFAULT_ENABLE_DUPLEX = false;
+const DEFAULT_OPTIONS: string[] = [];
+const DEFAULT_CHROME_PATH = "";
+const DEFAULT_MARKDOWN_EXTENSIONS: string[] = [];
+const DEFAULT_ENABLE_MANAGEMENT = false;
+const DEFAULT_FALLBACK_ON_RENDER_ERROR = false;
+const DEFAULT_CODE_EXCLUDE_EXTENSIONS: string[] = [];
+const DEFAULT_CODE_COLOR_SCHEME = "atom-one-light";
+const DEFAULT_CODE_ENABLE_LINE_NUMBERS = true;
+const DEFAULT_CODE_FONT_SIZE = "10pt";
+const DEFAULT_CODE_LINE_SPACING = "1.5";
+
 // Get home directory for security defaults
 const homeDir = homedir();
 
@@ -46,9 +64,7 @@ const homeDir = homedir();
 const defaultAllowedPaths = [homeDir];
 
 // Parse user-provided allowed paths from environment variable (colon-separated)
-const userAllowedPaths = process.env.MCP_PRINTER_ALLOWED_PATHS
-  ? process.env.MCP_PRINTER_ALLOWED_PATHS.split(':').map(p => p.trim()).filter(p => p)
-  : [];
+const userAllowedPaths = parseDelimitedString(process.env.MCP_PRINTER_ALLOWED_PATHS, ':');
 
 // Default denied paths (sensitive directories)
 const defaultDeniedPaths = [
@@ -69,35 +85,29 @@ const defaultDeniedPaths = [
 ];
 
 // Parse user-provided denied paths from environment variable (colon-separated)
-const userDeniedPaths = process.env.MCP_PRINTER_DENIED_PATHS
-  ? process.env.MCP_PRINTER_DENIED_PATHS.split(':').map(p => p.trim()).filter(p => p)
-  : [];
+const userDeniedPaths = parseDelimitedString(process.env.MCP_PRINTER_DENIED_PATHS, ':');
 
 /**
  * Global configuration object loaded from environment variables.
  * Provides settings for printer defaults, rendering options, and code formatting.
  */
 export const config: Config = {
-  defaultPrinter: process.env.MCP_PRINTER_DEFAULT_PRINTER || "",
-  enableDuplex: yn(process.env.MCP_PRINTER_ENABLE_DUPLEX, { default: false }),
-  defaultOptions: process.env.MCP_PRINTER_DEFAULT_OPTIONS || "",
-  chromePath: process.env.MCP_PRINTER_CHROME_PATH || "",
-  markdownExtensions: process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS 
-    ? process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS.split(',').map(e => e.trim().toLowerCase())
-    : [],
-  enableManagement: yn(process.env.MCP_PRINTER_ENABLE_MANAGEMENT, { default: false }),
-  fallbackOnRenderError: yn(process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR, { default: false }),
+  defaultPrinter: process.env.MCP_PRINTER_DEFAULT_PRINTER || DEFAULT_PRINTER,
+  enableDuplex: yn(process.env.MCP_PRINTER_ENABLE_DUPLEX, { default: DEFAULT_ENABLE_DUPLEX }),
+  defaultOptions: parseDelimitedString(process.env.MCP_PRINTER_DEFAULT_OPTIONS, /\s+/),
+  chromePath: process.env.MCP_PRINTER_CHROME_PATH || DEFAULT_CHROME_PATH,
+  markdownExtensions: parseDelimitedString(process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS, ',', s => s.toLowerCase()),
+  enableManagement: yn(process.env.MCP_PRINTER_ENABLE_MANAGEMENT, { default: DEFAULT_ENABLE_MANAGEMENT }),
+  fallbackOnRenderError: yn(process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR, { default: DEFAULT_FALLBACK_ON_RENDER_ERROR }),
   // Merge default paths with user-provided paths
   allowedPaths: [...defaultAllowedPaths, ...userAllowedPaths],
   deniedPaths: [...defaultDeniedPaths, ...userDeniedPaths],
   code: {
-    excludeExtensions: process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS 
-      ? process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS.split(',').map(e => e.trim().toLowerCase()) 
-      : [],
-    colorScheme: process.env.MCP_PRINTER_CODE_COLOR_SCHEME || "atom-one-light",
-    enableLineNumbers: yn(process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS, { default: true }),
-    fontSize: process.env.MCP_PRINTER_CODE_FONT_SIZE || "10pt",
-    lineSpacing: process.env.MCP_PRINTER_CODE_LINE_SPACING || "1.5",
+    excludeExtensions: parseDelimitedString(process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS, ',', s => s.toLowerCase()),
+    colorScheme: process.env.MCP_PRINTER_CODE_COLOR_SCHEME || DEFAULT_CODE_COLOR_SCHEME,
+    enableLineNumbers: yn(process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS, { default: DEFAULT_CODE_ENABLE_LINE_NUMBERS }),
+    fontSize: process.env.MCP_PRINTER_CODE_FONT_SIZE || DEFAULT_CODE_FONT_SIZE,
+    lineSpacing: process.env.MCP_PRINTER_CODE_LINE_SPACING || DEFAULT_CODE_LINE_SPACING,
   }
 };
 

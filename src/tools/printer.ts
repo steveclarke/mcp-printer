@@ -29,7 +29,9 @@ export function registerPrinterTools(server: McpServer) {
       const configData = {
         MCP_PRINTER_DEFAULT_PRINTER: config.defaultPrinter || "(not set)",
         MCP_PRINTER_ENABLE_DUPLEX: config.enableDuplex ? "true" : "false",
-        MCP_PRINTER_DEFAULT_OPTIONS: config.defaultOptions || "(not set)",
+        MCP_PRINTER_DEFAULT_OPTIONS: config.defaultOptions.length > 0
+          ? config.defaultOptions.join(" ")
+          : "(not set)",
         MCP_PRINTER_CHROME_PATH: config.chromePath || "(auto-detected)",
         MCP_PRINTER_MARKDOWN_EXTENSIONS: config.markdownExtensions.length > 0 
           ? config.markdownExtensions.join(", ") 

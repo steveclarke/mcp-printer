@@ -52,8 +52,8 @@ export function registerRenderTools(server: McpServer) {
         if (config.enableDuplex && !options?.includes("sides=")) {
           allOptions.push("sides=two-sided-long-edge");
         }
-        if (config.defaultOptions) {
-          allOptions.push(...config.defaultOptions.split(/\s+/));
+        if (config.defaultOptions.length > 0) {
+          allOptions.push(...config.defaultOptions);
         }
         if (options) {
           allOptions.push(...options.split(/\s+/));

@@ -5,6 +5,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import yn from "yn";
 
 /**
  * Registers prompts with the MCP server.
@@ -42,9 +43,9 @@ export function registerPrompts(server: McpServer) {
       }
     },
     ({ directory = '.', include_source = 'yes', include_docs = 'yes', include_tests = 'no', copies = '1' }) => {
-      const shouldIncludeSource = include_source.toLowerCase() !== 'no';
-      const shouldIncludeDocs = include_docs.toLowerCase() !== 'no';
-      const shouldIncludeTests = include_tests.toLowerCase() === 'yes';
+      const shouldIncludeSource = yn(include_source, { default: true });
+      const shouldIncludeDocs = yn(include_docs, { default: true });
+      const shouldIncludeTests = yn(include_tests, { default: false });
       const numCopies = parseInt(copies) || 1;
       
       return {

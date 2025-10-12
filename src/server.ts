@@ -1,5 +1,5 @@
 /**
- * @fileoverview MCP Server implementation for macOS printing operations.
+ * @fileoverview MCP Server implementation for printing operations.
  * Provides a Model Context Protocol server that exposes printing tools via CUPS.
  */
 
@@ -9,7 +9,7 @@ import { registerAllTools } from "./tools/index.js";
 import packageJson from "../package.json" with { type: "json" };
 
 /**
- * MCP Server instance for macOS printing via CUPS.
+ * MCP Server instance for printing via CUPS.
  * Handles printer management, print jobs, and document rendering.
  */
 const mcpServer = new McpServer({
