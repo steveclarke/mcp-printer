@@ -56,14 +56,12 @@ export const MARKDOWN_EXTENSIONS = ['md', 'markdown'] as const;
  */
 const DEFAULT_PRINTER = "";
 const DEFAULT_AUTO_DUPLEX = false;
-const DEFAULT_OPTIONS: string[] = [];
 const DEFAULT_CHROME_PATH = "";
 const DEFAULT_AUTO_RENDER_MARKDOWN = false;
 const DEFAULT_AUTO_RENDER_CODE = true;
 const DEFAULT_ENABLE_MANAGEMENT = false;
 const DEFAULT_FALLBACK_ON_RENDER_ERROR = false;
 const DEFAULT_MAX_COPIES = 10;
-const DEFAULT_CODE_EXCLUDE_EXTENSIONS: string[] = [];
 const DEFAULT_CODE_COLOR_SCHEME = "atom-one-light";
 const DEFAULT_CODE_ENABLE_LINE_NUMBERS = true;
 const DEFAULT_CODE_FONT_SIZE = "10pt";
@@ -72,32 +70,58 @@ const DEFAULT_CODE_LINE_SPACING = "1.5";
 // Get home directory for security defaults
 const homeDir = homedir();
 
-// Default allowed paths
-const defaultAllowedPaths = [homeDir];
-
-// Parse user-provided allowed paths from environment variable (colon-separated)
-const userAllowedPaths = parseDelimitedString(process.env.MCP_PRINTER_ALLOWED_PATHS, ':');
+// Default allowed paths - restricted to safe directories only
+const defaultAllowedPaths = [
+  join(homeDir, 'Documents'),
+  join(homeDir, 'Downloads'),
+  join(homeDir, 'Desktop')
+];
 
 // Default denied paths (sensitive directories)
+// NOTE: This is a defense-in-depth measure. The primary security layer is the
+// universal dotfile blocking in validateFilePath() which catches most
+// credential stores. This deny list serves as a fallback to ensure system
+// directories are ALWAYS blocked. Even if you explicitly add these paths to
+// MCP_PRINTER_ALLOWED_PATHS, they will still be denied. These paths cannot be
+// overridden by any configuration.
 const defaultDeniedPaths = [
-  // Sensitive credential directories
+  // Sensitive credential directories (most are also caught by dotfile blocking)
   join(homeDir, '.ssh'),
   join(homeDir, '.gnupg'),
   join(homeDir, '.aws'),
   join(homeDir, '.config', 'gcloud'),
-  // System directories
+  // Standard Unix system directories
+  '/bin',
+  '/sbin',
+  '/lib',
+  '/lib64',
+  '/usr/lib',
+  '/usr/sbin',
+  '/boot',
+  '/dev',
   '/etc',
-  '/var',
-  '/root',
-  '/sys',
   '/proc',
-  // macOS specific
+  '/run',
+  '/sys',
+  '/var',
+  '/tmp',
+  '/root',
+  // macOS specific system directories
+  '/System',
+  '/Library',
   '/private/etc',
-  '/private/var'
+  '/private/var',
+  '/private/tmp'
 ];
 
-// Parse user-provided denied paths from environment variable (colon-separated)
-const userDeniedPaths = parseDelimitedString(process.env.MCP_PRINTER_DENIED_PATHS, ':');
+// Parse user-provided allowed paths from environment variable (colon-separated) and expand env vars
+const userAllowedPaths = parseDelimitedString(process.env.MCP_PRINTER_ALLOWED_PATHS, ':')
+  .map(expandEnvVars);
+const hasUserPaths = userAllowedPaths.length > 0;
+
+// Parse user-provided denied paths from environment variable (colon-separated) and expand env vars
+const userDeniedPaths = parseDelimitedString(process.env.MCP_PRINTER_DENIED_PATHS, ':')
+  .map(expandEnvVars);
 
 /**
  * Global configuration object loaded from environment variables.
@@ -112,8 +136,8 @@ export const config: Config = {
   autoRenderCode: yn(process.env.MCP_PRINTER_AUTO_RENDER_CODE, { default: DEFAULT_AUTO_RENDER_CODE }),
   enableManagement: yn(process.env.MCP_PRINTER_ENABLE_MANAGEMENT, { default: DEFAULT_ENABLE_MANAGEMENT }),
   fallbackOnRenderError: yn(process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR, { default: DEFAULT_FALLBACK_ON_RENDER_ERROR }),
-  // Merge default paths with user-provided paths
-  allowedPaths: [...defaultAllowedPaths, ...userAllowedPaths],
+  // Use user-provided paths if set, otherwise use safe default directories
+  allowedPaths: hasUserPaths ? userAllowedPaths : [...defaultAllowedPaths],
   deniedPaths: [...defaultDeniedPaths, ...userDeniedPaths],
   maxCopies: parseInt(process.env.MCP_PRINTER_MAX_COPIES || String(DEFAULT_MAX_COPIES), 10),
   code: {
@@ -125,3 +149,16 @@ export const config: Config = {
   }
 };
 
+/**
+ * Expands environment variables in a path string.
+ * Supports $HOME, ${HOME}, and ~ expansion.
+ * 
+ * @param path - Path that may contain environment variables
+ * @returns Path with environment variables expanded
+ */
+function expandEnvVars(path: string): string {
+  return path
+    .replace(/^~/, homeDir)            // Expand ~ at the start
+    .replace(/\$HOME/g, homeDir)       // Expand $HOME
+    .replace(/\$\{HOME\}/g, homeDir);  // Expand ${HOME}
+}

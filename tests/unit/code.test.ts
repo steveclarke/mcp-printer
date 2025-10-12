@@ -3,8 +3,39 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getLanguageFromExtension, fixMultilineSpans, renderCodeToPdf } from '../../src/renderers/code.js';
 import { unlinkSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+// Mock config to allow access to test directory
+vi.mock('../../src/config.js', () => {
+  const { dirname, join } = require('path');
+  const { fileURLToPath } = require('url');
+  const testDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+  
+  return {
+    config: {
+      allowedPaths: [testDir],
+      deniedPaths: [],
+      autoRenderCode: true,
+      chromePath: '',
+      code: {
+        excludeExtensions: [],
+        colorScheme: 'atom-one-light',
+        enableLineNumbers: true,
+        fontSize: '10pt',
+        lineSpacing: '1.5',
+      },
+    },
+    MARKDOWN_EXTENSIONS: ['md', 'markdown'],
+  };
+});
+
+import { getLanguageFromExtension, fixMultilineSpans, renderCodeToPdf } from '../../src/renderers/code.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const testDir = join(__dirname, '..');
 
 describe('getLanguageFromExtension', () => {
   it('should map common extensions to highlight.js language names', () => {

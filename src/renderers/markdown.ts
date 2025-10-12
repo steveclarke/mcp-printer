@@ -6,7 +6,8 @@
 import { mkdtempSync, unlinkSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { checkDependency, validateFilePath, convertHtmlToPdf } from "../utils.js";
+import { checkDependency, convertHtmlToPdf } from "../utils.js";
+import { validateFilePath } from "../file-security.js";
 import { execa } from "execa";
 
 /**

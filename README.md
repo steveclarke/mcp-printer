@@ -48,7 +48,7 @@ Add to your MCP configuration file (e.g., `~/.cursor/mcp.json` for Cursor):
 
 That's it! The package will be automatically downloaded from npm on first use.
 
-> **⚠️ Security:** This server allows AI assistants to print files from within allowed directories. Only use with trusted AI assistants on your local machine. The server attempts to block common sensitive directories (`.ssh`, `.aws`, etc.) by default, but this is not exhaustive. Configure additional restrictions as needed. See [Security](#security) for details.
+> **⚠️ Security:** This server allows AI assistants to print files from safe directories (`~/Documents`, `~/Downloads`, `~/Desktop` by default). Dotfiles and hidden directories are always blocked to protect credentials. Only use with trusted AI assistants on your local machine. See [Security](#security) for configuration options.
 
 ## Configuration
 
@@ -63,8 +63,8 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_AUTO_RENDER_MARKDOWN` | `false` | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`) |
 | `MCP_PRINTER_AUTO_RENDER_CODE` | `true` | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`) |
 | `MCP_PRINTER_ENABLE_MANAGEMENT` | `false` | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` |
-| `MCP_PRINTER_ALLOWED_PATHS` | _(home directory)_ | Colon-separated paths allowed for printing. **Merged with** home directory default (e.g., `"/mnt/shared:/opt/documents"`) |
-| `MCP_PRINTER_DENIED_PATHS` | _(sensitive dirs)_ | Colon-separated paths denied for printing. **Merged with** defaults like `.ssh`, `.aws`, etc. (e.g., `"/home/user/private"`) |
+| `MCP_PRINTER_ALLOWED_PATHS` | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** safe directory defaults when set (e.g., `"$HOME/Documents:$HOME/src"`) |
+| `MCP_PRINTER_DENIED_PATHS` | _(system dirs)_ | Colon-separated paths denied for printing. **Merged with** system directory defaults like `/etc`, `/var`, etc. (e.g., `"/home/user/private"`) |
 | `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false` | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead |
 | `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering (e.g., `"exe,bin,so"`) - only applies when code rendering is enabled |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
@@ -423,34 +423,81 @@ MCP Printer includes multiple security protections to prevent unauthorized file 
 
 ### File Access Control
 
-By default, the server only allows printing files within your home directory and blocks access to well-known sensitive subdirectories:
+The server uses a secure-by-default approach with multiple layers of protection:
 
-**Default Allowed:**
-- All files under your home directory (`~`)
+#### Default Safe Directories
 
-**Default Blocked:**
+By default, printing is only allowed from these safe directories:
+- `~/Documents`
+- `~/Downloads`
+- `~/Desktop`
+
+This restrictive default prevents accidental exposure of credentials, source code, or sensitive configuration files while covering the most common use cases.
+
+#### Universal Dotfile/Dotdir Blocking
+
+**All dotfiles and hidden directories are blocked** from printing, with no way to override. This prevents access to:
 - `~/.ssh` (SSH keys)
 - `~/.gnupg` (GPG keys)
 - `~/.aws` (AWS credentials)
-- `~/.config/gcloud` (Google Cloud credentials)
-- Any files named `.env*` (environment variables)
-- System directories: `/etc`, `/var`, `/root`, `/sys`, `/proc`, `/private/etc`, `/private/var`
+- `~/.config` (application configurations)
+- `.env` files (environment variables)
+- Any file or directory starting with `.` (except `.` and `..`)
+
+This rule applies even if the path is within an allowed directory or specified via symlink. For example:
+- ❌ `~/Documents/.secrets.txt` (blocked - dotfile)
+- ❌ `~/Documents/link` → `~/.ssh/id_rsa` (blocked - resolves to dotfile)
+- ✅ `~/Documents/report.pdf` (allowed)
+
+#### System Directory Protection
+
+System directories are always blocked regardless of configuration:
+- `/etc`, `/var`, `/root`, `/sys`, `/proc`
+- `/private/etc`, `/private/var` (macOS)
 
 ### Custom Security Configuration
 
-You can add custom allowed or denied paths using environment variables. Your custom paths are **merged with** the defaults (not replaced), so you never lose the built-in protections.
+You can configure additional allowed paths for specific workflows using environment variables.
 
-**Example:**
+**Important:** When you set `MCP_PRINTER_ALLOWED_PATHS`, it **completely overrides** the safe directory defaults. You must re-specify them if you want to keep them.
+
+**Environment Variable Expansion:**
+
+The `MCP_PRINTER_ALLOWED_PATHS` and `MCP_PRINTER_DENIED_PATHS` variables support environment variable expansion:
+- `$HOME` or `${HOME}` expands to your home directory
+- `~` at the start of a path expands to your home directory
+
+**Examples:**
+
 ```json
+// Developer workflow - allow printing from source code directory
 "env": {
-  "MCP_PRINTER_ALLOWED_PATHS": "/mnt/shared:/opt/documents",
-  "MCP_PRINTER_DENIED_PATHS": "/home/user/private:/home/user/secrets"
+  "MCP_PRINTER_ALLOWED_PATHS": "$HOME/Documents:$HOME/Downloads:$HOME/Desktop:$HOME/src"
+}
+```
+
+```json
+// Shared workspace - print from external mount
+"env": {
+  "MCP_PRINTER_ALLOWED_PATHS": "$HOME/Documents:$HOME/Downloads:/mnt/shared"
+}
+```
+
+```json
+// Security-conscious - fully locked down (requires explicit configuration per use)
+"env": {
+  "MCP_PRINTER_ALLOWED_PATHS": ""
 }
 ```
 
 Use colon (`:`) to separate multiple paths, just like the Unix `PATH` variable.
 
-**Note:** Your custom paths are merged with the built-in defaults, so the default protections (home directory access and blocked sensitive directories) remain active.
+**Additional denied paths** can be specified and will be merged with system directory defaults:
+```json
+"env": {
+  "MCP_PRINTER_DENIED_PATHS": "/home/user/private:/home/user/secrets"
+}
+```
 
 ### Management Operations
 

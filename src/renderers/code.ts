@@ -27,7 +27,8 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import hljs from "highlight.js";
 import he from "he";
-import { validateFilePath, convertHtmlToPdf } from "../utils.js";
+import { convertHtmlToPdf } from "../utils.js";
+import { validateFilePath } from "../file-security.js";
 import { config } from "../config.js";
 
 /**

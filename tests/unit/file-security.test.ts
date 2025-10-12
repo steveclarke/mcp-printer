@@ -1,5 +1,5 @@
 /**
- * @fileoverview Unit tests for security validation
+ * @fileoverview Unit tests for file security validation
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -30,35 +30,35 @@ describe('validateFilePath', () => {
   });
 
   it('should allow files under home directory', async () => {
-    const { validateFilePath } = await import('../../src/utils.js');
+    const { validateFilePath } = await import('../../src/file-security.js');
     const homeDir = homedir();
     const testPath = join(homeDir, 'Documents', 'test.txt');
     
     expect(() => validateFilePath(testPath)).not.toThrow();
   });
 
-  it('should deny files in sensitive directories', async () => {
-    const { validateFilePath } = await import('../../src/utils.js');
+  it('should deny files in sensitive directories via dotfile blocking', async () => {
+    const { validateFilePath } = await import('../../src/file-security.js');
     const homeDir = homedir();
     
-    // Test that denied paths are blocked
-    expect(() => validateFilePath(join(homeDir, '.ssh', 'id_rsa'))).toThrow(/restricted directory/);
-    expect(() => validateFilePath(join(homeDir, '.gnupg', 'private-keys'))).toThrow(/restricted directory/);
-    expect(() => validateFilePath(join(homeDir, '.aws', 'credentials'))).toThrow(/restricted directory/);
+    // Test that dotfiles/dotdirs are blocked (new universal rule)
+    expect(() => validateFilePath(join(homeDir, '.ssh', 'id_rsa'))).toThrow(/Dotfiles and hidden directories/);
+    expect(() => validateFilePath(join(homeDir, '.gnupg', 'private-keys'))).toThrow(/Dotfiles and hidden directories/);
+    expect(() => validateFilePath(join(homeDir, '.aws', 'credentials'))).toThrow(/Dotfiles and hidden directories/);
   });
 
-  it('should deny all .env files anywhere', async () => {
-    const { validateFilePath } = await import('../../src/utils.js');
+  it('should deny all .env files anywhere via dotfile blocking', async () => {
+    const { validateFilePath } = await import('../../src/file-security.js');
     const homeDir = homedir();
     
-    // Test that all .env variants are blocked
-    expect(() => validateFilePath(join(homeDir, 'projects', '.env'))).toThrow(/Environment files.*blocked/);
-    expect(() => validateFilePath(join(homeDir, 'projects', '.env.local'))).toThrow(/Environment files.*blocked/);
-    expect(() => validateFilePath(join(homeDir, 'projects', '.env.production'))).toThrow(/Environment files.*blocked/);
+    // Test that all .env variants are blocked by dotfile rule
+    expect(() => validateFilePath(join(homeDir, 'projects', '.env'))).toThrow(/Dotfiles and hidden directories/);
+    expect(() => validateFilePath(join(homeDir, 'projects', '.env.local'))).toThrow(/Dotfiles and hidden directories/);
+    expect(() => validateFilePath(join(homeDir, 'projects', '.env.production'))).toThrow(/Dotfiles and hidden directories/);
   });
 
   it('should deny files in system directories', async () => {
-    const { validateFilePath } = await import('../../src/utils.js');
+    const { validateFilePath } = await import('../../src/file-security.js');
     
     // Test that system directories are blocked
     expect(() => validateFilePath('/etc/passwd')).toThrow(/Access denied/);
@@ -75,7 +75,7 @@ describe('validateFilePath', () => {
       },
     }));
 
-    const { validateFilePath } = await import('../../src/utils.js');
+    const { validateFilePath } = await import('../../src/file-security.js');
     
     try {
       validateFilePath('/tmp/test.txt');
@@ -87,7 +87,7 @@ describe('validateFilePath', () => {
   });
 
   it('should deny subdirectories of denied paths', async () => {
-    const { validateFilePath } = await import('../../src/utils.js');
+    const { validateFilePath } = await import('../../src/file-security.js');
     const homeDir = homedir();
     
     // Subdirectories of denied paths should be denied

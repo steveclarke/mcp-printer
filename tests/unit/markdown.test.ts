@@ -1,8 +1,35 @@
-import { describe, it, expect } from 'vitest';
-import { renderMarkdownToPdf } from '../../src/renderers/markdown.js';
+import { describe, it, expect, vi } from 'vitest';
 import { existsSync, unlinkSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { homedir } from 'os';
+
+// Mock config to allow access to test directory
+vi.mock('../../src/config.js', () => {
+  const { dirname, join } = require('path');
+  const { fileURLToPath } = require('url');
+  const testDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+  
+  return {
+    config: {
+      allowedPaths: [testDir],
+      deniedPaths: [],
+      autoRenderMarkdown: true,
+      chromePath: '',
+    },
+    MARKDOWN_EXTENSIONS: ['md', 'markdown'],
+  };
+});
+
+import { renderMarkdownToPdf } from '../../src/renderers/markdown.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const testDir = join(__dirname, '..');
 
 describe('renderMarkdownToPdf', () => {
+
+
   it('should render a simple markdown file to PDF', async () => {
     // Create a simple test file in the test fixtures directory
     const { writeFileSync } = await import('fs');

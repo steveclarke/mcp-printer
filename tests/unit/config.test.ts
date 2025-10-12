@@ -88,20 +88,25 @@ describe('config', () => {
     expect(emptyConfig.code.excludeExtensions).toEqual([]);
   });
 
-  it('should include home directory in allowedPaths by default', async () => {
+  it('should include safe directories in allowedPaths by default', async () => {
     delete process.env.MCP_PRINTER_ALLOWED_PATHS;
     const { config } = await import('../../src/config.js');
     const homeDir = homedir();
-    expect(config.allowedPaths).toContain(homeDir);
+    expect(config.allowedPaths).toContain(join(homeDir, 'Documents'));
+    expect(config.allowedPaths).toContain(join(homeDir, 'Downloads'));
+    expect(config.allowedPaths).toContain(join(homeDir, 'Desktop'));
+    expect(config.allowedPaths).not.toContain(homeDir); // Should NOT contain entire home dir
   });
 
-  it('should merge user-provided allowedPaths with defaults', async () => {
+  it('should override safe directories when user provides allowedPaths', async () => {
     process.env.MCP_PRINTER_ALLOWED_PATHS = '/custom/path:/another/path';
     const { config } = await import('../../src/config.js');
     const homeDir = homedir();
-    expect(config.allowedPaths).toContain(homeDir);
+    // User paths should completely replace defaults
     expect(config.allowedPaths).toContain('/custom/path');
     expect(config.allowedPaths).toContain('/another/path');
+    expect(config.allowedPaths).not.toContain(join(homeDir, 'Documents'));
+    expect(config.allowedPaths.length).toBe(2);
   });
 
   it('should include default denied paths', async () => {
@@ -177,6 +182,62 @@ describe('config', () => {
     expect(config.defaultOptions).toEqual(['landscape', 'sides=two-sided-long-edge', 'color=true']);
     expect(config.allowedPaths).toContain('/path/one');
     expect(config.allowedPaths).toContain('/path/two');
+  });
+
+  it('should expand $HOME in allowedPaths', async () => {
+    const homeDir = homedir();
+    process.env.MCP_PRINTER_ALLOWED_PATHS = '$HOME/Documents:$HOME/src';
+    
+    const { config } = await import('../../src/config.js');
+    
+    expect(config.allowedPaths).toContain(join(homeDir, 'Documents'));
+    expect(config.allowedPaths).toContain(join(homeDir, 'src'));
+    expect(config.allowedPaths).not.toContain('$HOME/Documents');
+  });
+
+  it('should expand ${HOME} in allowedPaths', async () => {
+    vi.resetModules();
+    const homeDir = homedir();
+    process.env.MCP_PRINTER_ALLOWED_PATHS = '${HOME}/Documents:${HOME}/projects';
+    
+    const { config } = await import('../../src/config.js');
+    
+    expect(config.allowedPaths).toContain(join(homeDir, 'Documents'));
+    expect(config.allowedPaths).toContain(join(homeDir, 'projects'));
+  });
+
+  it('should expand ~ in allowedPaths', async () => {
+    vi.resetModules();
+    const homeDir = homedir();
+    process.env.MCP_PRINTER_ALLOWED_PATHS = '~/Documents:~/src';
+    
+    const { config } = await import('../../src/config.js');
+    
+    expect(config.allowedPaths).toContain(join(homeDir, 'Documents'));
+    expect(config.allowedPaths).toContain(join(homeDir, 'src'));
+  });
+
+  it('should expand $HOME in deniedPaths', async () => {
+    vi.resetModules();
+    const homeDir = homedir();
+    process.env.MCP_PRINTER_DENIED_PATHS = '$HOME/private:$HOME/secrets';
+    
+    const { config } = await import('../../src/config.js');
+    
+    expect(config.deniedPaths).toContain(join(homeDir, 'private'));
+    expect(config.deniedPaths).toContain(join(homeDir, 'secrets'));
+  });
+
+  it('should handle mixed absolute and $HOME paths', async () => {
+    vi.resetModules();
+    const homeDir = homedir();
+    process.env.MCP_PRINTER_ALLOWED_PATHS = '/mnt/shared:$HOME/Documents:~/Downloads';
+    
+    const { config } = await import('../../src/config.js');
+    
+    expect(config.allowedPaths).toContain('/mnt/shared');
+    expect(config.allowedPaths).toContain(join(homeDir, 'Documents'));
+    expect(config.allowedPaths).toContain(join(homeDir, 'Downloads'));
   });
 });
 
