@@ -135,6 +135,7 @@ Print a file to a specified printer.
 - `color_scheme` (optional) - Syntax highlighting theme for code files (e.g., `github`, `monokai`, `atom-one-light`)
 - `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
 - `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
+- `force_render` (optional) - Force rendering to PDF regardless of config (boolean: `true`=always render, `false`=never render, `undefined`=use config). Applies to both markdown and code files.
 
 **Note:** The code rendering parameters (`line_numbers`, `color_scheme`, `font_size`, `line_spacing`) only apply when printing code files that are automatically rendered to PDF with syntax highlighting.
 
@@ -194,31 +195,8 @@ User: Make HP LaserJet my default printer
 AI: ✓ Set default printer to: HP_LaserJet_4001
 ```
 
-### `render_and_print_markdown`
-Render a markdown file to PDF and print it with proper formatting.
-
-**Requirements:**
-- `pandoc` - Install with `brew install pandoc`
-- Google Chrome or Chromium browser
-
-**Parameters:**
-- `file_path` (required) - Full path to markdown file
-- `printer` (optional) - Printer name
-- `copies` (optional) - Number of copies (default: 1)
-- `options` (optional) - CUPS options
-
-**Example:**
-```
-User: Render and print README.md
-AI: *converts markdown → HTML → PDF → prints*
-✓ Rendered and printed markdown file
-  Printer: HP_LaserJet_4001
-  Copies: 1
-  Source: /path/to/README.md
-```
-
-**Auto-rendering:**
-If you set `MCP_PRINTER_MARKDOWN_EXTENSIONS="md,markdown"` in your config, calling `print_file` on `.md` files will automatically render them to PDF first!
+**Auto-rendering markdown:**
+Set `MCP_PRINTER_MARKDOWN_EXTENSIONS="md,markdown"` in your config to automatically render markdown files to PDF when using `print_file`. You can also use the `force_render` parameter to override this behavior on a per-call basis.
 
 ## Available Prompts
 
@@ -281,10 +259,22 @@ Code files are automatically rendered with:
 ```
 User: Print all the markdown files in docs/
 AI: Let me do that for you...
-*prints setup.md*
-*prints guide.md*
-*prints reference.md*
+*prints setup.md (rendered to PDF)*
+*prints guide.md (rendered to PDF)*
+*prints reference.md (rendered to PDF)*
 ✓ Printed 3 files to HP_LaserJet_Pro
+```
+
+### Force Rendering
+
+```
+User: Print this .ts file without syntax highlighting
+AI: *prints with force_render=false*
+✓ File sent as plain text
+
+User: Print this README.md with formatting even though I don't have auto-render enabled
+AI: *prints with force_render=true*
+✓ Rendered markdown → PDF
 ```
 
 ### Print with Options
@@ -329,7 +319,7 @@ The server uses CUPS, which natively supports:
 - ✅ Plain text
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
-- ✅ Markdown (rendered to PDF with `render_and_print_markdown` or via `MCP_PRINTER_MARKDOWN_EXTENSIONS`)
+- ✅ Markdown (automatically rendered to PDF via `MCP_PRINTER_MARKDOWN_EXTENSIONS` or `force_render` parameter)
 - ✅ Code files (see [Code Rendering](#code-rendering) for details)
 
 Other document formats may need conversion to PDF first.
@@ -398,6 +388,8 @@ brew install pandoc
 # Chrome should be auto-detected, but you can specify the path:
 # Set MCP_PRINTER_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ```
+
+**Note:** You can use the `force_render` parameter in `print_file` to control whether markdown and code files are rendered to PDF on a per-call basis.
 
 ### Code not rendering with syntax highlighting
 1. Ensure Chrome/Chromium is installed (required for PDF generation)

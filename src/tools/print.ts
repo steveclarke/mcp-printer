@@ -31,10 +31,11 @@ export function registerPrintTools(server: McpServer) {
         line_numbers: z.boolean().optional().describe("Show line numbers when rendering code files (overrides global setting)"),
         color_scheme: z.string().optional().describe("Syntax highlighting color scheme for code files (e.g., 'github', 'monokai', 'atom-one-light')"),
         font_size: z.string().optional().describe("Font size for code files (e.g., '8pt', '10pt', '12pt')"),
-        line_spacing: z.string().optional().describe("Line spacing for code files (e.g., '1', '1.5', '2')")
+        line_spacing: z.string().optional().describe("Line spacing for code files (e.g., '1', '1.5', '2')"),
+        force_render: z.boolean().optional().describe("Force rendering to PDF regardless of config (true=always render, false=never render, undefined=use config). Applies to both markdown and code files.")
       }
     },
-    async ({ file_path, printer, copies = 1, options, line_numbers, color_scheme, font_size, line_spacing }) => {
+    async ({ file_path, printer, copies = 1, options, line_numbers, color_scheme, font_size, line_spacing, force_render }) => {
       // Validate file path security
       validateFilePath(file_path);
       
@@ -43,7 +44,12 @@ export function registerPrintTools(server: McpServer) {
       let renderType = "";
 
       // Check if file should be auto-rendered to PDF (markdown)
-      if (shouldRenderToPdf(file_path)) {
+      // Honor force_render: true=always render, false=never render, undefined=use config
+      const shouldRenderMarkdown = force_render !== undefined 
+        ? force_render && file_path.match(/\.(md|markdown)$/i)
+        : shouldRenderToPdf(file_path);
+
+      if (shouldRenderMarkdown) {
         try {
           renderedPdf = await renderMarkdownToPdf(file_path);
           actualFilePath = renderedPdf;
@@ -58,7 +64,8 @@ export function registerPrintTools(server: McpServer) {
         }
       }
       // Check if file should be rendered as code with syntax highlighting
-      else if (shouldRenderCode(file_path)) {
+      // Honor force_render: true=always render, false=never render, undefined=use config
+      else if (force_render !== undefined ? force_render : shouldRenderCode(file_path)) {
         try {
           renderedPdf = await renderCodeToPdf(file_path, line_numbers, color_scheme, font_size, line_spacing);
           actualFilePath = renderedPdf;

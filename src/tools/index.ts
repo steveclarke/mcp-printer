@@ -6,7 +6,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerPrinterTools } from "./printer.js";
 import { registerPrintTools } from "./print.js";
-import { registerRenderTools } from "./render.js";
 import { registerPrompts } from "./prompts.js";
 
 /**
@@ -20,6 +19,5 @@ import { registerPrompts } from "./prompts.js";
 export function registerAllTools(server: McpServer) {
   registerPrinterTools(server);
   registerPrintTools(server);
-  registerRenderTools(server);
   registerPrompts(server);
 }
