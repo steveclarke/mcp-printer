@@ -8,7 +8,7 @@ import { dirname, basename } from "path";
 import { findChrome } from "../utils.js";
 import { validateFilePath } from "../file-security.js";
 import { config } from "../config.js";
-import { Notebook, PreviewTheme, CodeBlockTheme, MermaidTheme } from "crossnote";
+import { Notebook } from "crossnote";
 
 /**
  * Renders a markdown file to PDF using crossnote.
@@ -34,10 +34,10 @@ export async function renderMarkdownToPdf(filePath: string): Promise<string> {
     const notebook = await Notebook.init({
       notebookPath,
       config: {
-        // Theme configuration from environment variables
-        previewTheme: `${config.markdown.theme}.css` as PreviewTheme,
-        codeBlockTheme: `${config.markdown.codeTheme}.css` as CodeBlockTheme,
-        mermaidTheme: config.markdown.mermaidTheme as MermaidTheme,
+        // Hardcoded themes optimized for printing (light background, clean styling)
+        previewTheme: 'github-light.css',
+        codeBlockTheme: 'github.css',
+        mermaidTheme: 'default',
         
         // Math rendering
         mathRenderingOption: 'KaTeX',

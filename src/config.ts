@@ -42,15 +42,6 @@ export interface Config {
     /** Line spacing for code rendering (e.g., "1.5") */
     lineSpacing: string;
   };
-  /** Markdown rendering configuration */
-  markdown: {
-    /** Overall document theme for markdown preview (without .css extension) */
-    theme: string;
-    /** Code block syntax highlighting theme within markdown (without .css extension) */
-    codeTheme: string;
-    /** Mermaid diagram theme */
-    mermaidTheme: string;
-  };
 }
 
 /**
@@ -75,9 +66,6 @@ const DEFAULT_CODE_COLOR_SCHEME = "atom-one-light";
 const DEFAULT_CODE_ENABLE_LINE_NUMBERS = true;
 const DEFAULT_CODE_FONT_SIZE = "10pt";
 const DEFAULT_CODE_LINE_SPACING = "1.5";
-const DEFAULT_MARKDOWN_THEME = "github-light";
-const DEFAULT_MARKDOWN_CODE_THEME = "github";
-const DEFAULT_MARKDOWN_MERMAID_THEME = "default";
 
 // Get home directory for security defaults
 const homeDir = homedir();
@@ -158,11 +146,6 @@ export const config: Config = {
     enableLineNumbers: yn(process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS, { default: DEFAULT_CODE_ENABLE_LINE_NUMBERS }),
     fontSize: process.env.MCP_PRINTER_CODE_FONT_SIZE || DEFAULT_CODE_FONT_SIZE,
     lineSpacing: process.env.MCP_PRINTER_CODE_LINE_SPACING || DEFAULT_CODE_LINE_SPACING,
-  },
-  markdown: {
-    theme: process.env.MCP_PRINTER_MARKDOWN_THEME || DEFAULT_MARKDOWN_THEME,
-    codeTheme: process.env.MCP_PRINTER_MARKDOWN_CODE_THEME || DEFAULT_MARKDOWN_CODE_THEME,
-    mermaidTheme: process.env.MCP_PRINTER_MARKDOWN_MERMAID_THEME || DEFAULT_MARKDOWN_MERMAID_THEME,
   }
 };
 

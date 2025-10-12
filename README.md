@@ -24,7 +24,8 @@ In the era of AI-assisted development, we're generating more documentation, spec
 ## Features
 
 - 📄 **Print files** - PDF, text, and other formats
-- 📝 **Render markdown** - Convert markdown to beautifully formatted PDFs before printing
+- 📝 **Render markdown** - Convert markdown to beautifully formatted PDFs
+- 📊 **Mermaid diagrams** - Flowcharts, sequence diagrams, and more render as visual graphics in markdown
 - 💻 **Syntax-highlighted code** - Automatically render code files with syntax highlighting, line numbers, and proper formatting
 - 🖨️ **List printers** - See all available printers and their status
 - 📋 **Manage queue** - View and cancel print jobs
@@ -332,6 +333,36 @@ The server uses CUPS, which natively supports:
 
 Other document formats may need conversion to PDF first.
 
+## Markdown Rendering
+
+Markdown files are rendered to beautifully formatted PDFs using [crossnote](https://github.com/shd101wyy/crossnote).
+
+### Features
+
+- ✨ **Beautiful styling** - Clean, modern GitHub-style theme optimized for printing
+- 📊 **Mermaid diagrams** - Flowcharts, sequence diagrams, class diagrams render as visual graphics
+- 🎨 **Syntax highlighting** - Code blocks within markdown are beautifully highlighted
+- ➕ **Math rendering** - KaTeX support for mathematical expressions
+- 📐 **Tables & formatting** - Professional table styling, blockquotes, and all standard markdown features
+- 🚫 **No Pandoc required** - Pure JavaScript rendering, works offline
+
+### Diagram Support
+
+Markdown rendering includes full support for:
+- **Mermaid** - Flowcharts, sequence diagrams, class diagrams, state diagrams, etc.
+- **PlantUML** - UML diagrams
+- **WaveDrom** - Digital timing diagrams  
+- **GraphViz** - Graph visualizations
+- **Vega & Vega-Lite** - Data visualizations
+
+All diagrams render as visual graphics in the PDF output, not code blocks.
+
+### Configuration
+
+- To enable/disable markdown rendering: Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN` to `"true"` or `"false"` (default: false)
+- To force rendering on a per-call basis: Use the `force_markdown_render` parameter in `print_file`
+- Rendering uses a hardcoded GitHub Light theme optimized for clean, printer-friendly output
+
 ## Code Rendering
 
 Code files are automatically rendered to PDF with syntax highlighting, line numbers, and proper formatting for optimal printing quality.
@@ -387,15 +418,17 @@ Ensure CUPS is running: `sudo cupsctl`
 ### "File format not supported"
 Some file formats need to be converted to PDF before printing. Export to PDF from the original application or use a conversion tool.
 
-### "pandoc not found" or "Chrome not found"
-For markdown rendering, install dependencies:
-```bash
-# Install pandoc
-brew install pandoc
-
-# Chrome should be auto-detected, but you can specify the path:
-# Set MCP_PRINTER_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+### "Chrome not found"
+Chrome/Chromium is required for PDF rendering (markdown and code files). It should be auto-detected, but you can specify the path:
+```json
+{
+  "env": {
+    "MCP_PRINTER_CHROME_PATH": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  }
+}
 ```
+
+Markdown rendering uses [crossnote](https://github.com/shd101wyy/crossnote) with bundled Chromium via Puppeteer, so no Pandoc installation is required!
 
 **Note:** You can use the `force_markdown_render` and `force_code_render` parameters in `print_file` to control rendering on a per-call basis.
 
@@ -607,9 +640,12 @@ Then reference it directly in your MCP config (without npx):
   - Linux: Install CUPS if not present (`sudo apt install cups` on Ubuntu/Debian)
   - **Windows is not currently supported** (contributions welcome!)
 - **Node.js** 22+
-- **Google Chrome or Chromium** - Required for rendering markdown and code to PDF (auto-detected)
-- **pandoc** - Optional, only needed for markdown rendering (`brew install pandoc`)
+- **Google Chrome or Chromium** - Required for code rendering (auto-detected)
+  - Markdown rendering uses crossnote with bundled Chromium (via Puppeteer) - no separate Chrome installation needed for markdown!
+  - You can use your system Chrome for both by setting `MCP_PRINTER_CHROME_PATH` 
 - Printers configured in your system
+
+**Note:** No Pandoc required! Markdown rendering uses [crossnote](https://github.com/shd101wyy/crossnote), a pure JavaScript solution.
 
 ## Contributing
 
