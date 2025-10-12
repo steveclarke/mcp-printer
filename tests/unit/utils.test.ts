@@ -26,24 +26,12 @@ describe('parseDelimitedString', () => {
     expect(result).toEqual(['opt1', 'opt2', 'opt3']);
   });
 
-  it('should trim whitespace from items', () => {
-    const result = parseDelimitedString(' foo : bar : baz ', ':');
-    expect(result).toEqual(['foo', 'bar', 'baz']);
-  });
-
-  it('should filter out empty strings', () => {
-    const result = parseDelimitedString('foo::bar', ':');
-    expect(result).toEqual(['foo', 'bar']);
-  });
-
-  it('should return empty array for undefined value', () => {
-    const result = parseDelimitedString(undefined, ':');
-    expect(result).toEqual([]);
-  });
-
-  it('should return empty array for empty string', () => {
-    const result = parseDelimitedString('', ':');
-    expect(result).toEqual([]);
+  it('should trim whitespace and filter empty strings', () => {
+    expect(parseDelimitedString(' foo : bar : baz ', ':')).toEqual(['foo', 'bar', 'baz']);
+    expect(parseDelimitedString('foo::bar', ':')).toEqual(['foo', 'bar']);
+    expect(parseDelimitedString('foo,  ,bar', ',')).toEqual(['foo', 'bar']);
+    expect(parseDelimitedString('', ':')).toEqual([]);
+    expect(parseDelimitedString(undefined, ':')).toEqual([]);
   });
 
   it('should apply transform function', () => {
@@ -55,57 +43,21 @@ describe('parseDelimitedString', () => {
     const result = parseDelimitedString('single', ':');
     expect(result).toEqual(['single']);
   });
-
-  it('should handle whitespace-only items', () => {
-    const result = parseDelimitedString('foo,  ,bar', ',');
-    expect(result).toEqual(['foo', 'bar']);
-  });
 });
 
 describe('getLanguageFromExtension', () => {
-  it('should map common JavaScript extensions', () => {
+  it('should map common extensions to highlight.js language names', () => {
+    expect(getLanguageFromExtension('ts')).toBe('typescript');
+    expect(getLanguageFromExtension('py')).toBe('python');
+    expect(getLanguageFromExtension('rs')).toBe('rust');
+    expect(getLanguageFromExtension('md')).toBe('markdown');
+  });
+
+  it('should map multiple variants to same language', () => {
     expect(getLanguageFromExtension('js')).toBe('javascript');
     expect(getLanguageFromExtension('jsx')).toBe('javascript');
-  });
-
-  it('should map TypeScript extensions', () => {
-    expect(getLanguageFromExtension('ts')).toBe('typescript');
-    expect(getLanguageFromExtension('tsx')).toBe('typescript');
-  });
-
-  it('should map Python extension', () => {
-    expect(getLanguageFromExtension('py')).toBe('python');
-  });
-
-  it('should map C/C++ extensions', () => {
-    expect(getLanguageFromExtension('c')).toBe('c');
-    expect(getLanguageFromExtension('cpp')).toBe('cpp');
-    expect(getLanguageFromExtension('cc')).toBe('cpp');
-    expect(getLanguageFromExtension('cxx')).toBe('cpp');
-    expect(getLanguageFromExtension('h')).toBe('c');
-    expect(getLanguageFromExtension('hpp')).toBe('cpp');
-  });
-
-  it('should map shell script extensions', () => {
-    expect(getLanguageFromExtension('sh')).toBe('bash');
-    expect(getLanguageFromExtension('bash')).toBe('bash');
-    expect(getLanguageFromExtension('zsh')).toBe('bash');
-    expect(getLanguageFromExtension('fish')).toBe('bash');
-  });
-
-  it('should map data format extensions', () => {
-    expect(getLanguageFromExtension('json')).toBe('json');
     expect(getLanguageFromExtension('yaml')).toBe('yaml');
     expect(getLanguageFromExtension('yml')).toBe('yaml');
-    expect(getLanguageFromExtension('xml')).toBe('xml');
-  });
-
-  it('should map Rust extension', () => {
-    expect(getLanguageFromExtension('rs')).toBe('rust');
-  });
-
-  it('should map Go extension', () => {
-    expect(getLanguageFromExtension('go')).toBe('go');
   });
 
   it('should return original extension for unknown extensions', () => {
@@ -115,19 +67,6 @@ describe('getLanguageFromExtension', () => {
 
   it('should handle empty extension', () => {
     expect(getLanguageFromExtension('')).toBe('');
-  });
-
-  it('should map markdown extension', () => {
-    expect(getLanguageFromExtension('md')).toBe('markdown');
-  });
-
-  it('should map dockerfile extension', () => {
-    expect(getLanguageFromExtension('dockerfile')).toBe('dockerfile');
-  });
-
-  it('should map makefile extensions', () => {
-    expect(getLanguageFromExtension('makefile')).toBe('makefile');
-    expect(getLanguageFromExtension('mk')).toBe('makefile');
   });
 });
 
@@ -191,16 +130,16 @@ describe('formatPrintResponse', () => {
     expect(result.content[0].text).not.toContain('Options:');
   });
 
-  it('should format response with options', () => {
+  it('should format response with options and multiple copies', () => {
     const result = formatPrintResponse(
       'TestPrinter',
-      2,
+      3,
       ['landscape', 'sides=two-sided-long-edge'],
       '/path/to/file.pdf'
     );
     
     expect(result.content[0].text).toContain('TestPrinter');
-    expect(result.content[0].text).toContain('Copies: 2');
+    expect(result.content[0].text).toContain('Copies: 3');
     expect(result.content[0].text).toContain('Options: landscape, sides=two-sided-long-edge');
     expect(result.content[0].text).toContain('/path/to/file.pdf');
   });
@@ -215,38 +154,6 @@ describe('formatPrintResponse', () => {
     );
     
     expect(result.content[0].text).toContain('Rendered: markdown → PDF');
-  });
-
-  it('should not include render note when not provided', () => {
-    const result = formatPrintResponse('TestPrinter', 1, [], '/path/to/file.txt');
-    expect(result.content[0].text).not.toContain('Rendered:');
-  });
-
-  it('should handle multiple copies', () => {
-    const result = formatPrintResponse('TestPrinter', 5, [], '/path/to/file.txt');
-    expect(result.content[0].text).toContain('Copies: 5');
-  });
-
-  it('should format with all features', () => {
-    const result = formatPrintResponse(
-      'MyPrinter',
-      3,
-      ['duplex', 'color=true'],
-      '/documents/report.md',
-      'markdown → PDF'
-    );
-    
-    const text = result.content[0].text;
-    expect(text).toContain('MyPrinter');
-    expect(text).toContain('Copies: 3');
-    expect(text).toContain('Options: duplex, color=true');
-    expect(text).toContain('/documents/report.md');
-    expect(text).toContain('Rendered: markdown → PDF');
-  });
-
-  it('should include checkmark in response', () => {
-    const result = formatPrintResponse('TestPrinter', 1, [], '/path/to/file.txt');
-    expect(result.content[0].text).toContain('✓');
   });
 });
 

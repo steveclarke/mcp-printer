@@ -19,112 +19,77 @@ describe('config', () => {
     process.env = originalEnv;
   });
 
-  it('should use default printer when not configured', async () => {
+  it('should load string configs from environment with defaults', async () => {
+    // Test default values
     delete process.env.MCP_PRINTER_DEFAULT_PRINTER;
-    const { config } = await import('../../src/config.js');
-    expect(config.defaultPrinter).toBe('');
-  });
-
-  it('should load default printer from environment', async () => {
-    process.env.MCP_PRINTER_DEFAULT_PRINTER = 'MyPrinter';
-    const { config } = await import('../../src/config.js');
-    expect(config.defaultPrinter).toBe('MyPrinter');
-  });
-
-  it('should default enableDuplex to false', async () => {
-    delete process.env.MCP_PRINTER_ENABLE_DUPLEX;
-    const { config } = await import('../../src/config.js');
-    expect(config.enableDuplex).toBe(false);
-  });
-
-  it('should parse enableDuplex from environment (true)', async () => {
-    process.env.MCP_PRINTER_ENABLE_DUPLEX = 'true';
-    const { config } = await import('../../src/config.js');
-    expect(config.enableDuplex).toBe(true);
-  });
-
-  it('should parse enableDuplex from environment (yes)', async () => {
-    process.env.MCP_PRINTER_ENABLE_DUPLEX = 'yes';
-    const { config } = await import('../../src/config.js');
-    expect(config.enableDuplex).toBe(true);
-  });
-
-  it('should parse enableDuplex from environment (1)', async () => {
-    process.env.MCP_PRINTER_ENABLE_DUPLEX = '1';
-    const { config } = await import('../../src/config.js');
-    expect(config.enableDuplex).toBe(true);
-  });
-
-  it('should parse enableDuplex from environment (false)', async () => {
-    process.env.MCP_PRINTER_ENABLE_DUPLEX = 'false';
-    const { config } = await import('../../src/config.js');
-    expect(config.enableDuplex).toBe(false);
-  });
-
-  it('should parse defaultOptions from space-delimited string', async () => {
-    process.env.MCP_PRINTER_DEFAULT_OPTIONS = 'landscape color=true';
-    const { config } = await import('../../src/config.js');
-    expect(config.defaultOptions).toEqual(['landscape', 'color=true']);
-  });
-
-  it('should handle empty defaultOptions', async () => {
-    delete process.env.MCP_PRINTER_DEFAULT_OPTIONS;
-    const { config } = await import('../../src/config.js');
-    expect(config.defaultOptions).toEqual([]);
-  });
-
-  it('should load chromePath from environment', async () => {
-    process.env.MCP_PRINTER_CHROME_PATH = '/custom/chrome/path';
-    const { config } = await import('../../src/config.js');
-    expect(config.chromePath).toBe('/custom/chrome/path');
-  });
-
-  it('should use empty chromePath by default', async () => {
     delete process.env.MCP_PRINTER_CHROME_PATH;
-    const { config } = await import('../../src/config.js');
-    expect(config.chromePath).toBe('');
+    const { config: defaultConfig } = await import('../../src/config.js');
+    expect(defaultConfig.defaultPrinter).toBe('');
+    expect(defaultConfig.chromePath).toBe('');
+    
+    vi.resetModules();
+    
+    // Test loading from environment
+    process.env.MCP_PRINTER_DEFAULT_PRINTER = 'MyPrinter';
+    process.env.MCP_PRINTER_CHROME_PATH = '/custom/chrome/path';
+    const { config: envConfig } = await import('../../src/config.js');
+    expect(envConfig.defaultPrinter).toBe('MyPrinter');
+    expect(envConfig.chromePath).toBe('/custom/chrome/path');
   });
 
-  it('should parse markdownExtensions from comma-delimited string', async () => {
-    process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS = 'md,markdown,mdown';
-    const { config } = await import('../../src/config.js');
-    expect(config.markdownExtensions).toEqual(['md', 'markdown', 'mdown']);
-  });
-
-  it('should lowercase markdownExtensions', async () => {
-    process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS = 'MD,Markdown';
-    const { config } = await import('../../src/config.js');
-    expect(config.markdownExtensions).toEqual(['md', 'markdown']);
-  });
-
-  it('should handle empty markdownExtensions', async () => {
-    delete process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS;
-    const { config } = await import('../../src/config.js');
-    expect(config.markdownExtensions).toEqual([]);
-  });
-
-  it('should default enableManagement to false', async () => {
+  it('should parse boolean configs from environment', async () => {
+    // Test defaults
+    delete process.env.MCP_PRINTER_ENABLE_DUPLEX;
     delete process.env.MCP_PRINTER_ENABLE_MANAGEMENT;
-    const { config } = await import('../../src/config.js');
-    expect(config.enableManagement).toBe(false);
-  });
-
-  it('should parse enableManagement from environment', async () => {
-    process.env.MCP_PRINTER_ENABLE_MANAGEMENT = 'true';
-    const { config } = await import('../../src/config.js');
-    expect(config.enableManagement).toBe(true);
-  });
-
-  it('should default fallbackOnRenderError to false', async () => {
     delete process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR;
-    const { config } = await import('../../src/config.js');
-    expect(config.fallbackOnRenderError).toBe(false);
+    const { config: defaultConfig } = await import('../../src/config.js');
+    expect(defaultConfig.enableDuplex).toBe(false);
+    expect(defaultConfig.enableManagement).toBe(false);
+    expect(defaultConfig.fallbackOnRenderError).toBe(false);
+    
+    vi.resetModules();
+    
+    // Test truthy values (true, yes, 1)
+    process.env.MCP_PRINTER_ENABLE_DUPLEX = 'true';
+    process.env.MCP_PRINTER_ENABLE_MANAGEMENT = 'yes';
+    process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR = '1';
+    const { config: truthyConfig } = await import('../../src/config.js');
+    expect(truthyConfig.enableDuplex).toBe(true);
+    expect(truthyConfig.enableManagement).toBe(true);
+    expect(truthyConfig.fallbackOnRenderError).toBe(true);
+    
+    vi.resetModules();
+    
+    // Test false value
+    process.env.MCP_PRINTER_ENABLE_DUPLEX = 'false';
+    const { config: falseConfig } = await import('../../src/config.js');
+    expect(falseConfig.enableDuplex).toBe(false);
   });
 
-  it('should parse fallbackOnRenderError from environment', async () => {
-    process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR = 'true';
+  it('should parse array configs with appropriate delimiters and lowercasing', async () => {
+    // Space-delimited array (defaultOptions)
+    process.env.MCP_PRINTER_DEFAULT_OPTIONS = 'landscape color=true';
+    // Comma-delimited arrays with lowercasing
+    process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS = 'MD,Markdown';
+    process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS = 'TXT,Log';
+    
     const { config } = await import('../../src/config.js');
-    expect(config.fallbackOnRenderError).toBe(true);
+    
+    expect(config.defaultOptions).toEqual(['landscape', 'color=true']);
+    expect(config.markdownExtensions).toEqual(['md', 'markdown']);
+    expect(config.code.excludeExtensions).toEqual(['txt', 'log']);
+    
+    vi.resetModules();
+    
+    // Test empty arrays
+    delete process.env.MCP_PRINTER_DEFAULT_OPTIONS;
+    delete process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS;
+    delete process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS;
+    
+    const { config: emptyConfig } = await import('../../src/config.js');
+    expect(emptyConfig.defaultOptions).toEqual([]);
+    expect(emptyConfig.markdownExtensions).toEqual([]);
+    expect(emptyConfig.code.excludeExtensions).toEqual([]);
   });
 
   it('should include home directory in allowedPaths by default', async () => {
@@ -161,105 +126,61 @@ describe('config', () => {
     expect(config.deniedPaths).toContain('/etc'); // Still includes defaults
   });
 
-  it('should default maxCopies to 10', async () => {
+  it('should parse numeric maxCopies config', async () => {
     delete process.env.MCP_PRINTER_MAX_COPIES;
-    const { config } = await import('../../src/config.js');
-    expect(config.maxCopies).toBe(10);
-  });
-
-  it('should parse maxCopies from environment', async () => {
+    const { config: defaultConfig } = await import('../../src/config.js');
+    expect(defaultConfig.maxCopies).toBe(10);
+    
+    vi.resetModules();
+    
     process.env.MCP_PRINTER_MAX_COPIES = '50';
-    const { config } = await import('../../src/config.js');
-    expect(config.maxCopies).toBe(50);
-  });
-
-  it('should parse maxCopies as 0 for unlimited', async () => {
+    const { config: customConfig } = await import('../../src/config.js');
+    expect(customConfig.maxCopies).toBe(50);
+    
+    vi.resetModules();
+    
     process.env.MCP_PRINTER_MAX_COPIES = '0';
-    const { config } = await import('../../src/config.js');
-    expect(config.maxCopies).toBe(0);
+    const { config: unlimitedConfig } = await import('../../src/config.js');
+    expect(unlimitedConfig.maxCopies).toBe(0);
   });
 
-  it('should parse code.excludeExtensions from comma-delimited string', async () => {
-    process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS = 'txt,log,bin';
-    const { config } = await import('../../src/config.js');
-    expect(config.code.excludeExtensions).toEqual(['txt', 'log', 'bin']);
-  });
-
-  it('should lowercase code.excludeExtensions', async () => {
-    process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS = 'TXT,Log';
-    const { config } = await import('../../src/config.js');
-    expect(config.code.excludeExtensions).toEqual(['txt', 'log']);
-  });
-
-  it('should default code.excludeExtensions to empty array', async () => {
-    delete process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS;
-    const { config } = await import('../../src/config.js');
-    expect(config.code.excludeExtensions).toEqual([]);
-  });
-
-  it('should default code.colorScheme to atom-one-light', async () => {
+  it('should load code rendering configs from environment with defaults', async () => {
+    // Test defaults
     delete process.env.MCP_PRINTER_CODE_COLOR_SCHEME;
-    const { config } = await import('../../src/config.js');
-    expect(config.code.colorScheme).toBe('atom-one-light');
-  });
-
-  it('should load code.colorScheme from environment', async () => {
-    process.env.MCP_PRINTER_CODE_COLOR_SCHEME = 'monokai';
-    const { config } = await import('../../src/config.js');
-    expect(config.code.colorScheme).toBe('monokai');
-  });
-
-  it('should default code.enableLineNumbers to true', async () => {
     delete process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS;
-    const { config } = await import('../../src/config.js');
-    expect(config.code.enableLineNumbers).toBe(true);
-  });
-
-  it('should parse code.enableLineNumbers from environment', async () => {
-    process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS = 'false';
-    const { config } = await import('../../src/config.js');
-    expect(config.code.enableLineNumbers).toBe(false);
-  });
-
-  it('should default code.fontSize to 10pt', async () => {
     delete process.env.MCP_PRINTER_CODE_FONT_SIZE;
-    const { config } = await import('../../src/config.js');
-    expect(config.code.fontSize).toBe('10pt');
-  });
-
-  it('should load code.fontSize from environment', async () => {
-    process.env.MCP_PRINTER_CODE_FONT_SIZE = '12pt';
-    const { config } = await import('../../src/config.js');
-    expect(config.code.fontSize).toBe('12pt');
-  });
-
-  it('should default code.lineSpacing to 1.5', async () => {
     delete process.env.MCP_PRINTER_CODE_LINE_SPACING;
-    const { config } = await import('../../src/config.js');
-    expect(config.code.lineSpacing).toBe('1.5');
-  });
-
-  it('should load code.lineSpacing from environment', async () => {
+    
+    const { config: defaultConfig } = await import('../../src/config.js');
+    expect(defaultConfig.code.colorScheme).toBe('atom-one-light');
+    expect(defaultConfig.code.enableLineNumbers).toBe(true);
+    expect(defaultConfig.code.fontSize).toBe('10pt');
+    expect(defaultConfig.code.lineSpacing).toBe('1.5');
+    
+    vi.resetModules();
+    
+    // Test loading from environment
+    process.env.MCP_PRINTER_CODE_COLOR_SCHEME = 'monokai';
+    process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS = 'false';
+    process.env.MCP_PRINTER_CODE_FONT_SIZE = '12pt';
     process.env.MCP_PRINTER_CODE_LINE_SPACING = '2.0';
-    const { config } = await import('../../src/config.js');
-    expect(config.code.lineSpacing).toBe('2.0');
+    
+    const { config: envConfig } = await import('../../src/config.js');
+    expect(envConfig.code.colorScheme).toBe('monokai');
+    expect(envConfig.code.enableLineNumbers).toBe(false);
+    expect(envConfig.code.fontSize).toBe('12pt');
+    expect(envConfig.code.lineSpacing).toBe('2.0');
   });
 
-  it('should handle multiple space-separated options', async () => {
+  it('should handle whitespace in delimited strings', async () => {
     process.env.MCP_PRINTER_DEFAULT_OPTIONS = '  landscape    sides=two-sided-long-edge   color=true  ';
-    const { config } = await import('../../src/config.js');
-    expect(config.defaultOptions).toEqual(['landscape', 'sides=two-sided-long-edge', 'color=true']);
-  });
-
-  it('should handle comma-separated markdownExtensions with spaces', async () => {
     process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS = ' md , markdown , mdown ';
-    const { config } = await import('../../src/config.js');
-    expect(config.markdownExtensions).toEqual(['md', 'markdown', 'mdown']);
-  });
-
-  it('should handle colon-separated paths with spaces', async () => {
     process.env.MCP_PRINTER_ALLOWED_PATHS = ' /path/one : /path/two ';
+    
     const { config } = await import('../../src/config.js');
+    
+    expect(config.defaultOptions).toEqual(['landscape', 'sides=two-sided-long-edge', 'color=true']);
+    expect(config.markdownExtensions).toEqual(['md', 'markdown', 'mdown']);
     expect(config.allowedPaths).toContain('/path/one');
     expect(config.allowedPaths).toContain('/path/two');
   });

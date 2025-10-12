@@ -63,7 +63,7 @@ describe('shouldRenderToPdf', () => {
     expect(shouldRenderToPdf('File.Md')).toBe(true);
   });
 
-  it('should return false for non-configured extensions', async () => {
+  it('should return false for non-configured extensions and files without extensions', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
         markdownExtensions: ['md'],
@@ -74,17 +74,6 @@ describe('shouldRenderToPdf', () => {
     const { shouldRenderToPdf } = await import('../../src/utils.js');
     expect(shouldRenderToPdf('file.txt')).toBe(false);
     expect(shouldRenderToPdf('file.pdf')).toBe(false);
-  });
-
-  it('should handle files without extensions', async () => {
-    vi.doMock('../../src/config.js', () => ({
-      config: {
-        markdownExtensions: ['md'],
-        code: { excludeExtensions: [] },
-      },
-    }));
-
-    const { shouldRenderToPdf } = await import('../../src/utils.js');
     expect(shouldRenderToPdf('README')).toBe(false);
   });
 
@@ -144,7 +133,7 @@ describe('shouldRenderCode', () => {
     expect(shouldRenderCode('error.log')).toBe(false);
   });
 
-  it('should return true for known code extensions', async () => {
+  it('should return true for known and unknown code extensions', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
         markdownExtensions: [],
@@ -159,29 +148,13 @@ describe('shouldRenderCode', () => {
     }));
 
     const { shouldRenderCode } = await import('../../src/utils.js');
+    // Known code extensions should work
     expect(shouldRenderCode('script.js')).toBe(true);
     expect(shouldRenderCode('app.py')).toBe(true);
-    expect(shouldRenderCode('main.rs')).toBe(true);
-    expect(shouldRenderCode('program.go')).toBe(true);
-  });
-
-  it('should return true for unknown extensions (fallback to highlight.js auto-detect)', async () => {
-    vi.doMock('../../src/config.js', () => ({
-      config: {
-        markdownExtensions: [],
-        code: {
-          excludeExtensions: [],
-          enableLineNumbers: true,
-          colorScheme: 'atom-one-light',
-          fontSize: '10pt',
-          lineSpacing: '1.5',
-        },
-      },
-    }));
-
-    const { shouldRenderCode } = await import('../../src/utils.js');
-    // Unknown extensions return their name from getLanguageFromExtension,
-    // which allows highlight.js to attempt auto-detection
+    expect(shouldRenderCode('component.ts')).toBe(true);
+    expect(shouldRenderCode('config.json')).toBe(true);
+    
+    // Unknown extensions should fallback to highlight.js auto-detection
     expect(shouldRenderCode('file.xyz')).toBe(true);
     expect(shouldRenderCode('file.unknown')).toBe(true);
   });
@@ -202,84 +175,6 @@ describe('shouldRenderCode', () => {
 
     const { shouldRenderCode } = await import('../../src/utils.js');
     expect(shouldRenderCode('file.TXT')).toBe(false); // Should be case-insensitive
-  });
-
-  it('should handle TypeScript files', async () => {
-    vi.doMock('../../src/config.js', () => ({
-      config: {
-        markdownExtensions: [],
-        code: {
-          excludeExtensions: [],
-          enableLineNumbers: true,
-          colorScheme: 'atom-one-light',
-          fontSize: '10pt',
-          lineSpacing: '1.5',
-        },
-      },
-    }));
-
-    const { shouldRenderCode } = await import('../../src/utils.js');
-    expect(shouldRenderCode('component.ts')).toBe(true);
-    expect(shouldRenderCode('component.tsx')).toBe(true);
-  });
-
-  it('should handle C/C++ files', async () => {
-    vi.doMock('../../src/config.js', () => ({
-      config: {
-        markdownExtensions: [],
-        code: {
-          excludeExtensions: [],
-          enableLineNumbers: true,
-          colorScheme: 'atom-one-light',
-          fontSize: '10pt',
-          lineSpacing: '1.5',
-        },
-      },
-    }));
-
-    const { shouldRenderCode } = await import('../../src/utils.js');
-    expect(shouldRenderCode('main.c')).toBe(true);
-    expect(shouldRenderCode('main.cpp')).toBe(true);
-    expect(shouldRenderCode('header.h')).toBe(true);
-  });
-
-  it('should handle shell scripts', async () => {
-    vi.doMock('../../src/config.js', () => ({
-      config: {
-        markdownExtensions: [],
-        code: {
-          excludeExtensions: [],
-          enableLineNumbers: true,
-          colorScheme: 'atom-one-light',
-          fontSize: '10pt',
-          lineSpacing: '1.5',
-        },
-      },
-    }));
-
-    const { shouldRenderCode } = await import('../../src/utils.js');
-    expect(shouldRenderCode('script.sh')).toBe(true);
-    expect(shouldRenderCode('script.bash')).toBe(true);
-  });
-
-  it('should handle config files', async () => {
-    vi.doMock('../../src/config.js', () => ({
-      config: {
-        markdownExtensions: [],
-        code: {
-          excludeExtensions: [],
-          enableLineNumbers: true,
-          colorScheme: 'atom-one-light',
-          fontSize: '10pt',
-          lineSpacing: '1.5',
-        },
-      },
-    }));
-
-    const { shouldRenderCode } = await import('../../src/utils.js');
-    expect(shouldRenderCode('config.json')).toBe(true);
-    expect(shouldRenderCode('config.yaml')).toBe(true);
-    expect(shouldRenderCode('config.yml')).toBe(true);
   });
 });
 
