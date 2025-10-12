@@ -340,6 +340,7 @@ Markdown files are rendered to beautifully formatted PDFs using [crossnote](http
 ### Features
 
 - ✨ **Beautiful styling** - Clean, modern GitHub-style theme optimized for printing
+- 🔢 **Automatic page numbers** - Every page shows "Page X / Y" at the bottom
 - 📊 **Mermaid diagrams** - Flowcharts, sequence diagrams, class diagrams render as visual graphics
 - 🎨 **Syntax highlighting** - Code blocks within markdown are beautifully highlighted
 - ➕ **Math rendering** - KaTeX support for mathematical expressions
@@ -362,6 +363,36 @@ All diagrams render as visual graphics in the PDF output, not code blocks.
 - To enable/disable markdown rendering: Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN` to `"true"` or `"false"` (default: false)
 - To force rendering on a per-call basis: Use the `force_markdown_render` parameter in `print_file`
 - Rendering uses a hardcoded GitHub Light theme optimized for clean, printer-friendly output
+- Page numbering is automatically added to all rendered PDFs (footer shows "Page X / Y")
+
+### Custom Page Numbering
+
+Page numbers are automatically added to the footer of every rendered markdown PDF. If you want to customize or disable page numbering for a specific file, you can add YAML front-matter:
+
+```markdown
+---
+chrome:
+  displayHeaderFooter: false
+---
+
+# Your Document
+
+Content without page numbers...
+```
+
+Or customize the footer template:
+
+```markdown
+---
+chrome:
+  displayHeaderFooter: true
+  footerTemplate: '<div style="font-size:10px; text-align:right; width:100%; padding-right:1cm; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">Page <span class="pageNumber"></span></div>'
+---
+
+# Your Document
+
+Content with custom page numbers...
+```
 
 ## Code Rendering
 
@@ -587,6 +618,27 @@ pnpm run build
 echo "Hello from MCP Printer Server!" > test.txt
 # Then ask AI to print test.txt
 ```
+
+### Testing Markdown Rendering
+
+The repository includes reference documents for testing markdown rendering:
+
+**Quick test (1 page):**
+```bash
+# Print markdown-test-short.md
+# Fast iteration during development
+# Tests: formatting, code blocks, Mermaid, tables, math, page numbers
+```
+
+**Comprehensive test (2-3 pages):**
+```bash
+# Print markdown-reference.md
+# Full feature verification
+# Tests: all text formatting, multiple diagram types, complex code blocks,
+#        blockquotes, nested lists, emoji, math equations, page numbering
+```
+
+Use these files to verify markdown rendering quality after making changes to the rendering pipeline.
 
 ### Running Locally in MCP
 
