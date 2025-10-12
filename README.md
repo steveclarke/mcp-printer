@@ -24,7 +24,8 @@ In the era of AI-assisted development, we're generating more documentation, spec
 ## Features
 
 - 📄 **Print files** - PDF, text, and other formats
-- 📝 **Render markdown** - Convert markdown to beautifully formatted PDFs before printing
+- 📝 **Render markdown** - Convert markdown to beautifully formatted PDFs
+- 📊 **Mermaid diagrams** - Flowcharts, sequence diagrams, and more render as visual graphics in markdown
 - 💻 **Syntax-highlighted code** - Automatically render code files with syntax highlighting, line numbers, and proper formatting
 - 🖨️ **List printers** - See all available printers and their status
 - 📋 **Manage queue** - View and cancel print jobs
@@ -48,6 +49,8 @@ Add to your MCP configuration file (e.g., `~/.cursor/mcp.json` for Cursor):
 
 That's it! The package will be automatically downloaded from npm on first use.
 
+> **📋 Requirements:** Google Chrome or Chromium is required for rendering markdown and code files to PDF. The server will auto-detect Chrome/Chromium installations on macOS/Linux. See [Requirements](#requirements) for details.
+
 > **⚠️ Security:** This server allows AI assistants to print files from safe directories (`~/Documents`, `~/Downloads`, `~/Desktop` by default). Dotfiles and hidden directories are always blocked to protect credentials. Only use with trusted AI assistants on your local machine. See [Security](#security) for configuration options.
 
 ## Configuration
@@ -60,7 +63,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_AUTO_DUPLEX` | `false` | Set to `"true"` to automatically print double-sided by default (can be overridden per-call) |
 | `MCP_PRINTER_DEFAULT_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
 | `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Path to Chrome/Chromium for PDF rendering (override if auto-detection fails) |
-| `MCP_PRINTER_AUTO_RENDER_MARKDOWN` | `false` | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`) |
+| `MCP_PRINTER_AUTO_RENDER_MARKDOWN` | `true` | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`) |
 | `MCP_PRINTER_AUTO_RENDER_CODE` | `true` | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`) |
 | `MCP_PRINTER_ENABLE_MANAGEMENT` | `false` | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` tools |
 | `MCP_PRINTER_ALLOWED_PATHS` | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** safe directory defaults when set (e.g., `"$HOME/Documents:$HOME/src"`) |
@@ -115,7 +118,7 @@ MCP_PRINTER_DEFAULT_PRINTER: HP_LaserJet_4001
 MCP_PRINTER_AUTO_DUPLEX: true
 MCP_PRINTER_DEFAULT_OPTIONS: (not set)
 MCP_PRINTER_CHROME_PATH: (auto-detected)
-MCP_PRINTER_AUTO_RENDER_MARKDOWN: false
+MCP_PRINTER_AUTO_RENDER_MARKDOWN: true
 MCP_PRINTER_AUTO_RENDER_CODE: true
 MCP_PRINTER_ENABLE_MANAGEMENT: false
 ```
@@ -204,7 +207,7 @@ AI: ✓ Set default printer to: HP_LaserJet_4001
 ```
 
 **Auto-rendering markdown:**
-Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN="true"` in your config to automatically render `.md` and `.markdown` files to PDF when using `print_file`. You can also use the `force_markdown_render` parameter to override this behavior on a per-call basis.
+Markdown files (`.md`, `.markdown`) are automatically rendered to beautiful PDFs by default. You can disable this by setting `MCP_PRINTER_AUTO_RENDER_MARKDOWN="false"`, or use the `force_markdown_render` parameter to override on a per-call basis.
 
 ## Available Prompts
 
@@ -327,10 +330,70 @@ The server uses CUPS, which natively supports:
 - ✅ Plain text
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
-- ✅ Markdown (automatically rendered to PDF when `MCP_PRINTER_AUTO_RENDER_MARKDOWN` is enabled, or via `force_markdown_render` parameter)
+- ✅ Markdown (automatically rendered to beautiful PDFs with page numbers, Mermaid diagrams, and syntax highlighting)
 - ✅ Code files (see [Code Rendering](#code-rendering) for details)
 
 Other document formats may need conversion to PDF first.
+
+## Markdown Rendering
+
+Markdown files are rendered to beautifully formatted PDFs using [crossnote](https://github.com/shd101wyy/crossnote).
+
+### Features
+
+- ✨ **Beautiful styling** - Clean, modern GitHub-style theme optimized for printing
+- 🔢 **Automatic page numbers** - Every page shows "Page X / Y" at the bottom
+- 📊 **Mermaid diagrams** - Flowcharts, sequence diagrams, class diagrams render as visual graphics
+- 🎨 **Syntax highlighting** - Code blocks within markdown are beautifully highlighted
+- ➕ **Math rendering** - KaTeX support for mathematical expressions
+- 📐 **Tables & formatting** - Professional table styling, blockquotes, and all standard markdown features
+
+### Diagram Support
+
+Markdown rendering includes full support for:
+- **Mermaid** - Flowcharts, sequence diagrams, class diagrams, state diagrams, etc.
+- **PlantUML** - UML diagrams
+- **WaveDrom** - Digital timing diagrams  
+- **GraphViz** - Graph visualizations
+- **Vega & Vega-Lite** - Data visualizations
+
+All diagrams render as visual graphics in the PDF output, not code blocks.
+
+### Configuration
+
+- To enable/disable markdown rendering: Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN` to `"true"` or `"false"` (default: true)
+- To force rendering on a per-call basis: Use the `force_markdown_render` parameter in `print_file`
+- Rendering uses a hardcoded GitHub Light theme optimized for clean, printer-friendly output
+- Page numbering is automatically added to all rendered PDFs (footer shows "Page X / Y")
+
+### Custom Page Numbering
+
+Page numbers are automatically added to the footer of every rendered markdown PDF. If you want to customize or disable page numbering for a specific file, you can add YAML front-matter:
+
+```markdown
+---
+chrome:
+  displayHeaderFooter: false
+---
+
+# Your Document
+
+Content without page numbers...
+```
+
+Or customize the footer template:
+
+```markdown
+---
+chrome:
+  displayHeaderFooter: true
+  footerTemplate: '<div style="font-size:10px; text-align:right; width:100%; padding-right:1cm; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">Page <span class="pageNumber"></span></div>'
+---
+
+# Your Document
+
+Content with custom page numbers...
+```
 
 ## Code Rendering
 
@@ -387,15 +450,17 @@ Ensure CUPS is running: `sudo cupsctl`
 ### "File format not supported"
 Some file formats need to be converted to PDF before printing. Export to PDF from the original application or use a conversion tool.
 
-### "pandoc not found" or "Chrome not found"
-For markdown rendering, install dependencies:
-```bash
-# Install pandoc
-brew install pandoc
-
-# Chrome should be auto-detected, but you can specify the path:
-# Set MCP_PRINTER_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+### "Chrome not found"
+Chrome/Chromium is required for PDF rendering (markdown and code files). It should be auto-detected, but you can specify the path:
+```json
+{
+  "env": {
+    "MCP_PRINTER_CHROME_PATH": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  }
+}
 ```
+
+Markdown rendering uses [crossnote](https://github.com/shd101wyy/crossnote) for PDF generation.
 
 **Note:** You can use the `force_markdown_render` and `force_code_render` parameters in `print_file` to control rendering on a per-call basis.
 
@@ -555,6 +620,27 @@ echo "Hello from MCP Printer Server!" > test.txt
 # Then ask AI to print test.txt
 ```
 
+### Testing Markdown Rendering
+
+The repository includes reference documents for testing markdown rendering:
+
+**Quick test (1 page):**
+```bash
+# Print markdown-test-short.md
+# Fast iteration during development
+# Tests: formatting, code blocks, Mermaid, tables, math, page numbers
+```
+
+**Comprehensive test (2-3 pages):**
+```bash
+# Print markdown-reference.md
+# Full feature verification
+# Tests: all text formatting, multiple diagram types, complex code blocks,
+#        blockquotes, nested lists, emoji, math equations, page numbering
+```
+
+Use these files to verify markdown rendering quality after making changes to the rendering pipeline.
+
 ### Running Locally in MCP
 
 Configure your MCP client to run from your local development directory:
@@ -607,8 +693,11 @@ Then reference it directly in your MCP config (without npx):
   - Linux: Install CUPS if not present (`sudo apt install cups` on Ubuntu/Debian)
   - **Windows is not currently supported** (contributions welcome!)
 - **Node.js** 22+
-- **Google Chrome or Chromium** - Required for rendering markdown and code to PDF (auto-detected)
-- **pandoc** - Optional, only needed for markdown rendering (`brew install pandoc`)
+- **Google Chrome or Chromium** - Required for both code and markdown PDF rendering (auto-detected)
+  - Both Chrome and Chromium work equally well (same browser engine)
+  - Auto-detection searches for: Chrome, Chromium, chromium-browser (Linux), Chrome Canary
+  - Linux users: `chromium` or `chromium-browser` are fully supported
+  - You can specify a custom path by setting `MCP_PRINTER_CHROME_PATH`
 - Printers configured in your system
 
 ## Contributing

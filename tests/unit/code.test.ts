@@ -118,14 +118,14 @@ describe('fixMultilineSpans', () => {
 
 describe('renderCodeToPdf', () => {
   it('should render a simple JavaScript file to PDF', async () => {
-    // Create a simple test file in the test fixtures directory
+    // Create a simple test file in the test tmp directory
     const { writeFileSync } = await import('fs');
     const { join, dirname } = await import('path');
     const { fileURLToPath } = await import('url');
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-code.js');
+    const testFile = join(__dirname, '../tmp/test-code.js');
     writeFileSync(testFile, 'const x = 5;\nconsole.log(x);', 'utf-8');
     
     try {
@@ -156,7 +156,7 @@ describe('renderCodeToPdf', () => {
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-code.py');
+    const testFile = join(__dirname, '../tmp/test-code.py');
     writeFileSync(testFile, 'def hello():\n    print("Hello")', 'utf-8');
     
     try {
@@ -179,7 +179,7 @@ describe('renderCodeToPdf', () => {
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-code.ts');
+    const testFile = join(__dirname, '../tmp/test-code.ts');
     writeFileSync(testFile, 'const y = 10;', 'utf-8');
     
     try {
@@ -207,7 +207,7 @@ describe('renderCodeToPdf', () => {
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-empty.js');
+    const testFile = join(__dirname, '../tmp/test-empty.js');
     writeFileSync(testFile, '', 'utf-8');
     
     try {
@@ -229,7 +229,7 @@ describe('renderCodeToPdf', () => {
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-special-chars.js');
+    const testFile = join(__dirname, '../tmp/test-special-chars.js');
     writeFileSync(testFile, 'const str = "Hello <world> & \"quotes\"";', 'utf-8');
     
     try {
