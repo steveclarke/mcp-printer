@@ -4,7 +4,7 @@
  */
 
 import { realpathSync } from "fs";
-import { resolve } from "path";
+import { resolve, sep } from "path";
 import { config } from "./config.js";
 
 /**
@@ -16,7 +16,7 @@ import { config } from "./config.js";
  * @returns True if path contains dotfile/dotdir
  */
 function pathContainsDotfile(filePath: string): boolean {
-  const components = filePath.split('/');
+  const components = filePath.split(sep);
   return components.some(component => 
     component.startsWith('.') && component !== '.' && component !== '..'
   );
@@ -58,7 +58,7 @@ export function validateFilePath(filePath: string): void {
   // Check if file or any of its parent directories match denied paths
   for (const deniedPath of config.deniedPaths) {
     const resolvedDeniedPath = resolve(deniedPath);
-    if (absolutePath.startsWith(resolvedDeniedPath + '/') || absolutePath === resolvedDeniedPath) {
+    if (absolutePath.startsWith(resolvedDeniedPath + sep) || absolutePath === resolvedDeniedPath) {
       throw new Error(
         `Access denied: File path "${filePath}" is in a restricted directory (${deniedPath}). ` +
         `This path is blocked for security reasons.`
@@ -70,7 +70,7 @@ export function validateFilePath(filePath: string): void {
   let isAllowed = false;
   for (const allowedPath of config.allowedPaths) {
     const resolvedAllowedPath = resolve(allowedPath);
-    if (absolutePath.startsWith(resolvedAllowedPath + '/') || absolutePath === resolvedAllowedPath) {
+    if (absolutePath.startsWith(resolvedAllowedPath + sep) || absolutePath === resolvedAllowedPath) {
       isAllowed = true;
       break;
     }
