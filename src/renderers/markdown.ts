@@ -24,9 +24,6 @@ export async function renderMarkdownToPdf(filePath: string): Promise<string> {
   // Check dependencies
   await checkDependency("pandoc", "pandoc");
   const chromePath = await findChrome();
-  if (!chromePath) {
-    throw new Error("Chrome not found. Install Google Chrome or set MCP_PRINTER_CHROME_PATH environment variable.");
-  }
 
   // Create secure temp directory
   const tmpDir = mkdtempSync(join(tmpdir(), 'mcp-printer-'));

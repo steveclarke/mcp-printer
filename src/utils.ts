@@ -146,9 +146,10 @@ export async function checkDependency(command: string, name: string): Promise<vo
  * First checks the MCP_PRINTER_CHROME_PATH environment variable,
  * then searches common macOS and Linux installation paths.
  * 
- * @returns Path to Chrome/Chromium executable, or null if not found
+ * @returns Path to Chrome/Chromium executable
+ * @throws {Error} If Chrome is not found
  */
-export async function findChrome(): Promise<string | null> {
+export async function findChrome(): Promise<string> {
   // Check environment variable first
   if (config.chromePath) {
     if (await fileExists(config.chromePath)) {
@@ -185,7 +186,7 @@ export async function findChrome(): Promise<string | null> {
     }
   }
 
-  return null;
+  throw new Error("Chrome not found. Install Google Chrome or set MCP_PRINTER_CHROME_PATH environment variable.");
 }
 
 /**

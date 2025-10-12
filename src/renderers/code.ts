@@ -35,9 +35,6 @@ export async function renderCodeToPdf(filePath: string, lineNumbers?: boolean, c
   validateFilePath(filePath);
   
   const chromePath = await findChrome();
-  if (!chromePath) {
-    throw new Error("Chrome not found. Install Google Chrome or set MCP_PRINTER_CHROME_PATH environment variable.");
-  }
 
   // Read source code file
   const sourceCode = readFileSync(filePath, 'utf-8');
