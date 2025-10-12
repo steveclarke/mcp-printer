@@ -215,6 +215,12 @@ Print a file to a specified printer.
 - `printer` (optional) - Printer name
 - `copies` (optional) - Number of copies (default: 1)
 - `options` (optional) - CUPS options like `landscape`, `sides=two-sided-long-edge`
+- `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
+- `color_scheme` (optional) - Syntax highlighting theme for code files (e.g., `github`, `monokai`, `atom-one-light`)
+- `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
+- `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
+
+**Note:** The code rendering parameters (`line_numbers`, `color_scheme`, `font_size`, `line_spacing`) only apply when printing code files that are automatically rendered to PDF with syntax highlighting.
 
 **Example:**
 ```

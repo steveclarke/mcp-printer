@@ -23,10 +23,14 @@ const __dirname = dirname(__filename);
  * Supports configurable color schemes, line numbers, font size, and line spacing.
  * 
  * @param filePath - Path to the source code file to render
+ * @param lineNumbers - Optional override for line numbers display; falls back to config if not provided
+ * @param colorScheme - Optional override for syntax highlighting color scheme; falls back to config if not provided
+ * @param fontSize - Optional override for font size; falls back to config if not provided
+ * @param lineSpacing - Optional override for line spacing; falls back to config if not provided
  * @returns Path to the generated temporary PDF file
  * @throws {Error} If Chrome is not found or PDF generation fails
  */
-export async function renderCodeToPdf(filePath: string): Promise<string> {
+export async function renderCodeToPdf(filePath: string, lineNumbers?: boolean, colorScheme?: string, fontSize?: string, lineSpacing?: string): Promise<string> {
   // Validate file path security
   validateFilePath(filePath);
   
@@ -62,7 +66,10 @@ export async function renderCodeToPdf(filePath: string): Promise<string> {
   let tableRows = "";
   const lines = highlightedCode.split("\n");
   
-  if (config.code.enableLineNumbers) {
+  // Use parameter if provided, otherwise fall back to global config
+  const showLineNumbers = lineNumbers ?? config.code.enableLineNumbers;
+  
+  if (showLineNumbers) {
     tableRows = lines
       .map(line => line || "&nbsp;")
       .map((line, i) => `<tr><td class="line-number">${i + 1}</td><td class="line-text">${line}</td></tr>`)
@@ -75,18 +82,20 @@ export async function renderCodeToPdf(filePath: string): Promise<string> {
   }
   
   // Get color scheme CSS
+  // Use parameter if provided, otherwise fall back to global config
+  const selectedColorScheme = colorScheme ?? config.code.colorScheme;
   let colorSchemeCSS = "";
   try {
     // Find highlight.js styles directory (node_modules relative to this module)
     const stylesDir = join(__dirname, '../../node_modules/highlight.js/styles');
-    const themeFileName = config.code.colorScheme + '.css';
+    const themeFileName = selectedColorScheme + '.css';
     const themePath = join(stylesDir, themeFileName);
     
     try {
       colorSchemeCSS = readFileSync(themePath, 'utf-8');
     } catch {
       // Try .min.css version
-      const minThemePath = join(stylesDir, `${config.code.colorScheme}.min.css`);
+      const minThemePath = join(stylesDir, `${selectedColorScheme}.min.css`);
       colorSchemeCSS = readFileSync(minThemePath, 'utf-8');
     }
   } catch (error) {
@@ -130,8 +139,8 @@ export async function renderCodeToPdf(filePath: string): Promise<string> {
       margin: 0;
       padding: 0;
       font-family: Menlo, Monaco, 'Courier New', monospace;
-      font-size: ${config.code.fontSize};
-      line-height: ${config.code.lineSpacing}em;
+      font-size: ${fontSize ?? config.code.fontSize};
+      line-height: ${lineSpacing ?? config.code.lineSpacing}em;
     }
     
     table {

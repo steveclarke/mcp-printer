@@ -28,10 +28,14 @@ export function registerPrintTools(server: McpServer) {
         file_path: z.string().describe("Full path to the file to print"),
         printer: z.string().optional().describe("Printer name (use list_printers to see available printers). Optional if default printer is set."),
         copies: z.number().optional().default(1).describe("Number of copies to print (default: 1)"),
-        options: z.string().optional().describe("Additional CUPS options (e.g., 'landscape', 'sides=two-sided-long-edge')")
+        options: z.string().optional().describe("Additional CUPS options (e.g., 'landscape', 'sides=two-sided-long-edge')"),
+        line_numbers: z.boolean().optional().describe("Show line numbers when rendering code files (overrides global setting)"),
+        color_scheme: z.string().optional().describe("Syntax highlighting color scheme for code files (e.g., 'github', 'monokai', 'atom-one-light')"),
+        font_size: z.string().optional().describe("Font size for code files (e.g., '8pt', '10pt', '12pt')"),
+        line_spacing: z.string().optional().describe("Line spacing for code files (e.g., '1', '1.5', '2')")
       }
     },
-    async ({ file_path, printer, copies = 1, options }) => {
+    async ({ file_path, printer, copies = 1, options, line_numbers, color_scheme, font_size, line_spacing }) => {
       // Validate file path security
       validateFilePath(file_path);
       
@@ -57,7 +61,7 @@ export function registerPrintTools(server: McpServer) {
       // Check if file should be rendered as code with syntax highlighting
       else if (shouldRenderCode(file_path)) {
         try {
-          renderedPdf = await renderCodeToPdf(file_path);
+          renderedPdf = await renderCodeToPdf(file_path, line_numbers, color_scheme, font_size, line_spacing);
           actualFilePath = renderedPdf;
           renderType = "code → PDF (syntax highlighted)";
         } catch (error) {
