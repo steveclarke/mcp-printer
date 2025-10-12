@@ -9,7 +9,7 @@ import { unlinkSync } from "fs";
 import { shouldRenderToPdf, executePrintJob, formatPrintResponse } from "../utils.js";
 import { validateFilePath } from "../file-security.js";
 import { config, MARKDOWN_EXTENSIONS } from "../config.js";
-import { renderMarkdownToPdf } from "../renderers/markdown.js";
+import { renderMarkdownToPdfWithCrossnote } from "../renderers/markdown.js";
 import { renderCodeToPdf, shouldRenderCode } from "../renderers/code.js";
 
 /**
@@ -53,9 +53,9 @@ export function registerPrintTools(server: McpServer) {
 
       if (shouldRenderMarkdown) {
         try {
-          renderedPdf = await renderMarkdownToPdf(file_path);
+          renderedPdf = await renderMarkdownToPdfWithCrossnote(file_path);
           actualFilePath = renderedPdf;
-          renderType = "markdown → PDF";
+          renderType = "markdown → PDF (crossnote)";
         } catch (error) {
           // If fallback is enabled, print original file; otherwise throw error
           if (config.fallbackOnRenderError) {
