@@ -38,14 +38,6 @@ export function registerPrintTools(server: McpServer) {
       // Validate file path security
       validateFilePath(file_path);
       
-      // Validate copy count against configured maximum
-      if (config.maxCopies > 0 && copies > config.maxCopies) {
-        throw new Error(
-          `Copy count (${copies}) exceeds maximum allowed (${config.maxCopies}). ` +
-          `Set MCP_PRINTER_MAX_COPIES environment variable to increase or use 0 for unlimited.`
-        );
-      }
-      
       let actualFilePath = file_path;
       let renderedPdf: string | null = null;
       let renderType = "";
