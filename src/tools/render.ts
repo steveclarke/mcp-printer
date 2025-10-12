@@ -5,8 +5,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { execCommand } from "../utils.js";
-import { config } from "../config.js";
+import { executePrintJob, formatPrintResponse } from "../utils.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
 import { execa } from "execa";
 
@@ -30,67 +29,15 @@ export function registerRenderTools(server: McpServer) {
       }
     },
     async ({ file_path, printer, copies = 1, options }) => {
-      // Validate copy count against configured maximum
-      if (config.maxCopies > 0 && copies > config.maxCopies) {
-        throw new Error(
-          `Copy count (${copies}) exceeds maximum allowed (${config.maxCopies}). ` +
-          `Set MCP_PRINTER_MAX_COPIES environment variable to increase or use 0 for unlimited.`
-        );
-      }
-      
       let renderedPdf: string | null = null;
 
       try {
         // Render markdown to PDF
         renderedPdf = await renderMarkdownToPdf(file_path);
         
-        // Print the PDF
-        const targetPrinter = printer || config.defaultPrinter;
-        const args: string[] = [];
-        
-        if (targetPrinter) {
-          args.push('-P', targetPrinter);
-        }
-        
-        if (copies > 1) {
-          args.push(`-#${copies}`);
-        }
-        
-        let allOptions = [];
-        if (config.enableDuplex && !options?.includes("sides=")) {
-          allOptions.push("sides=two-sided-long-edge");
-        }
-        if (config.defaultOptions.length > 0) {
-          allOptions.push(...config.defaultOptions);
-        }
-        if (options) {
-          allOptions.push(...options.split(/\s+/));
-        }
-        
-        // Add each option with -o flag
-        for (const option of allOptions) {
-          args.push('-o', option);
-        }
-        
-        args.push(renderedPdf);
-        await execa('lpr', args);
-        
-        const printerName = targetPrinter || (await execCommand('lpstat', ['-d'])).split(": ")[1] || "default";
-        
-        let optionsInfo = "";
-        if (allOptions.length > 0) {
-          optionsInfo = `\n  Options: ${allOptions.join(", ")}`;
-        }
-        
-        return {
-          content: [{
-            type: "text",
-            text: `✓ Rendered and printed markdown file\n` +
-                  `  Printer: ${printerName}\n` +
-                  `  Copies: ${copies}${optionsInfo}\n` +
-                  `  Source: ${file_path}`,
-          }],
-        };
+        // Print the PDF using shared function
+        const { printerName, allOptions } = await executePrintJob(renderedPdf, printer, copies, options);
+        return formatPrintResponse(printerName, copies, allOptions, file_path, "markdown → PDF");
       } finally {
         // Clean up temp files
         if (renderedPdf) {

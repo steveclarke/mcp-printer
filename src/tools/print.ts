@@ -6,11 +6,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { unlinkSync } from "fs";
-import { execCommand, shouldRenderToPdf, shouldRenderCode, validateFilePath } from "../utils.js";
+import { shouldRenderToPdf, shouldRenderCode, validateFilePath, executePrintJob, formatPrintResponse } from "../utils.js";
 import { config } from "../config.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
 import { renderCodeToPdf } from "../renderers/code.js";
-import { execa } from "execa";
 
 /**
  * Registers the print_file tool with the MCP server.
@@ -83,73 +82,8 @@ export function registerPrintTools(server: McpServer) {
       }
 
       try {
-        const args: string[] = [];
-        
-        // Use configured default printer if none specified
-        const targetPrinter = printer || config.defaultPrinter;
-        if (targetPrinter) {
-          args.push('-P', targetPrinter);
-        }
-        
-        if (copies > 1) {
-          args.push(`-#${copies}`);
-        }
-        
-        // Build options with defaults
-        let allOptions = [];
-        
-        // Add default duplex if configured and not overridden
-        if (config.enableDuplex && !options?.includes("sides=")) {
-          allOptions.push("sides=two-sided-long-edge");
-        }
-        
-        // Add default options if configured
-        if (config.defaultOptions.length > 0) {
-          allOptions.push(...config.defaultOptions);
-        }
-        
-        // Add user-specified options (these override defaults, split by spaces)
-        if (options) {
-          allOptions.push(...options.split(/\s+/));
-        }
-        
-        // Add each option with -o flag
-        for (const option of allOptions) {
-          args.push('-o', option);
-        }
-        
-        // Add file path
-        args.push(actualFilePath);
-
-        await execa('lpr', args);
-        
-        // Determine the printer name used: prefer the specified targetPrinter, else
-        // get the system default printer via 'lpstat -d', else fallback to
-        // 'default'
-        const printerName = targetPrinter || (await execCommand('lpstat', ['-d'])).split(": ")[1] || "default";
-        
-        // Construct a string that lists all print options if any are specified.
-        // This will be displayed to inform the user about what options were used in
-        // the print job.
-        let optionsInfo = "";
-        if (allOptions.length > 0) {
-          optionsInfo = `\n  Options: ${allOptions.join(", ")}`;
-        }
-
-        // If a renderType is provided, note what kind of rendering (e.g.,
-        // "markdown", "code") was performed before printing.
-        const renderedNote = renderType ? `\n  Rendered: ${renderType}` : "";
-        
-        return {
-          content: [
-            {
-              type: "text",
-              text: `✓ File sent to printer: ${printerName}\n` +
-                    `  Copies: ${copies}${optionsInfo}\n` +
-                    `  File: ${file_path}${renderedNote}`,
-            },
-          ],
-        };
+        const { printerName, allOptions } = await executePrintJob(actualFilePath, printer, copies, options);
+        return formatPrintResponse(printerName, copies, allOptions, file_path, renderType);
       } finally {
         // Clean up rendered PDF if it was created
         if (renderedPdf) {

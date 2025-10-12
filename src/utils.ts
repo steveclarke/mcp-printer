@@ -323,3 +323,109 @@ export function fixMultilineSpans(text: string): string {
   }).join("\n");
 }
 
+/**
+ * Execute a print job with the given file and options.
+ * Handles copy validation, lpr argument building, and execution.
+ * 
+ * @param filePath - Path to the file to print
+ * @param printer - Optional printer name
+ * @param copies - Number of copies to print
+ * @param options - Optional CUPS options string
+ * @returns Object with printer name and formatted options
+ */
+export async function executePrintJob(
+  filePath: string,
+  printer?: string,
+  copies: number = 1,
+  options?: string
+): Promise<{ printerName: string; allOptions: string[] }> {
+  // Validate copy count against configured maximum
+  if (config.maxCopies > 0 && copies > config.maxCopies) {
+    throw new Error(
+      `Copy count (${copies}) exceeds maximum allowed (${config.maxCopies}). ` +
+      `Set MCP_PRINTER_MAX_COPIES environment variable to increase or use 0 for unlimited.`
+    );
+  }
+
+  const args: string[] = [];
+  
+  // Use configured default printer if none specified
+  const targetPrinter = printer || config.defaultPrinter;
+  if (targetPrinter) {
+    args.push('-P', targetPrinter);
+  }
+  
+  if (copies > 1) {
+    args.push(`-#${copies}`);
+  }
+  
+  // Build options with defaults
+  let allOptions = [];
+  
+  // Add default duplex if configured and not overridden
+  if (config.enableDuplex && !options?.includes("sides=")) {
+    allOptions.push("sides=two-sided-long-edge");
+  }
+  
+  // Add default options if configured
+  if (config.defaultOptions.length > 0) {
+    allOptions.push(...config.defaultOptions);
+  }
+  
+  // Add user-specified options (these override defaults, split by spaces)
+  if (options) {
+    allOptions.push(...options.split(/\s+/));
+  }
+  
+  // Add each option with -o flag
+  for (const option of allOptions) {
+    args.push('-o', option);
+  }
+  
+  // Add file path
+  args.push(filePath);
+
+  await execa('lpr', args);
+  
+  // Determine the printer name used
+  const printerName = targetPrinter || (await execCommand('lpstat', ['-d'])).split(": ")[1] || "default";
+  
+  return { printerName, allOptions };
+}
+
+/**
+ * Format a print job response message.
+ * 
+ * @param printerName - Name of the printer used
+ * @param copies - Number of copies printed
+ * @param allOptions - Array of print options used
+ * @param sourceFile - Original file path to display
+ * @param renderType - Optional rendering description (e.g., "markdown → PDF")
+ * @returns Formatted MCP response object
+ */
+export function formatPrintResponse(
+  printerName: string,
+  copies: number,
+  allOptions: string[],
+  sourceFile: string,
+  renderType?: string
+) {
+  let optionsInfo = "";
+  if (allOptions.length > 0) {
+    optionsInfo = `\n  Options: ${allOptions.join(", ")}`;
+  }
+
+  const renderedNote = renderType ? `\n  Rendered: ${renderType}` : "";
+  
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: `✓ File sent to printer: ${printerName}\n` +
+              `  Copies: ${copies}${optionsInfo}\n` +
+              `  File: ${sourceFile}${renderedNote}`,
+      },
+    ],
+  };
+}
+
