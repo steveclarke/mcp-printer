@@ -5,8 +5,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseDelimitedString,
-  getLanguageFromExtension,
-  fixMultilineSpans,
   formatPrintResponse,
 } from '../../src/utils.js';
 
@@ -42,79 +40,6 @@ describe('parseDelimitedString', () => {
   it('should handle single item', () => {
     const result = parseDelimitedString('single', ':');
     expect(result).toEqual(['single']);
-  });
-});
-
-describe('getLanguageFromExtension', () => {
-  it('should map common extensions to highlight.js language names', () => {
-    expect(getLanguageFromExtension('ts')).toBe('typescript');
-    expect(getLanguageFromExtension('py')).toBe('python');
-    expect(getLanguageFromExtension('rs')).toBe('rust');
-    expect(getLanguageFromExtension('md')).toBe('markdown');
-  });
-
-  it('should map multiple variants to same language', () => {
-    expect(getLanguageFromExtension('js')).toBe('javascript');
-    expect(getLanguageFromExtension('jsx')).toBe('javascript');
-    expect(getLanguageFromExtension('yaml')).toBe('yaml');
-    expect(getLanguageFromExtension('yml')).toBe('yaml');
-  });
-
-  it('should return original extension for unknown extensions', () => {
-    expect(getLanguageFromExtension('unknown')).toBe('unknown');
-    expect(getLanguageFromExtension('xyz')).toBe('xyz');
-  });
-
-  it('should handle empty extension', () => {
-    expect(getLanguageFromExtension('')).toBe('');
-  });
-});
-
-describe('fixMultilineSpans', () => {
-  it('should handle text without spans', () => {
-    const input = 'line1\nline2\nline3';
-    const result = fixMultilineSpans(input);
-    expect(result).toBe('line1\nline2\nline3');
-  });
-
-  it('should close and reopen spans across lines', () => {
-    const input = '<span class="hljs-keyword">const</span> foo\n<span class="hljs-string">bar</span>';
-    const result = fixMultilineSpans(input);
-    
-    // Each line should be self-contained
-    const lines = result.split('\n');
-    expect(lines[0]).toContain('const');
-    expect(lines[1]).toContain('bar');
-  });
-
-  it('should handle nested spans', () => {
-    const input = '<span class="outer"><span class="inner">text</span></span>';
-    const result = fixMultilineSpans(input);
-    expect(result).toContain('text');
-  });
-
-  it('should preserve span classes', () => {
-    const input = '<span class="hljs-keyword">keyword</span>\ncontinued';
-    const result = fixMultilineSpans(input);
-    expect(result).toContain('hljs-keyword');
-  });
-
-  it('should handle empty lines', () => {
-    const input = '<span class="test">line1</span>\n\n<span class="test">line3</span>';
-    const result = fixMultilineSpans(input);
-    const lines = result.split('\n');
-    expect(lines).toHaveLength(3);
-  });
-
-  it('should handle unclosed spans across multiple lines', () => {
-    const input = '<span class="cls1">line1\nline2\nline3</span>';
-    const result = fixMultilineSpans(input);
-    const lines = result.split('\n');
-    
-    // Each line should have span closed
-    expect(lines[0]).toContain('</span>');
-    expect(lines[1]).toContain('</span>');
-    expect(lines[2]).toContain('</span>');
   });
 });
 

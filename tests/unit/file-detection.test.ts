@@ -3,7 +3,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { shouldRenderToPdf, shouldRenderCode } from '../../src/utils.js';
+import { shouldRenderToPdf } from '../../src/utils.js';
+import { shouldRenderCode } from '../../src/renderers/code.js';
 
 // Mock the config module
 vi.mock('../../src/config.js', () => ({
@@ -122,7 +123,7 @@ describe('shouldRenderCode', () => {
       },
     }));
 
-    const { shouldRenderCode } = await import('../../src/utils.js');
+    const { shouldRenderCode } = await import('../../src/renderers/code.js');
     expect(shouldRenderCode('file.js')).toBe(false);
     expect(shouldRenderCode('file.py')).toBe(false);
   });
@@ -142,7 +143,7 @@ describe('shouldRenderCode', () => {
       },
     }));
 
-    const { shouldRenderCode } = await import('../../src/utils.js');
+    const { shouldRenderCode } = await import('../../src/renderers/code.js');
     expect(shouldRenderCode('file.txt')).toBe(false);
     expect(shouldRenderCode('error.log')).toBe(false);
   });
@@ -162,7 +163,7 @@ describe('shouldRenderCode', () => {
       },
     }));
 
-    const { shouldRenderCode } = await import('../../src/utils.js');
+    const { shouldRenderCode } = await import('../../src/renderers/code.js');
     // Known code extensions should work
     expect(shouldRenderCode('script.js')).toBe(true);
     expect(shouldRenderCode('app.py')).toBe(true);
@@ -189,7 +190,7 @@ describe('shouldRenderCode', () => {
       },
     }));
 
-    const { shouldRenderCode } = await import('../../src/utils.js');
+    const { shouldRenderCode } = await import('../../src/renderers/code.js');
     expect(shouldRenderCode('file.TXT')).toBe(false); // Should be case-insensitive
   });
 });

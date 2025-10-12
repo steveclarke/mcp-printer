@@ -3,10 +3,10 @@
  * Converts markdown files to PDF using pandoc and Chrome.
  */
 
-import { mkdtempSync, unlinkSync } from "fs";
+import { mkdtempSync, unlinkSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { checkDependency, findChrome, validateFilePath } from "../utils.js";
+import { checkDependency, validateFilePath, convertHtmlToPdf } from "../utils.js";
 import { execa } from "execa";
 
 /**
@@ -21,14 +21,12 @@ export async function renderMarkdownToPdf(filePath: string): Promise<string> {
   // Validate file path security
   validateFilePath(filePath);
   
-  // Check dependencies
+  // Check that pandoc is available
   await checkDependency("pandoc", "pandoc");
-  const chromePath = await findChrome();
 
-  // Create secure temp directory
-  const tmpDir = mkdtempSync(join(tmpdir(), 'mcp-printer-'));
+  // Create secure temp directory for pandoc output
+  const tmpDir = mkdtempSync(join(tmpdir(), 'mcp-printer-md-'));
   const tmpHtml = join(tmpDir, 'input.html');
-  const tmpPdf = join(tmpDir, 'output.pdf');
 
   try {
     // Convert markdown to HTML (with raw HTML disabled for security)
@@ -39,39 +37,25 @@ export async function renderMarkdownToPdf(filePath: string): Promise<string> {
       tmpHtml
     ]);
     
-    // Convert HTML to PDF with Chrome (with JavaScript disabled for security)
-    // Note: Chrome outputs success messages to stderr
-    try {
-      await execa(chromePath, [
-        '--headless',
-        '--disable-gpu',
-        '--disable-javascript',
-        `--print-to-pdf=${tmpPdf}`,
-        tmpHtml
-      ]);
-    } catch (error: any) {
-      // Chrome might output to stderr even on success, check if PDF was created
-      if (!error.stderr || !error.stderr.includes('written to file')) {
-        throw new Error(`Failed to render PDF: ${error.message}`);
-      }
-      // Success - Chrome wrote the PDF and reported to stderr
-    }
+    // Read the pandoc-generated HTML
+    const htmlContent = readFileSync(tmpHtml, 'utf-8');
     
-    // Clean up HTML file
+    // Clean up the pandoc temp file
     try {
       unlinkSync(tmpHtml);
     } catch {
       // Ignore cleanup errors
     }
-
-    return tmpPdf;
+    
+    // Convert HTML to PDF with Chrome (with JavaScript disabled for security)
+    return await convertHtmlToPdf(htmlContent, {
+      chromeFlags: ['--disable-javascript'],
+      tempDirPrefix: 'mcp-printer-md-'
+    });
   } catch (error) {
-    // Clean up temp directory on error
+    // Clean up temp file on error
     try {
       unlinkSync(tmpHtml);
-    } catch {}
-    try {
-      unlinkSync(tmpPdf);
     } catch {}
     throw error;
   }

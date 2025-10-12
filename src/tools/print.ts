@@ -6,10 +6,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { unlinkSync } from "fs";
-import { shouldRenderToPdf, shouldRenderCode, validateFilePath, executePrintJob, formatPrintResponse } from "../utils.js";
+import { shouldRenderToPdf, validateFilePath, executePrintJob, formatPrintResponse } from "../utils.js";
 import { config, MARKDOWN_EXTENSIONS } from "../config.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
-import { renderCodeToPdf } from "../renderers/code.js";
+import { renderCodeToPdf, shouldRenderCode } from "../renderers/code.js";
 
 /**
  * Registers the print_file tool with the MCP server.

@@ -1,0 +1,8 @@
+# Ignore all test files generated during test runs
+*.js
+*.ts
+*.py
+*.pdf
+
+# But keep the directory structure
+!.gitignore

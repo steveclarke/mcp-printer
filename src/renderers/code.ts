@@ -1,108 +1,240 @@
 /**
  * @fileoverview Code file renderer with syntax highlighting.
- * Converts source code files to PDF with syntax highlighting using highlight.js and Chrome.
+ * 
+ * This module converts source code files to print-ready PDFs through a multi-step pipeline:
+ * 
+ * 1. **Syntax Highlighting**: Uses highlight.js to analyze the source code and wrap tokens
+ *    (keywords, strings, comments, etc.) in <span> elements with CSS classes for coloring.
+ * 
+ * 2. **Multiline Span Fixes**: Ensures syntax highlighting spans don't break across line 
+ *    boundaries, which would interfere with line-by-line table rendering.
+ * 
+ * 3. **HTML Table Structure**: Builds an HTML table where each line of code is a table row.
+ *    Optionally adds line numbers in a separate column with configurable visibility.
+ * 
+ * 4. **CSS Styling**: Loads the selected color scheme from highlight.js styles directory
+ *    and applies print-optimized CSS (fonts, spacing, margins, page setup).
+ * 
+ * 5. **PDF Generation**: Uses Chrome headless to convert the styled HTML to PDF format,
+ *    which preserves syntax colors and formatting for printing.
+ * 
+ * The approach of manually building HTML structure (rather than using browser-focused 
+ * plugins) is necessary for server-side Node.js rendering without DOM APIs.
  */
 
-import { readFileSync, writeFileSync, mkdtempSync, unlinkSync } from "fs";
+import { readFileSync } from "fs";
 import { dirname, join } from "path";
-import { tmpdir } from "os";
 import { fileURLToPath } from "url";
 import hljs from "highlight.js";
 import he from "he";
-import { findChrome, getLanguageFromExtension, fixMultilineSpans, validateFilePath } from "../utils.js";
+import { validateFilePath, convertHtmlToPdf } from "../utils.js";
 import { config } from "../config.js";
-import { execa } from "execa";
 
-// Get the directory of the current module
+/**
+ * Determines if a file should be rendered with syntax highlighting.
+ * Checks autoRenderCode setting, code.excludeExtensions configuration,
+ * and whether highlight.js supports the file type.
+ * 
+ * @param filePath - Path to the file to check
+ * @returns True if the file should be syntax-highlighted, false otherwise
+ */
+export function shouldRenderCode(filePath: string): boolean {
+  // Master switch check
+  if (!config.autoRenderCode) {
+    return false;
+  }
+  
+  const ext = filePath.split('.').pop()?.toLowerCase() || "";
+  
+  // Check if extension is in the exclusion list
+  if (config.code.excludeExtensions.includes(ext)) return false;
+  
+  // Try to get language from extension - if highlight.js knows it, render it
+  const language = getLanguageFromExtension(filePath);
+  return language !== "";
+}
+
+// Get the directory of the current module for resolving relative paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Renders a source code file to PDF with syntax highlighting.
- * Uses highlight.js for syntax highlighting and Chrome for PDF generation.
- * Supports configurable color schemes, line numbers, font size, and line spacing.
+ * Maps file extensions to highlight.js language names.
  * 
- * @param filePath - Path to the source code file to render
- * @param lineNumbers - Optional override for line numbers display; falls back to config if not provided
- * @param colorScheme - Optional override for syntax highlighting color scheme; falls back to config if not provided
- * @param fontSize - Optional override for font size; falls back to config if not provided
- * @param lineSpacing - Optional override for line spacing; falls back to config if not provided
- * @returns Path to the generated temporary PDF file
- * @throws {Error} If Chrome is not found or PDF generation fails
+ * This explicit mapping is necessary because file extensions often don't match highlight.js
+ * language identifiers (e.g., ".py" → "python", ".rs" → "rust", ".ts" → "typescript").
+ * 
+ * Benefits of extension-based detection:
+ * - 100% accurate (no guessing based on code patterns)
+ * - Instant (no need to scan file contents)
+ * - Reliable for similar languages (won't confuse TypeScript with JavaScript)
+ * 
+ * For extensions not in this map, the extension itself is returned and passed to highlight.js,
+ * which will either recognize it directly or trigger auto-detection as a fallback.
+ * 
+ * @param filePath - Path to the file (extension will be extracted)
+ * @returns Highlight.js language identifier, or the original extension if no mapping exists
  */
-export async function renderCodeToPdf(filePath: string, lineNumbers?: boolean, colorScheme?: string, fontSize?: string, lineSpacing?: string): Promise<string> {
-  // Validate file path security
-  validateFilePath(filePath);
-  
-  const chromePath = await findChrome();
-
-  // Read source code file
-  const sourceCode = readFileSync(filePath, 'utf-8');
-  
-  // Get file extension and language
+export function getLanguageFromExtension(filePath: string): string {
+  // Extract extension from file path
   const ext = filePath.split('.').pop()?.toLowerCase() || "";
-  const language = getLanguageFromExtension(ext);
   
-  // Syntax highlight the code
-  let highlightedCode = "";
-  try {
-    highlightedCode = hljs.highlight(sourceCode, { language }).value;
-    // If no keywords were highlighted, try auto-detect
-    if (!highlightedCode.includes('hljs-')) {
-      highlightedCode = hljs.highlightAuto(sourceCode).value;
+  // Map common file extensions to their highlight.js language names
+  const languageMap: { [key: string]: string } = {
+    'js': 'javascript',
+    'jsx': 'javascript',
+    'ts': 'typescript',
+    'tsx': 'typescript',
+    'py': 'python',
+    'rb': 'ruby',
+    'java': 'java',
+    'c': 'c',
+    'cpp': 'cpp',
+    'cc': 'cpp',
+    'cxx': 'cpp',
+    'h': 'c',
+    'hpp': 'cpp',
+    'cs': 'csharp',
+    'php': 'php',
+    'go': 'go',
+    'rs': 'rust',
+    'swift': 'swift',
+    'kt': 'kotlin',
+    'scala': 'scala',
+    'sh': 'bash',
+    'bash': 'bash',
+    'zsh': 'bash',
+    'fish': 'bash',
+    'ps1': 'powershell',
+    'sql': 'sql',
+    'r': 'r',
+    'lua': 'lua',
+    'perl': 'perl',
+    'pl': 'perl',
+    'vim': 'vim',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'json': 'json',
+    'xml': 'xml',
+    'html': 'html',
+    'css': 'css',
+    'scss': 'scss',
+    'sass': 'sass',
+    'less': 'less',
+    'md': 'markdown',
+    'dockerfile': 'dockerfile',
+    'makefile': 'makefile',
+    'mk': 'makefile',
+  };
+  
+  return languageMap[ext] || ext;
+}
+
+/**
+ * Fixes multiline HTML span elements by ensuring spans don't break across lines.
+ * 
+ * **Problem:** Highlight.js creates single spans for multiline constructs (strings, comments):
+ * ```html
+ * <span class="hljs-string">"multiline
+ * string"</span>
+ * ```
+ * 
+ * When split into table rows, this creates invalid HTML:
+ * ```html
+ * <tr><td><span class="hljs-string">"multiline</td></tr>     <!-- ❌ Unclosed span -->
+ * <tr><td>string"</span></td></tr>                           <!-- ❌ Orphaned close tag -->
+ * ```
+ * 
+ * **Solution:** This function closes spans at line end and reopens them at line start:
+ * ```html
+ * <tr><td><span class="hljs-string">"multiline</span></td></tr>     <!-- ✅ Complete -->
+ * <tr><td><span class="hljs-string">string"</span></td></tr>        <!-- ✅ Complete -->
+ * ```
+ * 
+ * @param text - HTML text with span elements from highlight.js
+ * @returns HTML text with spans properly closed and reopened at line boundaries
+ * @internal Exported for testing purposes
+ */
+export function fixMultilineSpans(text: string): string {
+  let classes: string[] = [];
+  const spanRegex = /<(\/?)span(.*?)>/g;
+  const tagAttrRegex = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|\s*\/?[>"']))+.)["']?/g;
+
+  return text.split("\n").map(line => {
+    const pre = classes.map(classVal => `<span class="${classVal}">`);
+
+    let spanMatch;
+    spanRegex.lastIndex = 0;
+    while ((spanMatch = spanRegex.exec(line)) !== null) {
+      if (spanMatch[1] !== "") {
+        classes.pop();
+        continue;
+      }
+      let attrMatch;
+      tagAttrRegex.lastIndex = 0;
+      while ((attrMatch = tagAttrRegex.exec(spanMatch[2])) !== null) {
+        if (attrMatch[1].toLowerCase().trim() === "class") {
+          classes.push(attrMatch[2]);
+        }
+      }
     }
-  } catch (error) {
-    // Fall back to auto-detect
-    highlightedCode = hljs.highlightAuto(sourceCode).value;
-  }
-  
-  // Fix multiline spans
-  highlightedCode = fixMultilineSpans(highlightedCode);
-  
-  // Build table rows with optional line numbers
-  let tableRows = "";
-  const lines = highlightedCode.split("\n");
-  
-  // Use parameter if provided, otherwise fall back to global config
-  const showLineNumbers = lineNumbers ?? config.code.enableLineNumbers;
-  
-  if (showLineNumbers) {
-    tableRows = lines
-      .map(line => line || "&nbsp;")
-      .map((line, i) => `<tr><td class="line-number">${i + 1}</td><td class="line-text">${line}</td></tr>`)
-      .join("\n");
-  } else {
-    tableRows = lines
-      .map(line => line || "&nbsp;")
-      .map(line => `<tr><td class="line-text">${line}</td></tr>`)
-      .join("\n");
-  }
-  
-  // Get color scheme CSS
-  // Use parameter if provided, otherwise fall back to global config
-  const selectedColorScheme = colorScheme ?? config.code.colorScheme;
-  let colorSchemeCSS = "";
+
+    return `${pre.join("")}${line}${"</span>".repeat(classes.length)}`;
+  }).join("\n");
+}
+
+/**
+ * Applies syntax highlighting to source code using highlight.js.
+ * 
+ * Strategy: Prefers extension-based language detection over auto-detection for accuracy.
+ * If the specified language fails or produces no highlighted tokens, falls back to auto-detection.
+ * 
+ * @param sourceCode - Raw source code to highlight
+ * @param language - Language identifier from file extension
+ * @returns HTML string with syntax highlighting span elements
+ */
+function applySyntaxHighlighting(sourceCode: string, language: string): string {
   try {
-    // Find highlight.js styles directory (node_modules relative to this module)
+    const highlighted = hljs.highlight(sourceCode, { language }).value;
+    
+    // Check if highlighting actually worked (should have 'hljs-' CSS classes)
+    if (!highlighted.includes('hljs-')) {
+      // No tokens were highlighted, try auto-detect instead
+      return hljs.highlightAuto(sourceCode).value;
+    }
+    
+    return highlighted;
+  } catch (error) {
+    // Language not recognized by highlight.js, fall back to auto-detect
+    return hljs.highlightAuto(sourceCode).value;
+  }
+}
+
+/**
+ * Loads the CSS for a highlight.js color scheme.
+ * Tries the specified theme, falls back to default, then to minimal inline CSS.
+ */
+function loadColorSchemeCSS(colorScheme: string): string {
+  try {
     const stylesDir = join(__dirname, '../../node_modules/highlight.js/styles');
-    const themeFileName = selectedColorScheme + '.css';
+    const themeFileName = colorScheme + '.css';
     const themePath = join(stylesDir, themeFileName);
     
     try {
-      colorSchemeCSS = readFileSync(themePath, 'utf-8');
+      return readFileSync(themePath, 'utf-8');
     } catch {
       // Try .min.css version
-      const minThemePath = join(stylesDir, `${selectedColorScheme}.min.css`);
-      colorSchemeCSS = readFileSync(minThemePath, 'utf-8');
+      const minThemePath = join(stylesDir, `${colorScheme}.min.css`);
+      return readFileSync(minThemePath, 'utf-8');
     }
   } catch (error) {
-    // Fall back to default if theme not found
+    // Fall back to default theme
     try {
       const defaultPath = join(__dirname, '../../node_modules/highlight.js/styles/default.css');
-      colorSchemeCSS = readFileSync(defaultPath, 'utf-8');
+      return readFileSync(defaultPath, 'utf-8');
     } catch {
       // If all else fails, use minimal inline CSS
-      colorSchemeCSS = `
+      return `
         .hljs { display: block; overflow-x: auto; padding: 0.5em; background: #f0f0f0; }
         .hljs-keyword { color: #0000ff; font-weight: bold; }
         .hljs-string { color: #008000; }
@@ -112,9 +244,59 @@ export async function renderCodeToPdf(filePath: string, lineNumbers?: boolean, c
       `;
     }
   }
+}
+
+/**
+ * Builds HTML table rows for code lines with optional line numbers.
+ * 
+ * Creates a table structure where each line of code is a separate row:
+ * 
+ * **With line numbers** (two columns):
+ * ```html
+ * <tr><td class="line-number">1</td><td class="line-text">const x = 5;</td></tr>
+ * <tr><td class="line-number">2</td><td class="line-text">console.log(x);</td></tr>
+ * ```
+ * 
+ * **Without line numbers** (single column):
+ * ```html
+ * <tr><td class="line-text">const x = 5;</td></tr>
+ * <tr><td class="line-text">console.log(x);</td></tr>
+ * ```
+ * 
+ * Empty lines are replaced with `&nbsp;` to preserve vertical spacing.
+ * Line numbers are 1-indexed (start at 1, not 0).
+ * 
+ * @param lines - Array of code lines (already syntax-highlighted HTML)
+ * @param showLineNumbers - Whether to include line numbers in a separate column
+ * @returns HTML string of table rows ready to insert into a <table> element
+ */
+function buildTableRows(lines: string[], showLineNumbers: boolean): string {
+  const sanitizedLines = lines.map(line => line || "&nbsp;");
   
-  // Build complete HTML document
-  const html = `<!DOCTYPE html>
+  if (showLineNumbers) {
+    return sanitizedLines
+      .map((line, i) => 
+        `<tr><td class="line-number">${i + 1}</td><td class="line-text">${line}</td></tr>`
+      )
+      .join("\n");
+  } else {
+    return sanitizedLines
+      .map(line => `<tr><td class="line-text">${line}</td></tr>`)
+      .join("\n");
+  }
+}
+
+/**
+ * Generates the complete HTML document with embedded CSS for printing.
+ */
+function generateHTML(
+  filePath: string,
+  tableRows: string,
+  colorSchemeCSS: string,
+  fontSize: string,
+  lineSpacing: string
+): string {
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -136,8 +318,8 @@ export async function renderCodeToPdf(filePath: string, lineNumbers?: boolean, c
       margin: 0;
       padding: 0;
       font-family: Menlo, Monaco, 'Courier New', monospace;
-      font-size: ${fontSize ?? config.code.fontSize};
-      line-height: ${lineSpacing ?? config.code.lineSpacing}em;
+      font-size: ${fontSize};
+      line-height: ${lineSpacing}em;
     }
     
     table {
@@ -174,48 +356,59 @@ export async function renderCodeToPdf(filePath: string, lineNumbers?: boolean, c
   </table>
 </body>
 </html>`;
+}
 
-  // Create secure temp directory
-  const tmpDir = mkdtempSync(join(tmpdir(), 'mcp-printer-code-'));
-  const tmpHtml = join(tmpDir, 'input.html');
-  const tmpPdf = join(tmpDir, 'output.pdf');
+/**
+ * Renders a source code file to PDF with syntax highlighting.
+ * Uses highlight.js for syntax highlighting and Chrome for PDF generation.
+ * Supports configurable color schemes, line numbers, font size, and line spacing.
+ * 
+ * @param filePath - Path to the source code file to render
+ * @param lineNumbers - Optional override for line numbers display; falls back to config if not provided
+ * @param colorScheme - Optional override for syntax highlighting color scheme; falls back to config if not provided
+ * @param fontSize - Optional override for font size; falls back to config if not provided
+ * @param lineSpacing - Optional override for line spacing; falls back to config if not provided
+ * @returns Path to the generated temporary PDF file
+ * @throws {Error} If Chrome is not found or PDF generation fails
+ */
+export async function renderCodeToPdf(
+  filePath: string,
+  lineNumbers?: boolean,
+  colorScheme?: string,
+  fontSize?: string,
+  lineSpacing?: string
+): Promise<string> {
+  // Step 1: Validate file path
+  validateFilePath(filePath);
   
-  try {
-    // Write HTML to temp file
-    writeFileSync(tmpHtml, html, 'utf-8');
-    
-    // Convert HTML to PDF with Chrome
-    try {
-      await execa(chromePath, [
-        '--headless',
-        '--disable-gpu',
-        `--print-to-pdf=${tmpPdf}`,
-        tmpHtml
-      ]);
-    } catch (error: any) {
-      // Chrome might output to stderr even on success
-      if (!error.stderr || !error.stderr.includes('written to file')) {
-        throw new Error(`Failed to render PDF: ${error.message}`);
-      }
-    }
-    
-    // Clean up HTML file
-    try {
-      unlinkSync(tmpHtml);
-    } catch {
-      // Ignore cleanup errors
-    }
-
-    return tmpPdf;
-  } catch (error) {
-    // Clean up temp directory on error
-    try {
-      unlinkSync(tmpHtml);
-    } catch {}
-    try {
-      unlinkSync(tmpPdf);
-    } catch {}
-    throw error;
-  }
+  // Step 2: Read source code and identify language
+  const sourceCode = readFileSync(filePath, 'utf-8');
+  const language = getLanguageFromExtension(filePath);
+  
+  // Step 3: Apply syntax highlighting with extension-based language, fallback to auto-detect
+  const highlightedCode = applySyntaxHighlighting(sourceCode, language);
+  
+  // Step 4: Fix multiline spans and split into lines
+  const lines = fixMultilineSpans(highlightedCode).split("\n");
+  
+  // Step 5: Build HTML structure with configuration
+  const showLineNumbers = lineNumbers ?? config.code.enableLineNumbers;
+  const tableRows = buildTableRows(lines, showLineNumbers);
+  
+  const selectedColorScheme = colorScheme ?? config.code.colorScheme;
+  const colorSchemeCSS = loadColorSchemeCSS(selectedColorScheme);
+  
+  const html = generateHTML(
+    filePath,
+    tableRows,
+    colorSchemeCSS,
+    fontSize ?? config.code.fontSize,
+    lineSpacing ?? config.code.lineSpacing
+  );
+  
+  // Step 6: Convert HTML to PDF
+  return await convertHtmlToPdf(html, {
+    tempDirPrefix: 'mcp-printer-code-'
+  });
 }
 

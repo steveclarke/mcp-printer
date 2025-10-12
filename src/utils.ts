@@ -6,8 +6,9 @@
 import { execa } from "execa";
 import { access } from "fs/promises";
 import { constants } from "fs";
-import { realpathSync } from "fs";
-import { resolve, basename } from "path";
+import { realpathSync, writeFileSync, mkdtempSync, unlinkSync } from "fs";
+import { resolve, basename, join } from "path";
+import { tmpdir } from "os";
 import { config, MARKDOWN_EXTENSIONS } from "./config.js";
 
 /**
@@ -190,6 +191,72 @@ export async function findChrome(): Promise<string> {
 }
 
 /**
+ * Converts HTML content to PDF using Chrome headless.
+ * Handles Chrome detection, temp file creation, execution, error handling, and cleanup.
+ * 
+ * @param htmlContent - HTML content to convert to PDF
+ * @param options - Optional configuration
+ * @param options.chromeFlags - Additional Chrome flags (e.g., ['--disable-javascript'])
+ * @param options.tempDirPrefix - Prefix for temp directory name (default: 'mcp-printer-')
+ * @returns Path to the generated temporary PDF file
+ * @throws {Error} If Chrome is not found or PDF generation fails
+ */
+export async function convertHtmlToPdf(
+  htmlContent: string,
+  options: { chromeFlags?: string[]; tempDirPrefix?: string } = {}
+): Promise<string> {
+  const { chromeFlags = [], tempDirPrefix = 'mcp-printer-' } = options;
+  
+  // Find Chrome/Chromium executable
+  const chromePath = await findChrome();
+  
+  // Create secure temp directory
+  const tmpDir = mkdtempSync(join(tmpdir(), tempDirPrefix));
+  const tmpHtml = join(tmpDir, 'input.html');
+  const tmpPdf = join(tmpDir, 'output.pdf');
+  
+  try {
+    // Write HTML to temp file
+    writeFileSync(tmpHtml, htmlContent, 'utf-8');
+    
+    // Convert HTML to PDF with Chrome headless
+    try {
+      await execa(chromePath, [
+        '--headless',
+        '--disable-gpu',
+        ...chromeFlags,
+        `--print-to-pdf=${tmpPdf}`,
+        tmpHtml
+      ]);
+    } catch (error: any) {
+      // Chrome outputs success messages to stderr, check if PDF was actually created
+      if (!error.stderr || !error.stderr.includes('written to file')) {
+        throw new Error(`Failed to render PDF: ${error.message}`);
+      }
+      // Success - Chrome wrote the PDF and reported to stderr
+    }
+    
+    // Clean up HTML file
+    try {
+      unlinkSync(tmpHtml);
+    } catch {
+      // Ignore cleanup errors
+    }
+
+    return tmpPdf;
+  } catch (error) {
+    // Clean up temp files on error
+    try {
+      unlinkSync(tmpHtml);
+    } catch {}
+    try {
+      unlinkSync(tmpPdf);
+    } catch {}
+    throw error;
+  }
+}
+
+/**
  * Determines if a file should be automatically rendered to PDF before printing.
  * Checks autoRenderMarkdown setting and standard markdown extensions (.md, .markdown).
  * 
@@ -202,130 +269,6 @@ export function shouldRenderToPdf(filePath: string): boolean {
   }
   const ext = filePath.split('.').pop()?.toLowerCase() || "";
   return MARKDOWN_EXTENSIONS.includes(ext as any);
-}
-
-/**
- * Determines if a file should be rendered with syntax highlighting.
- * Checks autoRenderCode setting, code.excludeExtensions configuration,
- * and whether highlight.js supports the file type.
- * 
- * @param filePath - Path to the file to check
- * @returns True if the file should be syntax-highlighted, false otherwise
- */
-export function shouldRenderCode(filePath: string): boolean {
-  // Master switch check
-  if (!config.autoRenderCode) {
-    return false;
-  }
-  
-  const ext = filePath.split('.').pop()?.toLowerCase() || "";
-  
-  // Check if extension is in the exclusion list
-  if (config.code.excludeExtensions.includes(ext)) return false;
-  
-  // Try to get language from extension - if highlight.js knows it, render it
-  const language = getLanguageFromExtension(ext);
-  return language !== "";
-}
-
-/**
- * Maps a file extension to a highlight.js language identifier.
- * 
- * This mapping is necessary because file extensions often don't match highlight.js language names
- * (e.g., ".py" → "python", ".rs" → "rust"). The explicit mapping provides faster and more accurate
- * highlighting for common languages. Extensions not in this map are passed through as-is and will
- * either be recognized by highlight.js directly or handled by auto-detection as a fallback.
- * 
- * @param ext - File extension (without the dot, e.g., "ts")
- * @returns Highlight.js language identifier, or the original extension if no mapping exists
- */
-export function getLanguageFromExtension(ext: string): string {
-  // Map common file extensions to their highlight.js language names
-  // This avoids relying on auto-detection for better performance and accuracy
-  const languageMap: { [key: string]: string } = {
-    'js': 'javascript',
-    'jsx': 'javascript',
-    'ts': 'typescript',
-    'tsx': 'typescript',
-    'py': 'python',
-    'rb': 'ruby',
-    'java': 'java',
-    'c': 'c',
-    'cpp': 'cpp',
-    'cc': 'cpp',
-    'cxx': 'cpp',
-    'h': 'c',
-    'hpp': 'cpp',
-    'cs': 'csharp',
-    'php': 'php',
-    'go': 'go',
-    'rs': 'rust',
-    'swift': 'swift',
-    'kt': 'kotlin',
-    'scala': 'scala',
-    'sh': 'bash',
-    'bash': 'bash',
-    'zsh': 'bash',
-    'fish': 'bash',
-    'ps1': 'powershell',
-    'sql': 'sql',
-    'r': 'r',
-    'lua': 'lua',
-    'perl': 'perl',
-    'pl': 'perl',
-    'vim': 'vim',
-    'yaml': 'yaml',
-    'yml': 'yaml',
-    'json': 'json',
-    'xml': 'xml',
-    'html': 'html',
-    'css': 'css',
-    'scss': 'scss',
-    'sass': 'sass',
-    'less': 'less',
-    'md': 'markdown',
-    'dockerfile': 'dockerfile',
-    'makefile': 'makefile',
-    'mk': 'makefile',
-  };
-  
-  return languageMap[ext] || ext;
-}
-
-/**
- * Fixes multiline HTML span elements by ensuring spans don't break across lines.
- * Closes all open spans at the end of each line and reopens them at the start of the next.
- * This ensures proper rendering in PDF output where line breaks can cause display issues.
- * 
- * @param text - HTML text with span elements
- * @returns HTML text with spans properly closed and reopened at line boundaries
- */
-export function fixMultilineSpans(text: string): string {
-  let classes: string[] = [];
-  const spanRegex = /<(\/?)span(.*?)>/g;
-  const tagAttrRegex = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|\s*\/?[>"']))+.)["']?/g;
-
-  return text.split("\n").map(line => {
-    const pre = classes.map(classVal => `<span class="${classVal}">`);
-
-    let spanMatch;
-    spanRegex.lastIndex = 0;
-    while ((spanMatch = spanRegex.exec(line)) !== null) {
-      if (spanMatch[1] !== "") {
-        classes.pop();
-        continue;
-      }
-      let attrMatch;
-      tagAttrRegex.lastIndex = 0;
-      while ((attrMatch = tagAttrRegex.exec(spanMatch[2])) !== null) {
-        if (attrMatch[1].toLowerCase().trim() === "class") {
-          classes.push(attrMatch[2]);
-        }
-      }
-    }
-
-    return `${pre.join("")}${line}${"</span>".repeat(classes.length)}`;
-  }).join("\n");
 }
 
 /**
