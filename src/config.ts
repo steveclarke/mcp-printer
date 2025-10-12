@@ -25,6 +25,8 @@ export interface Config {
   allowedPaths: string[];
   /** List of directory/file paths that are explicitly denied access (merged with defaults) */
   deniedPaths: string[];
+  /** Maximum number of copies allowed per print job (0 or negative means unlimited) */
+  maxCopies: number;
   /** Code rendering configuration */
   code: {
     /** File extensions to exclude from code rendering. All enabled by default. */
@@ -51,6 +53,7 @@ const DEFAULT_CHROME_PATH = "";
 const DEFAULT_MARKDOWN_EXTENSIONS: string[] = [];
 const DEFAULT_ENABLE_MANAGEMENT = false;
 const DEFAULT_FALLBACK_ON_RENDER_ERROR = false;
+const DEFAULT_MAX_COPIES = 10;
 const DEFAULT_CODE_EXCLUDE_EXTENSIONS: string[] = [];
 const DEFAULT_CODE_COLOR_SCHEME = "atom-one-light";
 const DEFAULT_CODE_ENABLE_LINE_NUMBERS = true;
@@ -102,6 +105,7 @@ export const config: Config = {
   // Merge default paths with user-provided paths
   allowedPaths: [...defaultAllowedPaths, ...userAllowedPaths],
   deniedPaths: [...defaultDeniedPaths, ...userDeniedPaths],
+  maxCopies: parseInt(process.env.MCP_PRINTER_MAX_COPIES || String(DEFAULT_MAX_COPIES), 10),
   code: {
     excludeExtensions: parseDelimitedString(process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS, ',', s => s.toLowerCase()),
     colorScheme: process.env.MCP_PRINTER_CODE_COLOR_SCHEME || DEFAULT_CODE_COLOR_SCHEME,

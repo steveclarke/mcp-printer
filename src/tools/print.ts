@@ -27,7 +27,7 @@ export function registerPrintTools(server: McpServer) {
       inputSchema: {
         file_path: z.string().describe("Full path to the file to print"),
         printer: z.string().optional().describe("Printer name (use list_printers to see available printers). Optional if default printer is set."),
-        copies: z.number().optional().default(1).describe("Number of copies to print (default: 1)"),
+        copies: z.number().min(1).optional().default(1).describe("Number of copies to print (default: 1)"),
         options: z.string().optional().describe("Additional CUPS options (e.g., 'landscape', 'sides=two-sided-long-edge')"),
         line_numbers: z.boolean().optional().describe("Show line numbers when rendering code files (overrides global setting)"),
         color_scheme: z.string().optional().describe("Syntax highlighting color scheme for code files (e.g., 'github', 'monokai', 'atom-one-light')"),
@@ -38,6 +38,14 @@ export function registerPrintTools(server: McpServer) {
     async ({ file_path, printer, copies = 1, options, line_numbers, color_scheme, font_size, line_spacing }) => {
       // Validate file path security
       validateFilePath(file_path);
+      
+      // Validate copy count against configured maximum
+      if (config.maxCopies > 0 && copies > config.maxCopies) {
+        throw new Error(
+          `Copy count (${copies}) exceeds maximum allowed (${config.maxCopies}). ` +
+          `Set MCP_PRINTER_MAX_COPIES environment variable to increase or use 0 for unlimited.`
+        );
+      }
       
       let actualFilePath = file_path;
       let renderedPdf: string | null = null;

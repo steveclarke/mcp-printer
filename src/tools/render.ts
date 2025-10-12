@@ -25,11 +25,19 @@ export function registerRenderTools(server: McpServer) {
       inputSchema: {
         file_path: z.string().describe("Full path to the markdown file to render and print"),
         printer: z.string().optional().describe("Printer name (optional, uses default if not specified)"),
-        copies: z.number().optional().default(1).describe("Number of copies to print (default: 1)"),
+        copies: z.number().min(1).optional().default(1).describe("Number of copies to print (default: 1)"),
         options: z.string().optional().describe("Additional CUPS options (e.g., 'landscape', 'sides=two-sided-long-edge')")
       }
     },
     async ({ file_path, printer, copies = 1, options }) => {
+      // Validate copy count against configured maximum
+      if (config.maxCopies > 0 && copies > config.maxCopies) {
+        throw new Error(
+          `Copy count (${copies}) exceeds maximum allowed (${config.maxCopies}). ` +
+          `Set MCP_PRINTER_MAX_COPIES environment variable to increase or use 0 for unlimited.`
+        );
+      }
+      
       let renderedPdf: string | null = null;
 
       try {

@@ -34,15 +34,21 @@ export async function renderMarkdownToPdf(filePath: string): Promise<string> {
   const tmpPdf = join(tmpDir, 'output.pdf');
 
   try {
-    // Convert markdown to HTML
-    await execa('pandoc', [filePath, '-o', tmpHtml]);
+    // Convert markdown to HTML (with raw HTML disabled for security)
+    await execa('pandoc', [
+      '--from=markdown-raw_html',
+      filePath, 
+      '-o', 
+      tmpHtml
+    ]);
     
-    // Convert HTML to PDF with Chrome
+    // Convert HTML to PDF with Chrome (with JavaScript disabled for security)
     // Note: Chrome outputs success messages to stderr
     try {
       await execa(chromePath, [
         '--headless',
         '--disable-gpu',
+        '--disable-javascript',
         `--print-to-pdf=${tmpPdf}`,
         tmpHtml
       ]);
