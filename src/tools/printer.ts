@@ -134,9 +134,8 @@ export function registerPrinterTools(server: McpServer) {
     }
   );
 
-  // Only register write operations if management is enabled
+  // cancel_print_job - Only register if management is enabled
   if (config.enableManagement) {
-    // cancel_print_job - Cancel print jobs
     server.registerTool(
       "cancel_print_job",
       {
@@ -176,8 +175,10 @@ export function registerPrinterTools(server: McpServer) {
         };
       }
     );
+  }
 
-    // set_default_printer - Set default printer
+  // set_default_printer - Only register if management is enabled
+  if (config.enableManagement) {
     server.registerTool(
       "set_default_printer",
       {

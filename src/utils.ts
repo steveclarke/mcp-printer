@@ -157,27 +157,31 @@ export async function findChrome(): Promise<string | null> {
     // If specified path doesn't exist, continue to auto-detection
   }
 
-  // macOS paths
-  const macPaths = [
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "/Applications/Chromium.app/Contents/MacOS/Chromium",
-    "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-  ];
+  // Check macOS paths
+  if (process.platform === "darwin") {
+    const macPaths = [
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "/Applications/Chromium.app/Contents/MacOS/Chromium",
+      "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+    ];
 
-  for (const path of macPaths) {
-    if (await fileExists(path)) {
-      return path;
+    for (const path of macPaths) {
+      if (await fileExists(path)) {
+        return path;
+      }
     }
   }
 
-  // Linux paths
-  const linuxCommands = ["google-chrome", "chromium", "chromium-browser"];
-  for (const cmd of linuxCommands) {
-    try {
-      const path = await execCommand('which', [cmd]);
-      if (path) return path;
-    } catch {
-      // Continue to next command
+  // Check Linux paths
+  if (process.platform === "linux") {
+    const linuxCommands = ["google-chrome", "chromium", "chromium-browser"];
+    for (const cmd of linuxCommands) {
+      try {
+        const path = await execCommand('which', [cmd]);
+        if (path) return path;
+      } catch {
+        // Continue to next command
+      }
     }
   }
 
