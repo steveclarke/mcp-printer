@@ -7,8 +7,10 @@ import { shouldRenderToPdf, shouldRenderCode } from '../../src/utils.js';
 
 // Mock the config module
 vi.mock('../../src/config.js', () => ({
+  MARKDOWN_EXTENSIONS: ['md', 'markdown'],
   config: {
-    markdownExtensions: [],
+    enableMarkdownRender: false,
+    enableCodeRender: true,
     code: {
       excludeExtensions: [],
       enableLineNumbers: true,
@@ -25,10 +27,12 @@ describe('shouldRenderToPdf', () => {
     vi.resetModules();
   });
 
-  it('should return false when markdownExtensions is empty', async () => {
+  it('should return false when enableMarkdownRender is false', async () => {
     vi.doMock('../../src/config.js', () => ({
+      MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        markdownExtensions: [],
+        enableMarkdownRender: false,
+        enableCodeRender: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -37,10 +41,12 @@ describe('shouldRenderToPdf', () => {
     expect(shouldRenderToPdf('file.md')).toBe(false);
   });
 
-  it('should return true for configured markdown extensions', async () => {
+  it('should return true for standard markdown extensions when enabled', async () => {
     vi.doMock('../../src/config.js', () => ({
+      MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        markdownExtensions: ['md', 'markdown'],
+        enableMarkdownRender: true,
+        enableCodeRender: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -52,8 +58,10 @@ describe('shouldRenderToPdf', () => {
 
   it('should be case insensitive for extensions', async () => {
     vi.doMock('../../src/config.js', () => ({
+      MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        markdownExtensions: ['md'],
+        enableMarkdownRender: true,
+        enableCodeRender: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -63,10 +71,12 @@ describe('shouldRenderToPdf', () => {
     expect(shouldRenderToPdf('File.Md')).toBe(true);
   });
 
-  it('should return false for non-configured extensions and files without extensions', async () => {
+  it('should return false for non-markdown extensions and files without extensions', async () => {
     vi.doMock('../../src/config.js', () => ({
+      MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        markdownExtensions: ['md'],
+        enableMarkdownRender: true,
+        enableCodeRender: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -79,8 +89,10 @@ describe('shouldRenderToPdf', () => {
 
   it('should handle multiple dots in filename', async () => {
     vi.doMock('../../src/config.js', () => ({
+      MARKDOWN_EXTENSIONS: ['md', 'markdown'],
       config: {
-        markdownExtensions: ['md'],
+        enableMarkdownRender: true,
+        enableCodeRender: true,
         code: { excludeExtensions: [] },
       },
     }));
@@ -95,12 +107,13 @@ describe('shouldRenderCode', () => {
     vi.resetModules();
   });
 
-  it('should return false when excludeExtensions includes "all"', async () => {
+  it('should return false when enableCodeRender is false', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
-        markdownExtensions: [],
+        enableMarkdownRender: false,
+        enableCodeRender: false,
         code: {
-          excludeExtensions: ['all'],
+          excludeExtensions: [],
           enableLineNumbers: true,
           colorScheme: 'atom-one-light',
           fontSize: '10pt',
@@ -117,7 +130,8 @@ describe('shouldRenderCode', () => {
   it('should return false for excluded extensions', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
-        markdownExtensions: [],
+        enableMarkdownRender: false,
+        enableCodeRender: true,
         code: {
           excludeExtensions: ['txt', 'log'],
           enableLineNumbers: true,
@@ -133,10 +147,11 @@ describe('shouldRenderCode', () => {
     expect(shouldRenderCode('error.log')).toBe(false);
   });
 
-  it('should return true for known and unknown code extensions', async () => {
+  it('should return true for known and unknown code extensions when enabled', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
-        markdownExtensions: [],
+        enableMarkdownRender: false,
+        enableCodeRender: true,
         code: {
           excludeExtensions: [],
           enableLineNumbers: true,
@@ -162,7 +177,8 @@ describe('shouldRenderCode', () => {
   it('should handle case sensitivity in exclusions', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
-        markdownExtensions: [],
+        enableMarkdownRender: false,
+        enableCodeRender: true,
         code: {
           excludeExtensions: ['txt'],
           enableLineNumbers: true,

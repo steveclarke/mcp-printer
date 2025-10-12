@@ -6,7 +6,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execCommand } from "../utils.js";
-import { config } from "../config.js";
+import { config, MARKDOWN_EXTENSIONS } from "../config.js";
 import { execa } from "execa";
 
 /**
@@ -33,9 +33,8 @@ export function registerPrinterTools(server: McpServer) {
           ? config.defaultOptions.join(" ")
           : "(not set)",
         MCP_PRINTER_CHROME_PATH: config.chromePath || "(auto-detected)",
-        MCP_PRINTER_MARKDOWN_EXTENSIONS: config.markdownExtensions.length > 0 
-          ? config.markdownExtensions.join(", ") 
-          : "(not set)",
+        MCP_PRINTER_ENABLE_MARKDOWN_RENDER: config.enableMarkdownRender ? "true" : "false",
+        MCP_PRINTER_ENABLE_CODE_RENDER: config.enableCodeRender ? "true" : "false",
         MCP_PRINTER_ENABLE_MANAGEMENT: config.enableManagement ? "true" : "false",
         MCP_PRINTER_ALLOWED_PATHS: config.allowedPaths.join(":"),
         MCP_PRINTER_DENIED_PATHS: config.deniedPaths.join(":"),

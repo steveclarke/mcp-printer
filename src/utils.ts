@@ -8,7 +8,7 @@ import { access } from "fs/promises";
 import { constants } from "fs";
 import { realpathSync } from "fs";
 import { resolve, basename } from "path";
-import { config } from "./config.js";
+import { config, MARKDOWN_EXTENSIONS } from "./config.js";
 
 /**
  * Parse a delimited string into an array of strings.
@@ -190,28 +190,32 @@ export async function findChrome(): Promise<string | null> {
 
 /**
  * Determines if a file should be automatically rendered to PDF before printing.
- * Checks if the file extension is in the markdownExtensions configuration.
+ * Checks enableMarkdownRender master switch and standard markdown extensions (.md, .markdown).
  * 
  * @param filePath - Path to the file to check
  * @returns True if the file should be rendered to PDF, false otherwise
  */
 export function shouldRenderToPdf(filePath: string): boolean {
-  if (config.markdownExtensions.length === 0) return false;
-  
+  if (!config.enableMarkdownRender) {
+    return false;
+  }
   const ext = filePath.split('.').pop()?.toLowerCase() || "";
-  return config.markdownExtensions.includes(ext);
+  return MARKDOWN_EXTENSIONS.includes(ext as any);
 }
 
 /**
  * Determines if a file should be rendered with syntax highlighting.
- * Checks code.excludeExtensions configuration and whether highlight.js supports the file type.
+ * Checks enableCodeRender master switch, code.excludeExtensions configuration,
+ * and whether highlight.js supports the file type.
  * 
  * @param filePath - Path to the file to check
  * @returns True if the file should be syntax-highlighted, false otherwise
  */
 export function shouldRenderCode(filePath: string): boolean {
-  // If excludeExtensions includes "all", disable all code rendering
-  if (config.code.excludeExtensions.includes("all")) return false;
+  // Master switch check
+  if (!config.enableCodeRender) {
+    return false;
+  }
   
   const ext = filePath.split('.').pop()?.toLowerCase() || "";
   

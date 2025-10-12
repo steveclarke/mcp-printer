@@ -15,8 +15,10 @@ export interface Config {
   defaultOptions: string[];
   /** Path to Chrome/Chromium executable for PDF rendering */
   chromePath: string;
-  /** File extensions that should be auto-rendered to PDF before printing (primarily markdown) */
-  markdownExtensions: string[];
+  /** Enable automatic markdown rendering to PDF */
+  enableMarkdownRender: boolean;
+  /** Enable automatic code syntax highlighting rendering to PDF */
+  enableCodeRender: boolean;
   /** Enable management operations (set_default_printer, cancel_print_job) */
   enableManagement: boolean;
   /** Fallback to printing original file if PDF rendering fails (for markdown and code) */
@@ -43,6 +45,12 @@ export interface Config {
 }
 
 /**
+ * Standard markdown file extensions.
+ * These are the file extensions that will be treated as markdown files for rendering.
+ */
+export const MARKDOWN_EXTENSIONS = ['md', 'markdown'] as const;
+
+/**
  * Default configuration values.
  * These are used when environment variables are not set.
  */
@@ -50,7 +58,8 @@ const DEFAULT_PRINTER = "";
 const DEFAULT_ENABLE_DUPLEX = false;
 const DEFAULT_OPTIONS: string[] = [];
 const DEFAULT_CHROME_PATH = "";
-const DEFAULT_MARKDOWN_EXTENSIONS: string[] = [];
+const DEFAULT_ENABLE_MARKDOWN_RENDER = false;
+const DEFAULT_ENABLE_CODE_RENDER = true;
 const DEFAULT_ENABLE_MANAGEMENT = false;
 const DEFAULT_FALLBACK_ON_RENDER_ERROR = false;
 const DEFAULT_MAX_COPIES = 10;
@@ -99,7 +108,8 @@ export const config: Config = {
   enableDuplex: yn(process.env.MCP_PRINTER_ENABLE_DUPLEX, { default: DEFAULT_ENABLE_DUPLEX }),
   defaultOptions: parseDelimitedString(process.env.MCP_PRINTER_DEFAULT_OPTIONS, /\s+/),
   chromePath: process.env.MCP_PRINTER_CHROME_PATH || DEFAULT_CHROME_PATH,
-  markdownExtensions: parseDelimitedString(process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS, ',', s => s.toLowerCase()),
+  enableMarkdownRender: yn(process.env.MCP_PRINTER_ENABLE_MARKDOWN_RENDER, { default: DEFAULT_ENABLE_MARKDOWN_RENDER }),
+  enableCodeRender: yn(process.env.MCP_PRINTER_ENABLE_CODE_RENDER, { default: DEFAULT_ENABLE_CODE_RENDER }),
   enableManagement: yn(process.env.MCP_PRINTER_ENABLE_MANAGEMENT, { default: DEFAULT_ENABLE_MANAGEMENT }),
   fallbackOnRenderError: yn(process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR, { default: DEFAULT_FALLBACK_ON_RENDER_ERROR }),
   // Merge default paths with user-provided paths

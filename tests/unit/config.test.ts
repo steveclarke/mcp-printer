@@ -70,25 +70,21 @@ describe('config', () => {
     // Space-delimited array (defaultOptions)
     process.env.MCP_PRINTER_DEFAULT_OPTIONS = 'landscape color=true';
     // Comma-delimited arrays with lowercasing
-    process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS = 'MD,Markdown';
     process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS = 'TXT,Log';
     
     const { config } = await import('../../src/config.js');
     
     expect(config.defaultOptions).toEqual(['landscape', 'color=true']);
-    expect(config.markdownExtensions).toEqual(['md', 'markdown']);
     expect(config.code.excludeExtensions).toEqual(['txt', 'log']);
     
     vi.resetModules();
     
     // Test empty arrays
     delete process.env.MCP_PRINTER_DEFAULT_OPTIONS;
-    delete process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS;
     delete process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS;
     
     const { config: emptyConfig } = await import('../../src/config.js');
     expect(emptyConfig.defaultOptions).toEqual([]);
-    expect(emptyConfig.markdownExtensions).toEqual([]);
     expect(emptyConfig.code.excludeExtensions).toEqual([]);
   });
 
@@ -174,13 +170,11 @@ describe('config', () => {
 
   it('should handle whitespace in delimited strings', async () => {
     process.env.MCP_PRINTER_DEFAULT_OPTIONS = '  landscape    sides=two-sided-long-edge   color=true  ';
-    process.env.MCP_PRINTER_MARKDOWN_EXTENSIONS = ' md , markdown , mdown ';
     process.env.MCP_PRINTER_ALLOWED_PATHS = ' /path/one : /path/two ';
     
     const { config } = await import('../../src/config.js');
     
     expect(config.defaultOptions).toEqual(['landscape', 'sides=two-sided-long-edge', 'color=true']);
-    expect(config.markdownExtensions).toEqual(['md', 'markdown', 'mdown']);
     expect(config.allowedPaths).toContain('/path/one');
     expect(config.allowedPaths).toContain('/path/two');
   });

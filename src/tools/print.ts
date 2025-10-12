@@ -7,7 +7,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { unlinkSync } from "fs";
 import { shouldRenderToPdf, shouldRenderCode, validateFilePath, executePrintJob, formatPrintResponse } from "../utils.js";
-import { config } from "../config.js";
+import { config, MARKDOWN_EXTENSIONS } from "../config.js";
 import { renderMarkdownToPdf } from "../renderers/markdown.js";
 import { renderCodeToPdf } from "../renderers/code.js";
 
@@ -32,10 +32,11 @@ export function registerPrintTools(server: McpServer) {
         color_scheme: z.string().optional().describe("Syntax highlighting color scheme for code files (e.g., 'github', 'monokai', 'atom-one-light')"),
         font_size: z.string().optional().describe("Font size for code files (e.g., '8pt', '10pt', '12pt')"),
         line_spacing: z.string().optional().describe("Line spacing for code files (e.g., '1', '1.5', '2')"),
-        force_render: z.boolean().optional().describe("Force rendering to PDF regardless of config (true=always render, false=never render, undefined=use config). Applies to both markdown and code files.")
+        force_markdown_render: z.boolean().optional().describe("Force markdown rendering to PDF (true=always render, false=never render, undefined=use config)"),
+        force_code_render: z.boolean().optional().describe("Force code rendering to PDF with syntax highlighting (true=always render, false=never render, undefined=use config)")
       }
     },
-    async ({ file_path, printer, copies = 1, options, line_numbers, color_scheme, font_size, line_spacing, force_render }) => {
+    async ({ file_path, printer, copies = 1, options, line_numbers, color_scheme, font_size, line_spacing, force_markdown_render, force_code_render }) => {
       // Validate file path security
       validateFilePath(file_path);
       
@@ -44,9 +45,9 @@ export function registerPrintTools(server: McpServer) {
       let renderType = "";
 
       // Check if file should be auto-rendered to PDF (markdown)
-      // Honor force_render: true=always render, false=never render, undefined=use config
-      const shouldRenderMarkdown = force_render !== undefined 
-        ? force_render && file_path.match(/\.(md|markdown)$/i)
+      // When forcing, check if it's a markdown file by extension
+      const shouldRenderMarkdown = force_markdown_render !== undefined 
+        ? force_markdown_render && MARKDOWN_EXTENSIONS.some(ext => file_path.toLowerCase().endsWith(`.${ext}`))
         : shouldRenderToPdf(file_path);
 
       if (shouldRenderMarkdown) {
@@ -64,8 +65,7 @@ export function registerPrintTools(server: McpServer) {
         }
       }
       // Check if file should be rendered as code with syntax highlighting
-      // Honor force_render: true=always render, false=never render, undefined=use config
-      else if (force_render !== undefined ? force_render : shouldRenderCode(file_path)) {
+      else if (force_code_render !== undefined ? force_code_render : shouldRenderCode(file_path)) {
         try {
           renderedPdf = await renderCodeToPdf(file_path, line_numbers, color_scheme, font_size, line_spacing);
           actualFilePath = renderedPdf;

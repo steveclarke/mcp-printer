@@ -60,12 +60,13 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_ENABLE_DUPLEX` | `false` | Set to `"true"` to print double-sided by default |
 | `MCP_PRINTER_DEFAULT_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
 | `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Path to Chrome/Chromium for PDF rendering (override if auto-detection fails) |
-| `MCP_PRINTER_MARKDOWN_EXTENSIONS` | _(none)_ | File extensions to auto-render to PDF (e.g., `"md,markdown"`) |
+| `MCP_PRINTER_ENABLE_MARKDOWN_RENDER` | `false` | Enable automatic markdown rendering to PDF for `.md` and `.markdown` files |
+| `MCP_PRINTER_ENABLE_CODE_RENDER` | `true` | Enable automatic code syntax highlighting rendering to PDF |
 | `MCP_PRINTER_ENABLE_MANAGEMENT` | `false` | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` |
 | `MCP_PRINTER_ALLOWED_PATHS` | _(home directory)_ | Colon-separated paths allowed for printing. **Merged with** home directory default (e.g., `"/mnt/shared:/opt/documents"`) |
 | `MCP_PRINTER_DENIED_PATHS` | _(sensitive dirs)_ | Colon-separated paths denied for printing. **Merged with** defaults like `.ssh`, `.aws`, etc. (e.g., `"/home/user/private"`) |
 | `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false` | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead |
-| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering, or `"all"` to disable |
+| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering (e.g., `"exe,bin,so"`) - only applies when code rendering is enabled |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
 | `MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS` | `true` | Show line numbers in code printouts (set to `"false"` to disable) |
 | `MCP_PRINTER_CODE_FONT_SIZE` | `"10pt"` | Font size for code (e.g., `"8pt"`, `"12pt"`) |
@@ -82,7 +83,8 @@ All configuration is optional. Add an `env` object to customize behavior:
         "MCP_PRINTER_DEFAULT_PRINTER": "HP_LaserJet_Pro",
         "MCP_PRINTER_ENABLE_DUPLEX": "true",
         "MCP_PRINTER_DEFAULT_OPTIONS": "fit-to-page",
-        "MCP_PRINTER_MARKDOWN_EXTENSIONS": "md,markdown",
+        "MCP_PRINTER_ENABLE_MARKDOWN_RENDER": "true",
+        "MCP_PRINTER_ENABLE_CODE_RENDER": "true",
         "MCP_PRINTER_CODE_COLOR_SCHEME": "github",
         "MCP_PRINTER_CODE_FONT_SIZE": "9pt"
       }
@@ -109,7 +111,8 @@ MCP_PRINTER_DEFAULT_PRINTER: HP_LaserJet_4001
 MCP_PRINTER_ENABLE_DUPLEX: true
 MCP_PRINTER_DEFAULT_OPTIONS: (not set)
 MCP_PRINTER_CHROME_PATH: (auto-detected)
-MCP_PRINTER_MARKDOWN_EXTENSIONS: md, markdown
+MCP_PRINTER_ENABLE_MARKDOWN_RENDER: false
+MCP_PRINTER_ENABLE_CODE_RENDER: true
 MCP_PRINTER_ENABLE_MANAGEMENT: false
 ```
 
@@ -135,7 +138,8 @@ Print a file to a specified printer.
 - `color_scheme` (optional) - Syntax highlighting theme for code files (e.g., `github`, `monokai`, `atom-one-light`)
 - `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
 - `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
-- `force_render` (optional) - Force rendering to PDF regardless of config (boolean: `true`=always render, `false`=never render, `undefined`=use config). Applies to both markdown and code files.
+- `force_markdown_render` (optional) - Force markdown rendering to PDF (boolean: `true`=always render, `false`=never render, `undefined`=use config)
+- `force_code_render` (optional) - Force code rendering to PDF with syntax highlighting (boolean: `true`=always render, `false`=never render, `undefined`=use config)
 
 **Note:** The code rendering parameters (`line_numbers`, `color_scheme`, `font_size`, `line_spacing`) only apply when printing code files that are automatically rendered to PDF with syntax highlighting.
 
@@ -196,7 +200,7 @@ AI: ✓ Set default printer to: HP_LaserJet_4001
 ```
 
 **Auto-rendering markdown:**
-Set `MCP_PRINTER_MARKDOWN_EXTENSIONS="md,markdown"` in your config to automatically render markdown files to PDF when using `print_file`. You can also use the `force_render` parameter to override this behavior on a per-call basis.
+Set `MCP_PRINTER_ENABLE_MARKDOWN_RENDER="true"` in your config to automatically render `.md` and `.markdown` files to PDF when using `print_file`. You can also use the `force_markdown_render` parameter to override this behavior on a per-call basis.
 
 ## Available Prompts
 
@@ -269,11 +273,11 @@ AI: Let me do that for you...
 
 ```
 User: Print this .ts file without syntax highlighting
-AI: *prints with force_render=false*
+AI: *prints with force_code_render=false*
 ✓ File sent as plain text
 
 User: Print this README.md with formatting even though I don't have auto-render enabled
-AI: *prints with force_render=true*
+AI: *prints with force_markdown_render=true*
 ✓ Rendered markdown → PDF
 ```
 
@@ -319,7 +323,7 @@ The server uses CUPS, which natively supports:
 - ✅ Plain text
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
-- ✅ Markdown (automatically rendered to PDF via `MCP_PRINTER_MARKDOWN_EXTENSIONS` or `force_render` parameter)
+- ✅ Markdown (automatically rendered to PDF when `MCP_PRINTER_ENABLE_MARKDOWN_RENDER` is enabled, or via `force_markdown_render` parameter)
 - ✅ Code files (see [Code Rendering](#code-rendering) for details)
 
 Other document formats may need conversion to PDF first.
@@ -336,8 +340,8 @@ JavaScript, TypeScript, Python, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Ruby,
 The system uses highlight.js for syntax highlighting, which supports a wide range of programming languages. Files are automatically detected by extension and rendered accordingly.
 
 **Configuration:**
+- To enable/disable all code rendering: Set `MCP_PRINTER_ENABLE_CODE_RENDER` to `"true"` or `"false"` (default: true)
 - To disable code rendering for specific extensions: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="ts,js,py"`
-- To disable all code rendering: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="all"`
 
 ### Color Schemes
 
@@ -389,13 +393,14 @@ brew install pandoc
 # Set MCP_PRINTER_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ```
 
-**Note:** You can use the `force_render` parameter in `print_file` to control whether markdown and code files are rendered to PDF on a per-call basis.
+**Note:** You can use the `force_markdown_render` and `force_code_render` parameters in `print_file` to control rendering on a per-call basis.
 
 ### Code not rendering with syntax highlighting
 1. Ensure Chrome/Chromium is installed (required for PDF generation)
-2. Check that the file extension is recognized (see [Code Rendering](#code-rendering))
-3. Verify `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` is not set to `"all"` or does not include your file's extension
-4. Try setting a different color scheme if the current one isn't working
+2. Verify `MCP_PRINTER_ENABLE_CODE_RENDER` is set to `"true"` (it's enabled by default)
+3. Check that the file extension is recognized (see [Code Rendering](#code-rendering))
+4. Verify `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` does not include your file's extension
+5. Try setting a different color scheme if the current one isn't working
 
 ### Code prints but with wrong colors/theme
 The color scheme might not exist. Try these reliable options:
@@ -405,7 +410,7 @@ The color scheme might not exist. Try these reliable options:
 - `xcode`
 
 ### Want to disable code rendering
-Set `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to `"all"` to disable all code rendering, or specify extensions to exclude (e.g., `"ts,js,py"`). See [Configuration](#configuration) for details.
+Set `MCP_PRINTER_ENABLE_CODE_RENDER` to `"false"` to disable all code rendering, or use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to exclude specific extensions (e.g., `"ts,js,py"`). See [Configuration](#configuration) for details.
 
 ### Server not showing in Cursor
 1. Restart Cursor after updating MCP config
