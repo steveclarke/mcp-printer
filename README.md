@@ -66,6 +66,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_ALLOWED_PATHS` | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** safe directory defaults when set (e.g., `"$HOME/Documents:$HOME/src"`) |
 | `MCP_PRINTER_DENIED_PATHS` | _(system dirs)_ | Colon-separated paths denied for printing. **Merged with** system directory defaults like `/etc`, `/var`, etc. (e.g., `"/home/user/private"`) |
 | `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false` | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead |
+| `MCP_PRINTER_MAX_COPIES` | `10` | Maximum copies allowed per print job (set to `0` for unlimited) |
 | `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering (e.g., `"exe,bin,so"`) - only applies when code rendering is enabled |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
 | `MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS` | `true` | Show line numbers in code printouts (set to `"false"` to disable) |
