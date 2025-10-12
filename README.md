@@ -49,6 +49,8 @@ Add to your MCP configuration file (e.g., `~/.cursor/mcp.json` for Cursor):
 
 That's it! The package will be automatically downloaded from npm on first use.
 
+> **📋 Requirements:** Google Chrome or Chromium is required for rendering markdown and code files to PDF. The server will auto-detect Chrome/Chromium installations on macOS/Linux. See [Requirements](#requirements) for details.
+
 > **⚠️ Security:** This server allows AI assistants to print files from safe directories (`~/Documents`, `~/Downloads`, `~/Desktop` by default). Dotfiles and hidden directories are always blocked to protect credentials. Only use with trusted AI assistants on your local machine. See [Security](#security) for configuration options.
 
 ## Configuration
@@ -61,7 +63,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_AUTO_DUPLEX` | `false` | Set to `"true"` to automatically print double-sided by default (can be overridden per-call) |
 | `MCP_PRINTER_DEFAULT_OPTIONS` | _(none)_ | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`) |
 | `MCP_PRINTER_CHROME_PATH` | _(auto-detected)_ | Path to Chrome/Chromium for PDF rendering (override if auto-detection fails) |
-| `MCP_PRINTER_AUTO_RENDER_MARKDOWN` | `false` | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`) |
+| `MCP_PRINTER_AUTO_RENDER_MARKDOWN` | `true` | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`) |
 | `MCP_PRINTER_AUTO_RENDER_CODE` | `true` | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`) |
 | `MCP_PRINTER_ENABLE_MANAGEMENT` | `false` | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` tools |
 | `MCP_PRINTER_ALLOWED_PATHS` | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** safe directory defaults when set (e.g., `"$HOME/Documents:$HOME/src"`) |
@@ -116,7 +118,7 @@ MCP_PRINTER_DEFAULT_PRINTER: HP_LaserJet_4001
 MCP_PRINTER_AUTO_DUPLEX: true
 MCP_PRINTER_DEFAULT_OPTIONS: (not set)
 MCP_PRINTER_CHROME_PATH: (auto-detected)
-MCP_PRINTER_AUTO_RENDER_MARKDOWN: false
+MCP_PRINTER_AUTO_RENDER_MARKDOWN: true
 MCP_PRINTER_AUTO_RENDER_CODE: true
 MCP_PRINTER_ENABLE_MANAGEMENT: false
 ```
@@ -205,7 +207,7 @@ AI: ✓ Set default printer to: HP_LaserJet_4001
 ```
 
 **Auto-rendering markdown:**
-Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN="true"` in your config to automatically render `.md` and `.markdown` files to PDF when using `print_file`. You can also use the `force_markdown_render` parameter to override this behavior on a per-call basis.
+Markdown files (`.md`, `.markdown`) are automatically rendered to beautiful PDFs by default. You can disable this by setting `MCP_PRINTER_AUTO_RENDER_MARKDOWN="false"`, or use the `force_markdown_render` parameter to override on a per-call basis.
 
 ## Available Prompts
 
@@ -328,7 +330,7 @@ The server uses CUPS, which natively supports:
 - ✅ Plain text
 - ✅ PostScript
 - ✅ Images (JPEG, PNG via conversion)
-- ✅ Markdown (automatically rendered to PDF when `MCP_PRINTER_AUTO_RENDER_MARKDOWN` is enabled, or via `force_markdown_render` parameter)
+- ✅ Markdown (automatically rendered to beautiful PDFs with page numbers, Mermaid diagrams, and syntax highlighting)
 - ✅ Code files (see [Code Rendering](#code-rendering) for details)
 
 Other document formats may need conversion to PDF first.
@@ -359,7 +361,7 @@ All diagrams render as visual graphics in the PDF output, not code blocks.
 
 ### Configuration
 
-- To enable/disable markdown rendering: Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN` to `"true"` or `"false"` (default: false)
+- To enable/disable markdown rendering: Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN` to `"true"` or `"false"` (default: true)
 - To force rendering on a per-call basis: Use the `force_markdown_render` parameter in `print_file`
 - Rendering uses a hardcoded GitHub Light theme optimized for clean, printer-friendly output
 - Page numbering is automatically added to all rendered PDFs (footer shows "Page X / Y")
@@ -692,8 +694,10 @@ Then reference it directly in your MCP config (without npx):
   - **Windows is not currently supported** (contributions welcome!)
 - **Node.js** 22+
 - **Google Chrome or Chromium** - Required for both code and markdown PDF rendering (auto-detected)
-  - Chrome is used by both the code renderer and crossnote (via Puppeteer)
-  - You can specify a custom Chrome path by setting `MCP_PRINTER_CHROME_PATH` 
+  - Both Chrome and Chromium work equally well (same browser engine)
+  - Auto-detection searches for: Chrome, Chromium, chromium-browser (Linux), Chrome Canary
+  - Linux users: `chromium` or `chromium-browser` are fully supported
+  - You can specify a custom path by setting `MCP_PRINTER_CHROME_PATH`
 - Printers configured in your system
 
 ## Contributing
