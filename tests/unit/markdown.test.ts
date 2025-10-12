@@ -31,14 +31,14 @@ describe('renderMarkdownToPdf', () => {
 
 
   it('should render a simple markdown file to PDF', async () => {
-    // Create a simple test file in the test fixtures directory
+    // Create a simple test file in the test tmp directory
     const { writeFileSync } = await import('fs');
     const { join, dirname } = await import('path');
     const { fileURLToPath } = await import('url');
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test.md');
+    const testFile = join(__dirname, '../tmp/test.md');
     writeFileSync(testFile, '# Hello World\n\nThis is a **test** markdown file.', 'utf-8');
     
     try {
@@ -65,7 +65,7 @@ describe('renderMarkdownToPdf', () => {
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-code-blocks.md');
+    const testFile = join(__dirname, '../tmp/test-code-blocks.md');
     
     const markdownContent = `# Code Example
 
@@ -99,7 +99,7 @@ Some text after the code.`;
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-formatting.md');
+    const testFile = join(__dirname, '../tmp/test-formatting.md');
     
     const markdownContent = `# Features
 
@@ -136,7 +136,7 @@ Some text after the code.`;
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-empty.md');
+    const testFile = join(__dirname, '../tmp/test-empty.md');
     writeFileSync(testFile, '', 'utf-8');
     
     try {
@@ -160,7 +160,7 @@ Some text after the code.`;
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const testFile = join(__dirname, '../fixtures/test-special.md');
+    const testFile = join(__dirname, '../tmp/test-special.md');
     
     const markdownContent = `# Special Characters
 

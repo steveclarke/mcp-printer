@@ -345,7 +345,6 @@ Markdown files are rendered to beautifully formatted PDFs using [crossnote](http
 - 🎨 **Syntax highlighting** - Code blocks within markdown are beautifully highlighted
 - ➕ **Math rendering** - KaTeX support for mathematical expressions
 - 📐 **Tables & formatting** - Professional table styling, blockquotes, and all standard markdown features
-- 🚫 **No Pandoc required** - Pure JavaScript rendering, works offline
 
 ### Diagram Support
 
@@ -459,7 +458,7 @@ Chrome/Chromium is required for PDF rendering (markdown and code files). It shou
 }
 ```
 
-Markdown rendering uses [crossnote](https://github.com/shd101wyy/crossnote) with bundled Chromium via Puppeteer, so no Pandoc installation is required!
+Markdown rendering uses [crossnote](https://github.com/shd101wyy/crossnote) for PDF generation.
 
 **Note:** You can use the `force_markdown_render` and `force_code_render` parameters in `print_file` to control rendering on a per-call basis.
 
@@ -692,12 +691,10 @@ Then reference it directly in your MCP config (without npx):
   - Linux: Install CUPS if not present (`sudo apt install cups` on Ubuntu/Debian)
   - **Windows is not currently supported** (contributions welcome!)
 - **Node.js** 22+
-- **Google Chrome or Chromium** - Required for code rendering (auto-detected)
-  - Markdown rendering uses crossnote with bundled Chromium (via Puppeteer) - no separate Chrome installation needed for markdown!
-  - You can use your system Chrome for both by setting `MCP_PRINTER_CHROME_PATH` 
+- **Google Chrome or Chromium** - Required for both code and markdown PDF rendering (auto-detected)
+  - Chrome is used by both the code renderer and crossnote (via Puppeteer)
+  - You can specify a custom Chrome path by setting `MCP_PRINTER_CHROME_PATH` 
 - Printers configured in your system
-
-**Note:** No Pandoc required! Markdown rendering uses [crossnote](https://github.com/shd101wyy/crossnote), a pure JavaScript solution.
 
 ## Contributing
 

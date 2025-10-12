@@ -9,5 +9,8 @@ package-lock.json
 yarn.lock
 /tmp/
 
+# Test temporary files
+tests/tmp/
+
 # Test coverage
 coverage/

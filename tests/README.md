@@ -65,5 +65,5 @@ Potential additions for comprehensive testing:
 
 ## Test Helpers
 
-The `tests/helpers/` directory is available for shared test utilities and fixtures as the test suite grows.
+The `tests/helpers/` directory is available for shared test utilities as the test suite grows. Temporary test files are written to `tests/tmp/` (not tracked in git).
 
