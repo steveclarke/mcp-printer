@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-10-13
+
+### Added
+- New `MCP_PRINTER_ENABLE_PROMPTS` environment variable to enable/disable prompt registration
+- Prompts can now be disabled by setting `MCP_PRINTER_ENABLE_PROMPTS=false` in configuration
+- Prompts are enabled by default
+
+### Changed
+- Updated `get_config` tool to display `MCP_PRINTER_ENABLE_PROMPTS` status
+
 ## [1.0.0] - 2025-10-13
 
 ### Added
