@@ -42,7 +42,7 @@ export function registerPrinterTools(server: McpServer) {
           ? config.code.excludeExtensions.join(", ")
           : "(not set)",
         MCP_PRINTER_CODE_COLOR_SCHEME: config.code.colorScheme,
-        MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS: config.code.enableLineNumbers ? "true" : "false",
+        MCP_PRINTER_CODE_AUTO_LINE_NUMBERS: config.code.autoLineNumbers ? "true" : "false",
         MCP_PRINTER_CODE_FONT_SIZE: config.code.fontSize,
         MCP_PRINTER_CODE_LINE_SPACING: config.code.lineSpacing
       };

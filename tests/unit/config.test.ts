@@ -148,13 +148,13 @@ describe('config', () => {
   it('should load code rendering configs from environment with defaults', async () => {
     // Test defaults
     delete process.env.MCP_PRINTER_CODE_COLOR_SCHEME;
-    delete process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS;
+    delete process.env.MCP_PRINTER_CODE_AUTO_LINE_NUMBERS;
     delete process.env.MCP_PRINTER_CODE_FONT_SIZE;
     delete process.env.MCP_PRINTER_CODE_LINE_SPACING;
     
     const { config: defaultConfig } = await import('../../src/config.js');
     expect(defaultConfig.code.colorScheme).toBe('atom-one-light');
-    expect(defaultConfig.code.enableLineNumbers).toBe(true);
+    expect(defaultConfig.code.autoLineNumbers).toBe(true);
     expect(defaultConfig.code.fontSize).toBe('10pt');
     expect(defaultConfig.code.lineSpacing).toBe('1.5');
     
@@ -162,13 +162,13 @@ describe('config', () => {
     
     // Test loading from environment
     process.env.MCP_PRINTER_CODE_COLOR_SCHEME = 'monokai';
-    process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS = 'false';
+    process.env.MCP_PRINTER_CODE_AUTO_LINE_NUMBERS = 'false';
     process.env.MCP_PRINTER_CODE_FONT_SIZE = '12pt';
     process.env.MCP_PRINTER_CODE_LINE_SPACING = '2.0';
     
     const { config: envConfig } = await import('../../src/config.js');
     expect(envConfig.code.colorScheme).toBe('monokai');
-    expect(envConfig.code.enableLineNumbers).toBe(false);
+    expect(envConfig.code.autoLineNumbers).toBe(false);
     expect(envConfig.code.fontSize).toBe('12pt');
     expect(envConfig.code.lineSpacing).toBe('2.0');
   });

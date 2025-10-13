@@ -407,7 +407,7 @@ export async function renderCodeToPdf(
   const lines = fixMultilineSpans(highlightedCode).split("\n");
   
   // Step 5: Build HTML structure with configuration
-  const showLineNumbers = lineNumbers ?? config.code.enableLineNumbers;
+  const showLineNumbers = lineNumbers ?? config.code.autoLineNumbers;
   const tableRows = buildTableRows(lines, showLineNumbers);
   
   const selectedColorScheme = colorScheme ?? config.code.colorScheme;

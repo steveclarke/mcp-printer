@@ -74,7 +74,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_MAX_COPIES` | `10` | Maximum copies allowed per print job (set to `0` for unlimited) |
 | `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering (e.g., `"json,yaml,html"`) - only applies when code rendering is enabled |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
-| `MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS` | `true` | Show line numbers in code printouts (set to `"false"` to disable). Can be overridden per-call with the `line_numbers` parameter. |
+| `MCP_PRINTER_CODE_AUTO_LINE_NUMBERS` | `true` | Automatically show line numbers in code printouts (can be overridden per-call with the `line_numbers` parameter) |
 | `MCP_PRINTER_CODE_FONT_SIZE` | `"10pt"` | Font size for code (e.g., `"8pt"`, `"12pt"`) |
 | `MCP_PRINTER_CODE_LINE_SPACING` | `"1.5"` | Line spacing multiplier for code (e.g., `"1"`, `"1.5"`, `"2"`) |
 

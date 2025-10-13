@@ -35,8 +35,8 @@ export interface Config {
     excludeExtensions: string[];
     /** Highlight.js color scheme for syntax highlighting */
     colorScheme: string;
-    /** Whether to show line numbers in code rendering */
-    enableLineNumbers: boolean;
+    /** Whether to automatically show line numbers in code rendering (can be overridden per-call) */
+    autoLineNumbers: boolean;
     /** Font size for code rendering (e.g., "10pt") */
     fontSize: string;
     /** Line spacing for code rendering (e.g., "1.5") */
@@ -63,7 +63,7 @@ const DEFAULT_ENABLE_MANAGEMENT = false;
 const DEFAULT_FALLBACK_ON_RENDER_ERROR = false;
 const DEFAULT_MAX_COPIES = 10;
 const DEFAULT_CODE_COLOR_SCHEME = "atom-one-light";
-const DEFAULT_CODE_ENABLE_LINE_NUMBERS = true;
+const DEFAULT_CODE_AUTO_LINE_NUMBERS = true;
 const DEFAULT_CODE_FONT_SIZE = "10pt";
 const DEFAULT_CODE_LINE_SPACING = "1.5";
 
@@ -143,7 +143,7 @@ export const config: Config = {
   code: {
     excludeExtensions: parseDelimitedString(process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS, ',', s => s.toLowerCase()),
     colorScheme: process.env.MCP_PRINTER_CODE_COLOR_SCHEME || DEFAULT_CODE_COLOR_SCHEME,
-    enableLineNumbers: yn(process.env.MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS, { default: DEFAULT_CODE_ENABLE_LINE_NUMBERS }),
+    autoLineNumbers: yn(process.env.MCP_PRINTER_CODE_AUTO_LINE_NUMBERS, { default: DEFAULT_CODE_AUTO_LINE_NUMBERS }),
     fontSize: process.env.MCP_PRINTER_CODE_FONT_SIZE || DEFAULT_CODE_FONT_SIZE,
     lineSpacing: process.env.MCP_PRINTER_CODE_LINE_SPACING || DEFAULT_CODE_LINE_SPACING,
   }
