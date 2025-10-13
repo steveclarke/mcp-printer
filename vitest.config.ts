@@ -8,6 +8,10 @@ export default defineConfig({
     // Global test setup
     globals: true,
 
+    // Default timeout for unit tests (5 seconds)
+    // Integration tests override this via CLI flag in package.json scripts
+    testTimeout: 5000,
+
     // Coverage configuration
     coverage: {
       provider: "v8",
