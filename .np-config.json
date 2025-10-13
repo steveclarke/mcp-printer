@@ -1,0 +1,18 @@
+{
+  "git": {
+    "requireBranch": "master",
+    "requireCleanWorkingDirectory": true,
+    "requireUpToDate": true,
+    "tagName": "v${version}"
+  },
+  "npm": {
+    "publish": true,
+    "publishTag": "latest"
+  },
+  "github": {
+    "release": true
+  },
+  "tests": true,
+  "anyBranch": false,
+  "preview": false
+}
