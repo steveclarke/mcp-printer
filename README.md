@@ -68,6 +68,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_AUTO_RENDER_MARKDOWN`     | `true`                                    | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`)                              |
 | `MCP_PRINTER_AUTO_RENDER_CODE`         | `true`                                    | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`)                                  |
 | `MCP_PRINTER_ENABLE_MANAGEMENT`        | `false`                                   | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` tools  |
+| `MCP_PRINTER_ENABLE_PROMPTS`           | `true`                                    | Enable prompts (workflow templates). Set to `"false"` to disable prompt registration if you don't want prompts in your MCP client             |
 | `MCP_PRINTER_ALLOWED_PATHS`            | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** default allowed directories when set (e.g., `"$HOME/Documents:$HOME/src"`)          |
 | `MCP_PRINTER_DENIED_PATHS`             | _(system dirs)_                           | Colon-separated paths denied for printing. **Merged with** system directory defaults like `/etc`, `/var`, etc. (e.g., `"/home/user/private"`) |
 | `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false`                                   | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead                      |
@@ -91,6 +92,7 @@ All configuration is optional. Add an `env` object to customize behavior:
         "MCP_PRINTER_DEFAULT_OPTIONS": "fit-to-page",
         "MCP_PRINTER_AUTO_RENDER_MARKDOWN": "true",
         "MCP_PRINTER_AUTO_RENDER_CODE": "true",
+        "MCP_PRINTER_ENABLE_PROMPTS": "true",
         "MCP_PRINTER_CODE_COLOR_SCHEME": "github",
         "MCP_PRINTER_CODE_FONT_SIZE": "9pt",
         "MCP_PRINTER_ALLOWED_PATHS": "/Users/myname/Documents:/Users/myname/Downloads:/Users/myname/projects"
@@ -123,6 +125,7 @@ MCP_PRINTER_CHROME_PATH: (auto-detected)
 MCP_PRINTER_AUTO_RENDER_MARKDOWN: true
 MCP_PRINTER_AUTO_RENDER_CODE: true
 MCP_PRINTER_ENABLE_MANAGEMENT: false
+MCP_PRINTER_ENABLE_PROMPTS: true
 ```
 
 ### `list_printers`

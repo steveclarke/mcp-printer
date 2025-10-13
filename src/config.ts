@@ -21,6 +21,8 @@ export interface Config {
   autoRenderCode: boolean
   /** Enable management operations (set_default_printer, cancel_print_job) */
   enableManagement: boolean
+  /** Enable prompts (workflow templates that appear as slash commands) */
+  enablePrompts: boolean
   /** Fallback to printing original file if PDF rendering fails (for markdown and code) */
   fallbackOnRenderError: boolean
   /** List of directory paths that files must be under to be accessible (merged with defaults) */
@@ -65,6 +67,7 @@ const DEFAULT_CHROME_PATH = ""
 const DEFAULT_AUTO_RENDER_MARKDOWN = true
 const DEFAULT_AUTO_RENDER_CODE = true
 const DEFAULT_ENABLE_MANAGEMENT = false
+const DEFAULT_ENABLE_PROMPTS = true
 const DEFAULT_FALLBACK_ON_RENDER_ERROR = false
 const DEFAULT_MAX_COPIES = 10
 const DEFAULT_CODE_COLOR_SCHEME = "atom-one-light"
@@ -147,6 +150,9 @@ export const config: Config = {
   }),
   enableManagement: yn(process.env.MCP_PRINTER_ENABLE_MANAGEMENT, {
     default: DEFAULT_ENABLE_MANAGEMENT,
+  }),
+  enablePrompts: yn(process.env.MCP_PRINTER_ENABLE_PROMPTS, {
+    default: DEFAULT_ENABLE_PROMPTS,
   }),
   fallbackOnRenderError: yn(process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR, {
     default: DEFAULT_FALLBACK_ON_RENDER_ERROR,
