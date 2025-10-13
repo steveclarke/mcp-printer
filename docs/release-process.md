@@ -2,15 +2,28 @@
 
 This document describes the ongoing release process for `mcp-printer` using the `np` release tool.
 
+## Prerequisites
+
+Before you can release, make sure you have:
+
+- [ ] All changes are committed and pushed
+- [ ] All tests pass: `pnpm test`
+- [ ] Build succeeds: `pnpm run build`
+- [ ] You've updated `CHANGELOG.md` with new version changes
+- [ ] README is up to date if there are new features
+- [ ] You're on the `master` branch
+- [ ] Your branch is up to date: `git pull`
+- [ ] You're logged in to npm: `npm whoami`
+
 ## Quick Start
 
-To release a new version:
+Once you've completed the prerequisites above, releasing is simple:
 
 ```bash
 pnpm release
 ```
 
-That's it! The `np` tool will guide you through an interactive release process.
+The `np` tool will guide you through an interactive release process that handles version bumping, testing, building, tagging, publishing, and creating a GitHub release.
 
 ## Version Selection
 
@@ -71,18 +84,6 @@ Here's what happens when you run `pnpm release`:
 ### 9. Success!
 - `np` shows a summary of what was published
 - Provides links to npm package and GitHub release
-
-## Pre-Release Checklist
-
-Before running `pnpm release`, make sure:
-
-- [ ] All changes are committed and pushed
-- [ ] All tests pass: `pnpm test`
-- [ ] Build succeeds: `pnpm run build`
-- [ ] You've updated `CHANGELOG.md` with new version changes
-- [ ] README is up to date if there are new features
-- [ ] You're on the `master` branch
-- [ ] Your branch is up to date: `git pull`
 
 ## Common Commands
 
@@ -255,10 +256,9 @@ You can modify this file to change the default behavior.
 
 ## Tips
 
+- **Complete all prerequisites** before starting a release (see Prerequisites section above)
 - **Use preview mode** when learning: `pnpm release --preview`
-- **Update CHANGELOG.md** before each release
 - **Follow semantic versioning** for version numbers
-- **Test thoroughly** before releasing
 - **Don't rush** - the interactive prompts give you time to verify each step
 
 ## Additional Resources
