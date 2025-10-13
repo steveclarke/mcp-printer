@@ -15,19 +15,26 @@ import { config } from "../config.js";
 import { Notebook } from "crossnote";
 
 /**
- * Page numbering configuration object for Puppeteer PDF generation.
+ * Page numbering configuration function for Puppeteer PDF generation.
+ * @param filename - The name of the file being rendered (displayed in footer)
+ * @returns Configuration object with header/footer templates
  */
-const PAGE_NUMBER_CHROME_CONFIG = {
-  displayHeaderFooter: true,
-  headerTemplate: '<div></div>',
-  footerTemplate: '<div style="font-size:9px; text-align:center; width:100%; margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', \'Helvetica\', \'Arial\', sans-serif;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
-  margin: {
-    top: '1cm',
-    bottom: '1.5cm',
-    left: '1cm',
-    right: '1cm',
-  },
-};
+function getPageNumberConfig(filename: string) {
+  return {
+    displayHeaderFooter: true,
+    headerTemplate: '<div></div>',
+    footerTemplate: `<div style="font-size:9px; width:100%; margin:0; padding:0 1cm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif; display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:8px; color:#666;">${filename}</span>
+      <span><span class="pageNumber"></span> / <span class="totalPages"></span></span>
+    </div>`,
+    margin: {
+      top: '1cm',
+      bottom: '1.5cm',
+      left: '1cm',
+      right: '1cm',
+    },
+  };
+}
 
 /**
  * Extracts YAML front-matter from markdown content.
@@ -65,14 +72,15 @@ function extractFrontMatter(content: string): { frontMatter: any; body: string }
  * Injects page numbering configuration into markdown content.
  * Properly merges with existing front-matter if present.
  * @param content - Original markdown content
+ * @param filename - Name of the file being rendered (displayed in footer)
  * @returns Markdown content with page numbering front-matter added/merged
  */
-function injectPageNumbering(content: string): string {
+function injectPageNumbering(content: string, filename: string): string {
   const extracted = extractFrontMatter(content);
   
   if (extracted === null) {
     // No front-matter exists, add it
-    const yamlString = stringifyYaml({ chrome: PAGE_NUMBER_CHROME_CONFIG });
+    const yamlString = stringifyYaml({ chrome: getPageNumberConfig(filename) });
     return `---\n${yamlString}---\n\n${content}`;
   }
   
@@ -86,7 +94,7 @@ function injectPageNumbering(content: string): string {
   // Merge in the chrome config with existing front-matter
   const mergedFrontMatter = {
     ...frontMatter,
-    chrome: PAGE_NUMBER_CHROME_CONFIG,
+    chrome: getPageNumberConfig(filename),
   };
   
   const yamlString = stringifyYaml(mergedFrontMatter);
@@ -110,7 +118,7 @@ export async function renderMarkdownToPdf(filePath: string): Promise<string> {
   const originalContent = readFileSync(filePath, 'utf-8');
   
   // Inject page numbering configuration if not already present
-  const contentWithPageNumbers = injectPageNumbering(originalContent);
+  const contentWithPageNumbers = injectPageNumbering(originalContent, basename(filePath));
   
   // Create a temporary directory for the modified markdown file
   const tempDir = mkdtempSync(join(tmpdir(), 'mcp-printer-markdown-'));

@@ -49,6 +49,8 @@ Add to your MCP configuration file (e.g., `~/.cursor/mcp.json` for Cursor):
 
 That's it! The package will be automatically downloaded from npm on first use.
 
+> **🖥️ Platform Support:** This server currently supports **macOS and Linux only**. Windows is not currently supported (contributions welcome!).
+
 > **📋 Requirements:** Google Chrome or Chromium is required for rendering markdown and code files to PDF. The server will auto-detect Chrome/Chromium installations on macOS/Linux. See [Requirements](#requirements) for details.
 
 > **⚠️ Security:** This server allows AI assistants to print files from safe directories (`~/Documents`, `~/Downloads`, `~/Desktop` by default). Dotfiles and hidden directories are always blocked to protect credentials. Only use with trusted AI assistants on your local machine. See [Security](#security) for configuration options.
@@ -70,7 +72,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_DENIED_PATHS` | _(system dirs)_ | Colon-separated paths denied for printing. **Merged with** system directory defaults like `/etc`, `/var`, etc. (e.g., `"/home/user/private"`) |
 | `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false` | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead |
 | `MCP_PRINTER_MAX_COPIES` | `10` | Maximum copies allowed per print job (set to `0` for unlimited) |
-| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering (e.g., `"exe,bin,so"`) - only applies when code rendering is enabled |
+| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering (e.g., `"json,yaml,txt"`) - only applies when code rendering is enabled |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
 | `MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS` | `true` | Show line numbers in code printouts (set to `"false"` to disable). Can be overridden per-call with the `line_numbers` parameter. |
 | `MCP_PRINTER_CODE_FONT_SIZE` | `"10pt"` | Font size for code (e.g., `"8pt"`, `"12pt"`) |
