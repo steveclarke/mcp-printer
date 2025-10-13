@@ -8,7 +8,8 @@
 import { dirname, basename, join } from "path";
 import { readFileSync, writeFileSync, mkdtempSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import matter from "gray-matter";
+import he from "he";
 import { findChrome } from "../utils.js";
 import { validateFilePath } from "../file-security.js";
 import { config } from "../config.js";
@@ -16,17 +17,37 @@ import { Notebook } from "crossnote";
 
 /**
  * Page numbering configuration function for Puppeteer PDF generation.
+ * Generates header/footer templates with inline styles (required by Puppeteer).
+ * Filename is HTML-escaped to prevent XSS and rendering issues.
+ * 
  * @param filename - The name of the file being rendered (displayed in footer)
  * @returns Configuration object with header/footer templates
  */
 function getPageNumberConfig(filename: string) {
+  // Puppeteer PDF headers/footers require inline styles (no external CSS support)
+  const footerStyles = {
+    container: [
+      'font-size: 9px',
+      'width: 100%',
+      'margin: 0',
+      'padding: 0 1cm',
+      'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+      'display: flex',
+      'justify-content: space-between',
+      'align-items: center'
+    ].join('; '),
+    filename: 'font-size: 8px; color: #666;'
+  };
+
   return {
     displayHeaderFooter: true,
     headerTemplate: '<div></div>',
-    footerTemplate: `<div style="font-size:9px; width:100%; margin:0; padding:0 1cm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif; display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:8px; color:#666;">${filename}</span>
-      <span><span class="pageNumber"></span> / <span class="totalPages"></span></span>
-    </div>`,
+    footerTemplate: `
+      <div style="${footerStyles.container}">
+        <span style="${footerStyles.filename}">${he.encode(filename)}</span>
+        <span><span class="pageNumber"></span> / <span class="totalPages"></span></span>
+      </div>
+    `,
     margin: {
       top: '1cm',
       bottom: '1.5cm',
@@ -37,68 +58,29 @@ function getPageNumberConfig(filename: string) {
 }
 
 /**
- * Extracts YAML front-matter from markdown content.
- * @param content - Markdown file content
- * @returns Object with frontMatter (parsed YAML) and body (rest of content), or null if no front-matter
- */
-function extractFrontMatter(content: string): { frontMatter: any; body: string } | null {
-  const trimmed = content.trimStart();
-  
-  // Check if file starts with YAML front-matter (---)
-  if (!trimmed.startsWith('---')) {
-    return null;
-  }
-  
-  // Find the closing --- (must be at start of line after at least one character)
-  const frontMatterEnd = trimmed.indexOf('\n---', 3);
-  if (frontMatterEnd === -1) {
-    return null;
-  }
-  
-  // Extract the YAML content (between the --- markers)
-  const yamlContent = trimmed.substring(3, frontMatterEnd).trim();
-  const body = trimmed.substring(frontMatterEnd + 4); // +4 to skip "\n---"
-  
-  try {
-    const frontMatter = parseYaml(yamlContent) || {};
-    return { frontMatter, body };
-  } catch (error) {
-    // If YAML parsing fails, treat it as if there's no front-matter
-    return null;
-  }
-}
-
-/**
  * Injects page numbering configuration into markdown content.
  * Properly merges with existing front-matter if present.
+ * Uses gray-matter's stringify for robust formatting.
  * @param content - Original markdown content
  * @param filename - Name of the file being rendered (displayed in footer)
  * @returns Markdown content with page numbering front-matter added/merged
  */
 function injectPageNumbering(content: string, filename: string): string {
-  const extracted = extractFrontMatter(content);
-  
-  if (extracted === null) {
-    // No front-matter exists, add it
-    const yamlString = stringifyYaml({ chrome: getPageNumberConfig(filename) });
-    return `---\n${yamlString}---\n\n${content}`;
-  }
-  
-  const { frontMatter, body } = extracted;
+  const { data, content: body } = matter(content);
   
   // Check if user already has chrome or puppeteer config - respect their settings
-  if (frontMatter.chrome || frontMatter.puppeteer) {
+  if (data.chrome || data.puppeteer) {
     return content; // Don't modify user's existing config
   }
   
-  // Merge in the chrome config with existing front-matter
+  // Merge in the chrome config with existing front-matter (even if empty)
   const mergedFrontMatter = {
-    ...frontMatter,
+    ...data,
     chrome: getPageNumberConfig(filename),
   };
   
-  const yamlString = stringifyYaml(mergedFrontMatter);
-  return `---\n${yamlString}---${body}`;
+  // Use gray-matter's stringify to properly format the document
+  return matter.stringify(body, mergedFrontMatter);
 }
 
 /**
