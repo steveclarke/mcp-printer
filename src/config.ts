@@ -70,7 +70,7 @@ const DEFAULT_CODE_LINE_SPACING = "1.5";
 // Get home directory for security defaults
 const homeDir = homedir();
 
-// Default allowed paths - restricted to safe directories only
+// Default allowed paths - restricted to common user directories only
 const defaultAllowedPaths = [
   join(homeDir, 'Documents'),
   join(homeDir, 'Downloads'),
@@ -136,7 +136,7 @@ export const config: Config = {
   autoRenderCode: yn(process.env.MCP_PRINTER_AUTO_RENDER_CODE, { default: DEFAULT_AUTO_RENDER_CODE }),
   enableManagement: yn(process.env.MCP_PRINTER_ENABLE_MANAGEMENT, { default: DEFAULT_ENABLE_MANAGEMENT }),
   fallbackOnRenderError: yn(process.env.MCP_PRINTER_FALLBACK_ON_RENDER_ERROR, { default: DEFAULT_FALLBACK_ON_RENDER_ERROR }),
-  // Use user-provided paths if set, otherwise use safe default directories
+  // Use user-provided paths if set, otherwise use default allowed directories
   allowedPaths: hasUserPaths ? userAllowedPaths : [...defaultAllowedPaths],
   deniedPaths: [...defaultDeniedPaths, ...userDeniedPaths],
   maxCopies: parseInt(process.env.MCP_PRINTER_MAX_COPIES || String(DEFAULT_MAX_COPIES), 10),

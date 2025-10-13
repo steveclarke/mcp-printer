@@ -53,7 +53,7 @@ That's it! The package will be automatically downloaded from npm on first use.
 
 > **📋 Requirements:** Google Chrome or Chromium is required for rendering markdown and code files to PDF. The server will auto-detect Chrome/Chromium installations on macOS/Linux. See [Requirements](#requirements) for details.
 
-> **⚠️ Security:** This server allows AI assistants to print files from safe directories (`~/Documents`, `~/Downloads`, `~/Desktop` by default). Dotfiles and hidden directories are always blocked to protect credentials. Only use with trusted AI assistants on your local machine. See [Security](#security) for configuration options.
+> **⚠️ Security:** This server allows AI assistants to print files from allowed directories (`~/Documents`, `~/Downloads`, `~/Desktop` by default). Dotfiles and hidden directories are always blocked. Only use with trusted AI assistants on your local machine. See [Security](#security) for configuration options.
 
 ## Configuration
 
@@ -68,7 +68,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_AUTO_RENDER_MARKDOWN` | `true` | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`) |
 | `MCP_PRINTER_AUTO_RENDER_CODE` | `true` | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`) |
 | `MCP_PRINTER_ENABLE_MANAGEMENT` | `false` | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` tools |
-| `MCP_PRINTER_ALLOWED_PATHS` | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** safe directory defaults when set (e.g., `"$HOME/Documents:$HOME/src"`) |
+| `MCP_PRINTER_ALLOWED_PATHS` | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** default allowed directories when set (e.g., `"$HOME/Documents:$HOME/src"`) |
 | `MCP_PRINTER_DENIED_PATHS` | _(system dirs)_ | Colon-separated paths denied for printing. **Merged with** system directory defaults like `/etc`, `/var`, etc. (e.g., `"/home/user/private"`) |
 | `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false` | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead |
 | `MCP_PRINTER_MAX_COPIES` | `10` | Maximum copies allowed per print job (set to `0` for unlimited) |
@@ -100,9 +100,9 @@ All configuration is optional. Add an `env` object to customize behavior:
 }
 ```
 
-💡 **Note:** The `MCP_PRINTER_ALLOWED_PATHS` example above **replaces** the default allowed directories. If you set this variable, you must explicitly include any default directories you want to keep (like Documents, Downloads, Desktop) plus any additional directories like your projects folder. Use colon-separated absolute paths (`:` on macOS/Linux, `;` on Windows).
+💡 **Note:** The `MCP_PRINTER_ALLOWED_PATHS` example above **replaces** the default allowed directories. If you set this variable, you must explicitly include any default directories you want to keep (like Documents, Downloads, Desktop) plus any additional directories like your projects folder. Use colon-separated absolute paths (`:`).
 
-💡 **Tip:** Run `lpstat -p` in your terminal to see your exact printer names.
+💡 **Tip:** You can use the `list_printers` tool to see all available printers and their exact names.
 
 User-specified options in prompts always override these defaults.
 
@@ -130,6 +130,7 @@ List all available printers with their status.
 
 **Example:**
 ```
+User: What printers do I have available?
 AI: Let me check what printers you have...
 → HP_LaserJet_4001 is idle and accepting jobs
 → Canon_Pixma is disabled
@@ -169,6 +170,7 @@ Check the print queue for pending jobs.
 
 **Example:**
 ```
+User: What's in my print queue?
 AI: Let me check your print queue...
 → Job 123: document.pdf (active)
 → Job 124: notes.txt (pending)
@@ -193,6 +195,7 @@ Get the system's default printer (not the MCP_PRINTER_DEFAULT_PRINTER config set
 
 **Example:**
 ```
+User: What's my default printer?
 AI: Your default printer is: HP_LaserJet_4001
 ```
 
@@ -207,9 +210,6 @@ Set a printer as the default.
 User: Make HP LaserJet my default printer
 AI: ✓ Set default printer to: HP_LaserJet_4001
 ```
-
-**Auto-rendering markdown:**
-Markdown files (`.md`, `.markdown`) are automatically rendered to beautiful PDFs by default. You can disable this by setting `MCP_PRINTER_AUTO_RENDER_MARKDOWN="false"`, or use the `force_markdown_render` parameter to override on a per-call basis.
 
 ## Available Prompts
 
@@ -260,12 +260,6 @@ AI: *automatically renders with syntax highlighting*
 ✓ File sent to printer: HP_LaserJet_Pro
   Rendered: code → PDF (syntax highlighted)
 ```
-
-Code files are automatically rendered with:
-- Syntax highlighting based on file type
-- Line numbers
-- Professional monospace font
-- Configurable color scheme and font size
 
 ### Print Documentation
 
@@ -327,13 +321,13 @@ For a complete list of available options:
 
 ## Supported File Types
 
-The server uses CUPS, which natively supports:
+The server uses CUPS, which supports:
 - ✅ PDF
 - ✅ Plain text
-- ✅ PostScript
-- ✅ Images (JPEG, PNG via conversion)
-- ✅ Markdown (automatically rendered to beautiful PDFs with page numbers, Mermaid diagrams, and syntax highlighting)
+- ✅ Images (JPEG, PNG)
+- ✅ Markdown
 - ✅ Code files (see [Code Rendering](#code-rendering) for details)
+- ⚠️ PostScript (printer-dependent - some printers may not support it)
 
 Other document formats may need conversion to PDF first.
 
@@ -348,13 +342,12 @@ Markdown files are rendered to beautifully formatted PDFs using [crossnote](http
 - 📊 **Mermaid diagrams** - Flowcharts, sequence diagrams, class diagrams render as visual graphics
 - 🎨 **Syntax highlighting** - Code blocks within markdown are beautifully highlighted
 - ➕ **Math rendering** - KaTeX support for mathematical expressions
-- 📐 **Tables & formatting** - Professional table styling, blockquotes, and all standard markdown features
+- 📐 **Tables & formatting** - Table styling, blockquotes, and all standard markdown features
 
 ### Diagram Support
 
-Markdown rendering includes full support for:
+Markdown rendering includes support for:
 - **Mermaid** - Flowcharts, sequence diagrams, class diagrams, state diagrams, etc.
-- **PlantUML** - UML diagrams
 - **WaveDrom** - Digital timing diagrams  
 - **GraphViz** - Graph visualizations
 - **Vega & Vega-Lite** - Data visualizations
@@ -365,8 +358,6 @@ All diagrams render as visual graphics in the PDF output, not code blocks.
 
 - To enable/disable markdown rendering: Set `MCP_PRINTER_AUTO_RENDER_MARKDOWN` to `"true"` or `"false"` (default: true)
 - To force rendering on a per-call basis: Use the `force_markdown_render` parameter in `print_file`
-- Rendering uses a hardcoded GitHub Light theme optimized for clean, printer-friendly output
-- Page numbering is automatically added to all rendered PDFs (footer shows "Page X / Y")
 
 ### Custom Page Numbering
 
@@ -421,38 +412,22 @@ HTML (`.html`), CSS (`.css`), SCSS (`.scss`), Sass (`.sass` - uses SCSS highligh
 Files with unknown extensions (like `.txt`, `.bak`, `.weird`) will NOT be automatically rendered. To render these files with syntax highlighting, the AI can use the `force_code_render=true` parameter in the `print_file` tool call.
 
 **Configuration:**
-- To enable/disable all code rendering: Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"true"` or `"false"` (default: true)
-- To disable code rendering for specific extensions: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="json,yaml,html"`
+- To enable/disable automatic code rendering: Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"true"` or `"false"` (default: true)
+- To disable automatic code rendering for specific extensions: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="json,yaml,html"`
 - To force code rendering for a specific file: Use the `force_code_render` parameter in `print_file`
 
 ### Color Schemes
 
-The following syntax highlighting themes are available (set via `MCP_PRINTER_CODE_COLOR_SCHEME`):
+The following light themes are recommended for printing (set via `MCP_PRINTER_CODE_COLOR_SCHEME`):
 
-**Light themes (good for printing):**
 - `atom-one-light` (default)
 - `github`
 - `googlecode`
 - `xcode`
 - `vs`
 - `stackoverflow-light`
-- `ascetic`
-
-**Dark themes:**
-- `atom-one-dark`
-- `monokai`
-- `github-dark`
-- `vs2015`
-- `tomorrow-night`
-- `nord`
-
-**Other popular themes:**
-- `gruvbox-light`, `gruvbox-dark`
-- `solarized-light`, `solarized-dark`
-- `dracula`
-- `tokyo-night`
-
-For a complete list of available themes, see the [highlight.js demo](https://highlightjs.org/static/demo/)
+- `gruvbox-light`
+- `solarized-light`
 
 ## Troubleshooting
 
@@ -475,10 +450,6 @@ Chrome/Chromium is required for PDF rendering (markdown and code files). It shou
 }
 ```
 
-Markdown rendering uses [crossnote](https://github.com/shd101wyy/crossnote) for PDF generation.
-
-**Note:** You can use the `force_markdown_render` and `force_code_render` parameters in `print_file` to control rendering on a per-call basis.
-
 ### Code not rendering with syntax highlighting
 1. Ensure Chrome/Chromium is installed (required for PDF generation)
 2. Verify `MCP_PRINTER_AUTO_RENDER_CODE` is set to `"true"` (it's enabled by default)
@@ -493,14 +464,6 @@ The color scheme might not exist. Try these reliable options:
 - `vs`
 - `xcode`
 
-### Want to disable code rendering
-Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"false"` to disable all code rendering, or use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to exclude specific extensions (e.g., `"json,yaml,html"`). See [Configuration](#configuration) for details.
-
-### Server not showing in Cursor
-1. Restart Cursor after updating MCP config
-2. Check Developer Tools → Console for errors
-3. Verify the path to `dist/index.js` is correct
-
 ## Security
 
 MCP Printer includes multiple security protections to prevent unauthorized file access and system modifications:
@@ -509,14 +472,14 @@ MCP Printer includes multiple security protections to prevent unauthorized file 
 
 The server uses a secure-by-default approach with multiple layers of protection:
 
-#### Default Safe Directories
+#### Default Allowed Directories
 
-By default, printing is only allowed from these safe directories:
+By default, printing is only allowed from these directories:
 - `~/Documents`
 - `~/Downloads`
 - `~/Desktop`
 
-This restrictive default prevents accidental exposure of credentials, source code, or sensitive configuration files while covering the most common use cases.
+This default configuration covers common use cases while being restrictive. You can configure additional directories as needed.
 
 #### Universal Dotfile/Dotdir Blocking
 
@@ -535,21 +498,20 @@ This rule applies even if the path is within an allowed directory or specified v
 
 #### System Directory Protection
 
-System directories are always blocked regardless of configuration:
-- `/etc`, `/var`, `/root`, `/sys`, `/proc`
-- `/private/etc`, `/private/var` (macOS)
+Common system directories are always blocked regardless of configuration, including:
+- `/etc`, `/var`, `/root`, `/sys`, `/proc`, `/bin`, `/boot`, `/tmp`, and more
+- `/System`, `/Library`, `/private/etc`, `/private/var` (macOS)
 
 ### Custom Security Configuration
 
 You can configure additional allowed paths for specific workflows using environment variables.
 
-**Important:** When you set `MCP_PRINTER_ALLOWED_PATHS`, it **completely overrides** the safe directory defaults. You must re-specify them if you want to keep them.
+**Important:** When you set `MCP_PRINTER_ALLOWED_PATHS`, it **completely overrides** the default allowed directories. You must re-specify them if you want to keep them.
 
 **Environment Variable Expansion:**
 
 The `MCP_PRINTER_ALLOWED_PATHS` and `MCP_PRINTER_DENIED_PATHS` variables support environment variable expansion:
-- `$HOME` or `${HOME}` expands to your home directory
-- `~` at the start of a path expands to your home directory
+- `~`, `$HOME`, or `${HOME}` expand to your home directory
 
 **Examples:**
 
@@ -567,13 +529,6 @@ The `MCP_PRINTER_ALLOWED_PATHS` and `MCP_PRINTER_DENIED_PATHS` variables support
 }
 ```
 
-```json
-// Security-conscious - fully locked down (requires explicit configuration per use)
-"env": {
-  "MCP_PRINTER_ALLOWED_PATHS": ""
-}
-```
-
 Use colon (`:`) to separate multiple paths, just like the Unix `PATH` variable.
 
 **Additional denied paths** can be specified and will be merged with system directory defaults:
@@ -585,7 +540,7 @@ Use colon (`:`) to separate multiple paths, just like the Unix `PATH` variable.
 
 ### Management Operations
 
-Management operations (`set_default_printer` and `cancel_print_job`) are **disabled by default** for security. These operations can affect other users' print jobs and system settings.
+Management operations (`set_default_printer` and `cancel_print_job`) are **disabled by default**.
 
 To enable them, set the environment variable:
 ```json
@@ -719,9 +674,7 @@ Then reference it directly in your MCP config (without npx):
 
 Contributions welcome! Areas for improvement:
 - Windows support (using Windows Print Spooler)
-- More print options and formats
-- Better error handling
-- Testing on various Linux distributions
+- More print options
 
 ## License
 

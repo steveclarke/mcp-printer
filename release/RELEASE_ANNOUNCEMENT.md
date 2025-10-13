@@ -53,7 +53,7 @@ When working with AI on complex projects, I found myself constantly generating d
 - 📝 **Beautiful markdown rendering** - Converts markdown to formatted PDFs with Mermaid diagrams
 - 💻 **Syntax-highlighted code** - Automatically renders code files with proper highlighting and line numbers
 - 🖨️ **Printer management** - List printers, view queues, cancel jobs
-- 🔒 **Secure by default** - Restricts file access to safe directories (configurable)
+- 🔒 **Secure by default** - Restricts file access to allowed directories (configurable)
 - ⚙️ **Highly configurable** - Default printer, duplex, color schemes, and more
 
 ## Quick Start

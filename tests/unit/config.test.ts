@@ -88,7 +88,7 @@ describe('config', () => {
     expect(emptyConfig.code.excludeExtensions).toEqual([]);
   });
 
-  it('should include safe directories in allowedPaths by default', async () => {
+  it('should include default allowed directories in allowedPaths by default', async () => {
     delete process.env.MCP_PRINTER_ALLOWED_PATHS;
     const { config } = await import('../../src/config.js');
     const homeDir = homedir();
@@ -98,7 +98,7 @@ describe('config', () => {
     expect(config.allowedPaths).not.toContain(homeDir); // Should NOT contain entire home dir
   });
 
-  it('should override safe directories when user provides allowedPaths', async () => {
+  it('should override default allowed directories when user provides allowedPaths', async () => {
     process.env.MCP_PRINTER_ALLOWED_PATHS = '/custom/path:/another/path';
     const { config } = await import('../../src/config.js');
     const homeDir = homedir();
