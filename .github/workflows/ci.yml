@@ -34,10 +34,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        id: cache-apt
+        with:
+          path: |
+            /var/cache/apt
+            /var/lib/apt
+          key: apt-${{ runner.os }}-chromium-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            apt-${{ runner.os }}-chromium-
+
       - name: Install Chromium
         run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
+          if ! command -v chromium-browser &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y chromium-browser
+          else
+            echo "Chromium already installed, skipping installation"
+          fi
 
       - name: Run linter
         run: pnpm run lint
