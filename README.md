@@ -72,7 +72,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | `MCP_PRINTER_DENIED_PATHS` | _(system dirs)_ | Colon-separated paths denied for printing. **Merged with** system directory defaults like `/etc`, `/var`, etc. (e.g., `"/home/user/private"`) |
 | `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false` | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead |
 | `MCP_PRINTER_MAX_COPIES` | `10` | Maximum copies allowed per print job (set to `0` for unlimited) |
-| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering (e.g., `"json,yaml,txt"`) - only applies when code rendering is enabled |
+| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` | _(none)_ | Extensions to exclude from code rendering (e.g., `"json,yaml,html"`) - only applies when code rendering is enabled |
 | `MCP_PRINTER_CODE_COLOR_SCHEME` | `"atom-one-light"` | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes)) |
 | `MCP_PRINTER_CODE_ENABLE_LINE_NUMBERS` | `true` | Show line numbers in code printouts (set to `"false"` to disable). Can be overridden per-call with the `line_numbers` parameter. |
 | `MCP_PRINTER_CODE_FONT_SIZE` | `"10pt"` | Font size for code (e.g., `"8pt"`, `"12pt"`) |
@@ -403,14 +403,27 @@ Code files are automatically rendered to PDF with syntax highlighting, line numb
 
 ### Supported Languages
 
-Common languages that are automatically syntax-highlighted include:
-JavaScript, TypeScript, Python, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Ruby, PHP, Scala, Shell/Bash, SQL, R, Perl, Lua, HTML, CSS, SCSS, JSON, YAML, XML, and many more.
+The system uses a **strict whitelist approach** - only files with recognized extensions are automatically rendered as code. This prevents false positives on plain text files like LICENSE or README.
 
-The system uses highlight.js for syntax highlighting, which supports a wide range of programming languages. Files are automatically detected by extension and rendered accordingly.
+**Programming Languages:**
+JavaScript (`.js`, `.jsx`), TypeScript (`.ts`, `.tsx`), Python (`.py`), Java (`.java`), C (`.c`, `.h`), C++ (`.cpp`, `.cc`, `.cxx`, `.hpp`), C# (`.cs`), Go (`.go`), Rust (`.rs`), Swift (`.swift`), Kotlin (`.kt`), Ruby (`.rb`), PHP (`.php`), Scala (`.scala`), Perl (`.pl`, `.perl`), Lua (`.lua`), R (`.r`)
+
+**Shell/Scripts:**
+Bash/Shell (`.sh`, `.bash`, `.zsh`, `.fish`), PowerShell (`.ps1`), Vim (`.vim`)
+
+**Markup/Data:**
+HTML (`.html`), CSS (`.css`), SCSS (`.scss`), Sass (`.sass` - uses SCSS highlighting), Less (`.less`), JSON (`.json`), YAML (`.yaml`, `.yml`), XML (`.xml`), Markdown (`.md`), SQL (`.sql`)
+
+**Special Files (no extension):**
+`Makefile`, `Dockerfile`, `Gemfile`, `Rakefile`, `Vagrantfile`
+
+**Unknown Extensions:**
+Files with unknown extensions (like `.txt`, `.bak`, `.weird`) will NOT be automatically rendered. To render these files with syntax highlighting, the AI can use the `force_code_render=true` parameter in the `print_file` tool call.
 
 **Configuration:**
 - To enable/disable all code rendering: Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"true"` or `"false"` (default: true)
-- To disable code rendering for specific extensions: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="ts,js,py"`
+- To disable code rendering for specific extensions: `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS="json,yaml,html"`
+- To force code rendering for a specific file: Use the `force_code_render` parameter in `print_file`
 
 ### Color Schemes
 
@@ -481,7 +494,7 @@ The color scheme might not exist. Try these reliable options:
 - `xcode`
 
 ### Want to disable code rendering
-Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"false"` to disable all code rendering, or use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to exclude specific extensions (e.g., `"ts,js,py"`). See [Configuration](#configuration) for details.
+Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"false"` to disable all code rendering, or use `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS` to exclude specific extensions (e.g., `"json,yaml,html"`). See [Configuration](#configuration) for details.
 
 ### Server not showing in Cursor
 1. Restart Cursor after updating MCP config

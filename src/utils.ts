@@ -7,7 +7,7 @@ import { execa } from "execa";
 import { access } from "fs/promises";
 import { constants } from "fs";
 import { writeFileSync, mkdtempSync, unlinkSync } from "fs";
-import { basename, join } from "path";
+import { basename, extname, join } from "path";
 import { tmpdir } from "os";
 import { config, MARKDOWN_EXTENSIONS } from "./config.js";
 
@@ -213,7 +213,8 @@ export function shouldRenderToPdf(filePath: string): boolean {
   if (!config.autoRenderMarkdown) {
     return false;
   }
-  const ext = filePath.split('.').pop()?.toLowerCase() || "";
+  // Extract extension using path.extname (returns '.md' or '')
+  const ext = extname(filePath).slice(1).toLowerCase();
   return MARKDOWN_EXTENSIONS.includes(ext as any);
 }
 

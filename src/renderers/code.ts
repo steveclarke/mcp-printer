@@ -23,7 +23,7 @@
  */
 
 import { readFileSync } from "fs";
-import { dirname, join } from "path";
+import { basename, dirname, extname, join } from "path";
 import { fileURLToPath } from "url";
 import hljs from "highlight.js";
 import he from "he";
@@ -33,8 +33,8 @@ import { config } from "../config.js";
 
 /**
  * Determines if a file should be rendered with syntax highlighting.
- * Checks autoRenderCode setting, code.excludeExtensions configuration,
- * and whether highlight.js supports the file type.
+ * Uses strict whitelist approach - only known extensions and special extensionless
+ * files will be auto-rendered. Unknown extensions require force_code_render=true.
  * 
  * @param filePath - Path to the file to check
  * @returns True if the file should be syntax-highlighted, false otherwise
@@ -45,12 +45,16 @@ export function shouldRenderCode(filePath: string): boolean {
     return false;
   }
   
-  const ext = filePath.split('.').pop()?.toLowerCase() || "";
+  // Extract extension (for files without extension, use the basename itself)
+  const fileExt = extname(filePath);
+  const ext = fileExt ? fileExt.slice(1).toLowerCase() : basename(filePath).toLowerCase();
   
   // Check if extension is in the exclusion list
-  if (config.code.excludeExtensions.includes(ext)) return false;
+  if (ext && config.code.excludeExtensions.includes(ext)) {
+    return false;
+  }
   
-  // Try to get language from extension - if highlight.js knows it, render it
+  // Check if language is recognized (whitelist check)
   const language = getLanguageFromExtension(filePath);
   return language !== "";
 }
@@ -62,26 +66,30 @@ const __dirname = dirname(__filename);
 /**
  * Maps file extensions to highlight.js language names.
  * 
- * This explicit mapping is necessary because file extensions often don't match highlight.js
- * language identifiers (e.g., ".py" → "python", ".rs" → "rust", ".ts" → "typescript").
+ * This is a strict whitelist - only files with these extensions will be automatically
+ * rendered as code. Files with unknown extensions will not be rendered unless
+ * force_code_render=true is explicitly passed.
  * 
- * Benefits of extension-based detection:
- * - 100% accurate (no guessing based on code patterns)
- * - Instant (no need to scan file contents)
+ * Benefits of strict whitelist:
+ * - 100% predictable (no false positives on plain text files)
+ * - Fast (no content scanning required)
  * - Reliable for similar languages (won't confuse TypeScript with JavaScript)
+ * - Safe for printing LICENSE, README, and other plain text files
  * 
- * For extensions not in this map, the extension itself is returned and passed to highlight.js,
- * which will either recognize it directly or trigger auto-detection as a fallback.
+ * Note: Files without extensions (like "Makefile") use the basename as the extension.
+ * For example, "Makefile" → "makefile" → maps to 'makefile' language.
  * 
- * @param filePath - Path to the file (extension will be extracted)
- * @returns Highlight.js language identifier, or the original extension if no mapping exists
+ * @param filePath - Path to the file (extension will be extracted using path.extname)
+ * @returns Highlight.js language identifier, or empty string if not in whitelist
  */
 export function getLanguageFromExtension(filePath: string): string {
-  // Extract extension from file path
-  const ext = filePath.split('.').pop()?.toLowerCase() || "";
+  // Extract extension (for files without extension, use the basename itself)
+  const fileExt = extname(filePath);
+  const ext = fileExt ? fileExt.slice(1).toLowerCase() : basename(filePath).toLowerCase();
   
   // Map common file extensions to their highlight.js language names
   const languageMap: { [key: string]: string } = {
+    // Programming Languages
     'js': 'javascript',
     'jsx': 'javascript',
     'ts': 'typescript',
@@ -102,17 +110,18 @@ export function getLanguageFromExtension(filePath: string): string {
     'swift': 'swift',
     'kt': 'kotlin',
     'scala': 'scala',
+    'lua': 'lua',
+    'perl': 'perl',
+    'pl': 'perl',
+    'r': 'r',
+    // Shell/Scripts
     'sh': 'bash',
     'bash': 'bash',
     'zsh': 'bash',
     'fish': 'bash',
     'ps1': 'powershell',
-    'sql': 'sql',
-    'r': 'r',
-    'lua': 'lua',
-    'perl': 'perl',
-    'pl': 'perl',
     'vim': 'vim',
+    // Markup/Data
     'yaml': 'yaml',
     'yml': 'yaml',
     'json': 'json',
@@ -120,15 +129,20 @@ export function getLanguageFromExtension(filePath: string): string {
     'html': 'html',
     'css': 'css',
     'scss': 'scss',
-    'sass': 'sass',
+    'sass': 'scss', // Sass uses SCSS highlighting
     'less': 'less',
     'md': 'markdown',
-    'dockerfile': 'dockerfile',
+    'sql': 'sql',
+    // Special extensionless files (lowercase filename treated as extension)
     'makefile': 'makefile',
-    'mk': 'makefile',
+    'dockerfile': 'dockerfile',
+    'gemfile': 'ruby',
+    'rakefile': 'ruby',
+    'vagrantfile': 'ruby',
   };
   
-  return languageMap[ext] || ext;
+  // Return language if in whitelist, empty string otherwise (strict whitelist)
+  return languageMap[ext] || "";
 }
 
 /**

@@ -1,0 +1,12 @@
+// This file has a .weird extension but contains real JavaScript code
+// It should NOT auto-render (unknown extension)
+// Use force_code_render=true to render it
+
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+const result = fibonacci(10);
+console.log(`Fibonacci(10) = ${result}`);
+

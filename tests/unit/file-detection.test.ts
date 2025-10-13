@@ -148,7 +148,7 @@ describe('shouldRenderCode', () => {
     expect(shouldRenderCode('error.log')).toBe(false);
   });
 
-  it('should return true for known and unknown code extensions when enabled', async () => {
+  it('should return true for whitelisted code extensions when enabled', async () => {
     vi.doMock('../../src/config.js', () => ({
       config: {
         autoRenderMarkdown: false,
@@ -164,15 +164,83 @@ describe('shouldRenderCode', () => {
     }));
 
     const { shouldRenderCode } = await import('../../src/renderers/code.js');
-    // Known code extensions should work
+    // Whitelisted code extensions should return true
     expect(shouldRenderCode('script.js')).toBe(true);
     expect(shouldRenderCode('app.py')).toBe(true);
     expect(shouldRenderCode('component.ts')).toBe(true);
     expect(shouldRenderCode('config.json')).toBe(true);
-    
-    // Unknown extensions should fallback to highlight.js auto-detection
-    expect(shouldRenderCode('file.xyz')).toBe(true);
-    expect(shouldRenderCode('file.unknown')).toBe(true);
+    expect(shouldRenderCode('main.rs')).toBe(true);
+    expect(shouldRenderCode('server.go')).toBe(true);
+  });
+
+  it('should return false for unknown extensions (strict whitelist)', async () => {
+    vi.doMock('../../src/config.js', () => ({
+      config: {
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
+        code: {
+          excludeExtensions: [],
+          enableLineNumbers: true,
+          colorScheme: 'atom-one-light',
+          fontSize: '10pt',
+          lineSpacing: '1.5',
+        },
+      },
+    }));
+
+    const { shouldRenderCode } = await import('../../src/renderers/code.js');
+    // Unknown extensions should return false (not in whitelist)
+    expect(shouldRenderCode('file.xyz')).toBe(false);
+    expect(shouldRenderCode('file.unknown')).toBe(false);
+    expect(shouldRenderCode('notes.txt')).toBe(false);
+    expect(shouldRenderCode('backup.bak')).toBe(false);
+  });
+
+  it('should return true for whitelisted extensionless code files', async () => {
+    vi.doMock('../../src/config.js', () => ({
+      config: {
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
+        code: {
+          excludeExtensions: [],
+          enableLineNumbers: true,
+          colorScheme: 'atom-one-light',
+          fontSize: '10pt',
+          lineSpacing: '1.5',
+        },
+      },
+    }));
+
+    const { shouldRenderCode } = await import('../../src/renderers/code.js');
+    // Special extensionless files should return true
+    expect(shouldRenderCode('Makefile')).toBe(true);
+    expect(shouldRenderCode('Dockerfile')).toBe(true);
+    expect(shouldRenderCode('Gemfile')).toBe(true);
+    expect(shouldRenderCode('Rakefile')).toBe(true);
+    expect(shouldRenderCode('Vagrantfile')).toBe(true);
+  });
+
+  it('should return false for non-whitelisted extensionless files', async () => {
+    vi.doMock('../../src/config.js', () => ({
+      config: {
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
+        code: {
+          excludeExtensions: [],
+          enableLineNumbers: true,
+          colorScheme: 'atom-one-light',
+          fontSize: '10pt',
+          lineSpacing: '1.5',
+        },
+      },
+    }));
+
+    const { shouldRenderCode } = await import('../../src/renderers/code.js');
+    // Plain text extensionless files should return false
+    expect(shouldRenderCode('LICENSE')).toBe(false);
+    expect(shouldRenderCode('README')).toBe(false);
+    expect(shouldRenderCode('CHANGELOG')).toBe(false);
+    expect(shouldRenderCode('CONTRIBUTORS')).toBe(false);
   });
 
   it('should handle case sensitivity in exclusions', async () => {

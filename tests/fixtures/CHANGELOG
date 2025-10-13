@@ -1,0 +1,14 @@
+Test Project
+
+This is a sample project for testing file type detection.
+
+Features:
+- Multiple programming languages
+- Plain text files
+- Special files (Makefile)
+
+Usage:
+Run the test scripts to verify file detection works correctly.
+
+Note: This file has no extension and should be printed as plain text.
+

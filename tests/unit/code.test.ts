@@ -38,11 +38,13 @@ const __dirname = dirname(__filename);
 const testDir = join(__dirname, '..');
 
 describe('getLanguageFromExtension', () => {
-  it('should map common extensions to highlight.js language names', () => {
+  it('should map whitelisted extensions to highlight.js language names', () => {
     expect(getLanguageFromExtension('file.ts')).toBe('typescript');
     expect(getLanguageFromExtension('script.py')).toBe('python');
     expect(getLanguageFromExtension('main.rs')).toBe('rust');
     expect(getLanguageFromExtension('README.md')).toBe('markdown');
+    expect(getLanguageFromExtension('app.go')).toBe('go');
+    expect(getLanguageFromExtension('style.css')).toBe('css');
   });
 
   it('should map multiple variants to same language', () => {
@@ -50,21 +52,42 @@ describe('getLanguageFromExtension', () => {
     expect(getLanguageFromExtension('component.jsx')).toBe('javascript');
     expect(getLanguageFromExtension('config.yaml')).toBe('yaml');
     expect(getLanguageFromExtension('deploy.yml')).toBe('yaml');
+    expect(getLanguageFromExtension('util.cpp')).toBe('cpp');
+    expect(getLanguageFromExtension('util.cc')).toBe('cpp');
+    expect(getLanguageFromExtension('util.cxx')).toBe('cpp');
   });
 
-  it('should return original extension for unknown extensions', () => {
-    expect(getLanguageFromExtension('file.unknown')).toBe('unknown');
-    expect(getLanguageFromExtension('data.xyz')).toBe('xyz');
+  it('should return empty string for unknown extensions (strict whitelist)', () => {
+    expect(getLanguageFromExtension('file.unknown')).toBe('');
+    expect(getLanguageFromExtension('data.xyz')).toBe('');
+    expect(getLanguageFromExtension('notes.txt')).toBe('');
+    expect(getLanguageFromExtension('backup.bak')).toBe('');
   });
 
-  it('should handle special files like Makefile', () => {
+  it('should handle extensionless whitelisted code files', () => {
     expect(getLanguageFromExtension('Makefile')).toBe('makefile');
-    expect(getLanguageFromExtension('makefile')).toBe('makefile');
+    expect(getLanguageFromExtension('Dockerfile')).toBe('dockerfile');
+    expect(getLanguageFromExtension('Gemfile')).toBe('ruby');
+    expect(getLanguageFromExtension('Rakefile')).toBe('ruby');
+    expect(getLanguageFromExtension('Vagrantfile')).toBe('ruby');
+  });
+
+  it('should return empty string for non-whitelisted extensionless files', () => {
+    expect(getLanguageFromExtension('LICENSE')).toBe('');
+    expect(getLanguageFromExtension('README')).toBe('');
+    expect(getLanguageFromExtension('CHANGELOG')).toBe('');
   });
   
-  it('should handle full paths', () => {
+  it('should handle full paths correctly', () => {
     expect(getLanguageFromExtension('/path/to/file.ts')).toBe('typescript');
     expect(getLanguageFromExtension('/home/user/script.py')).toBe('python');
+    expect(getLanguageFromExtension('/home/user/Makefile')).toBe('makefile');
+    expect(getLanguageFromExtension('/home/user/LICENSE')).toBe('');
+  });
+
+  it('should handle Sass files using SCSS highlighting', () => {
+    expect(getLanguageFromExtension('style.sass')).toBe('scss');
+    expect(getLanguageFromExtension('style.scss')).toBe('scss');
   });
 });
 
