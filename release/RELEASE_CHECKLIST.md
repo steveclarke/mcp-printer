@@ -151,10 +151,10 @@ git push origin v1.0.0
 ## Post-Release Verification
 
 ### Verify Package Availability
-- [ ] Wait 2-5 minutes for npm propagation
-- [ ] Visit: https://www.npmjs.com/package/mcp-printer
-- [ ] Test installation: `npm install -g mcp-printer` (in a fresh environment)
-- [ ] Test npx approach: `npx -y mcp-printer` (should work immediately)
+- [x] Wait 2-5 minutes for npm propagation
+- [x] Visit: https://www.npmjs.com/package/mcp-printer
+- [x] Test installation: `npm install -g mcp-printer` (in a fresh environment)
+- [x] Test npx approach: `npx -y mcp-printer` (should work immediately)
 
 ### Test Published Package
 ```bash
@@ -174,10 +174,10 @@ mcp-printer
 ```
 
 ### Documentation & Cleanup
-- [ ] Verify README renders correctly on npm: https://www.npmjs.com/package/mcp-printer
-- [ ] Update any external documentation or links
-- [ ] Remove the test tarball: `rm mcp-printer-1.0.0.tgz`
-- [ ] Monitor GitHub issues for early bug reports
+- [x] Verify README renders correctly on npm: https://www.npmjs.com/package/mcp-printer
+- [x] Update any external documentation or links
+- [x] Remove the test tarball: `rm mcp-printer-1.0.0.tgz`
+- [x] Monitor GitHub issues for early bug reports
 
 ## Announce! 🚀
 
