@@ -38,9 +38,7 @@ jobs:
         uses: actions/cache@v4
         id: cache-apt
         with:
-          path: |
-            /var/cache/apt
-            /var/lib/apt
+          path: /var/cache/apt/archives
           key: apt-${{ runner.os }}-chromium-${{ hashFiles('.github/workflows/ci.yml') }}
           restore-keys: |
             apt-${{ runner.os }}-chromium-
