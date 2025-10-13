@@ -5,10 +5,10 @@
  * Starts the Model Context Protocol server for printing operations via CUPS.
  */
 
-import { startServer } from "./server.js";
+import { startServer } from "./server.js"
 
 // Start the MCP Printer server
 startServer().catch((error) => {
-  console.error("Fatal error:", error);
-  process.exit(1);
-});
+  console.error("Fatal error:", error)
+  process.exit(1)
+})
