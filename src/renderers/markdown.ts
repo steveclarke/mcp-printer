@@ -68,7 +68,8 @@ function getPageNumberConfig(filename: string) {
 function injectPageNumbering(content: string, filename: string): string {
   const { data, content: body } = matter(content)
 
-  // Check if user already has chrome or puppeteer config - respect their settings
+  // Check if user already has chrome or puppeteer config in their frontmatter -
+  // respect their settings
   if (data.chrome || data.puppeteer) {
     return content // Don't modify user's existing config
   }
@@ -85,8 +86,9 @@ function injectPageNumbering(content: string, filename: string): string {
 
 /**
  * Renders a markdown file to PDF using crossnote.
- * Provides beautiful Markdown Preview Enhanced-quality output with comprehensive diagram support.
- * Automatically adds page numbering (Page X / Y) to the footer of each page.
+ * Provides beautiful Markdown Preview Enhanced-quality output with
+ * comprehensive diagram support. Automatically adds page numbering (Page X /
+ * Y) to the footer of each page.
  *
  * @param filePath - Path to the markdown file to render
  * @returns Path to the generated temporary PDF file
