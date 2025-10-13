@@ -207,12 +207,12 @@ describe('renderCodeToPdf', () => {
     
     try {
       // With line numbers
-      const pdfWithNumbers = await renderCodeToPdf(testFile, true);
+      const pdfWithNumbers = await renderCodeToPdf(testFile, { lineNumbers: true });
       expect(pdfWithNumbers).toBeDefined();
       unlinkSync(pdfWithNumbers);
       
       // Without line numbers
-      const pdfWithoutNumbers = await renderCodeToPdf(testFile, false);
+      const pdfWithoutNumbers = await renderCodeToPdf(testFile, { lineNumbers: false });
       expect(pdfWithoutNumbers).toBeDefined();
       unlinkSync(pdfWithoutNumbers);
       

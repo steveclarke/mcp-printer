@@ -374,24 +374,28 @@ function generateHTML(
 }
 
 /**
+ * Options for rendering code to PDF.
+ */
+export interface RenderCodeOptions {
+  lineNumbers?: boolean;
+  colorScheme?: string;
+  fontSize?: string;
+  lineSpacing?: string;
+}
+
+/**
  * Renders a source code file to PDF with syntax highlighting.
  * Uses highlight.js for syntax highlighting and Chrome for PDF generation.
  * Supports configurable color schemes, line numbers, font size, and line spacing.
  * 
  * @param filePath - Path to the source code file to render
- * @param lineNumbers - Optional override for line numbers display; falls back to config if not provided
- * @param colorScheme - Optional override for syntax highlighting color scheme; falls back to config if not provided
- * @param fontSize - Optional override for font size; falls back to config if not provided
- * @param lineSpacing - Optional override for line spacing; falls back to config if not provided
+ * @param options - Optional rendering options (lineNumbers, colorScheme, fontSize, lineSpacing)
  * @returns Path to the generated temporary PDF file
  * @throws {Error} If Chrome is not found or PDF generation fails
  */
 export async function renderCodeToPdf(
   filePath: string,
-  lineNumbers?: boolean,
-  colorScheme?: string,
-  fontSize?: string,
-  lineSpacing?: string
+  options?: RenderCodeOptions
 ): Promise<string> {
   // Step 1: Validate file path
   validateFilePath(filePath);
@@ -407,18 +411,18 @@ export async function renderCodeToPdf(
   const lines = fixMultilineSpans(highlightedCode).split("\n");
   
   // Step 5: Build HTML structure with configuration
-  const showLineNumbers = lineNumbers ?? config.code.autoLineNumbers;
+  const showLineNumbers = options?.lineNumbers ?? config.code.autoLineNumbers;
   const tableRows = buildTableRows(lines, showLineNumbers);
   
-  const selectedColorScheme = colorScheme ?? config.code.colorScheme;
+  const selectedColorScheme = options?.colorScheme ?? config.code.colorScheme;
   const colorSchemeCSS = loadColorSchemeCSS(selectedColorScheme);
   
   const html = generateHTML(
     filePath,
     tableRows,
     colorSchemeCSS,
-    fontSize ?? config.code.fontSize,
-    lineSpacing ?? config.code.lineSpacing
+    options?.fontSize ?? config.code.fontSize,
+    options?.lineSpacing ?? config.code.lineSpacing
   );
   
   // Step 6: Convert HTML to PDF

@@ -53,7 +53,7 @@ That's it! The package will be automatically downloaded from npm on first use.
 
 > **📋 Requirements:** Google Chrome or Chromium is required for rendering markdown and code files to PDF. The server will auto-detect Chrome/Chromium installations on macOS/Linux. See [Requirements](#requirements) for details.
 
-> **⚠️ Security:** This server allows AI assistants to print files from allowed directories (`~/Documents`, `~/Downloads`, `~/Desktop` by default). Dotfiles and hidden directories are always blocked. Only use with trusted AI assistants on your local machine. See [Security](#security) for configuration options.
+> **⚠️ Security:** This server allows AI assistants to print files from allowed directories (`~/Documents`, `~/Downloads`, `~/Desktop` by default, customizable via `MCP_PRINTER_ALLOWED_PATHS`). Dotfiles and hidden directories are always blocked. Only use with trusted AI assistants on your local machine. See [Security](#security) for configuration options.
 
 ## Configuration
 

@@ -68,7 +68,12 @@ export function registerPrintTools(server: McpServer) {
       // Check if file should be rendered as code with syntax highlighting
       else if (force_code_render !== undefined ? force_code_render : shouldRenderCode(file_path)) {
         try {
-          renderedPdf = await renderCodeToPdf(file_path, line_numbers, color_scheme, font_size, line_spacing);
+          renderedPdf = await renderCodeToPdf(file_path, {
+            lineNumbers: line_numbers,
+            colorScheme: color_scheme,
+            fontSize: font_size,
+            lineSpacing: line_spacing
+          });
           actualFilePath = renderedPdf;
           renderType = "code → PDF (syntax highlighted)";
         } catch (error) {
