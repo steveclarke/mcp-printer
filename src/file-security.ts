@@ -35,7 +35,7 @@ export function validateFilePath(filePath: string): void {
   let absolutePath: string
   try {
     absolutePath = realpathSync(originalAbsolutePath)
-  } catch (error: any) {
+  } catch {
     // If file doesn't exist yet or can't be resolved, use resolved path without following symlinks
     absolutePath = originalAbsolutePath
   }

@@ -3,13 +3,13 @@
  * file type detection, and print job handling for the MCP Printer server.
  */
 
-import { execa } from "execa"
+import { execa, type ExecaError } from "execa"
 import { access } from "fs/promises"
 import { constants } from "fs"
 import { writeFileSync, mkdtempSync, unlinkSync } from "fs"
-import { basename, extname, join } from "path"
+import { extname, join } from "path"
 import { tmpdir } from "os"
-import { config, MARKDOWN_EXTENSIONS } from "./config.js"
+import { config, MARKDOWN_EXTENSIONS, type MarkdownExtension } from "./config.js"
 
 /**
  * Parse a delimited string into an array of strings.
@@ -53,8 +53,9 @@ export async function execCommand(command: string, args: string[] = []): Promise
   try {
     const { stdout } = await execa(command, args)
     return stdout.trim()
-  } catch (error: any) {
-    throw new Error(`Command failed: ${error.message}`)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Command failed: ${message}`)
   }
 }
 
@@ -176,10 +177,12 @@ export async function convertHtmlToPdf(
         `--print-to-pdf=${tmpPdf}`,
         tmpHtml,
       ])
-    } catch (error: any) {
+    } catch (error) {
       // Chrome outputs success messages to stderr, check if PDF was actually created
-      if (!error.stderr || !error.stderr.includes("written to file")) {
-        throw new Error(`Failed to render PDF: ${error.message}`)
+      const execaError = error as ExecaError
+      const stderr = String(execaError.stderr ?? "")
+      if (!stderr.includes("written to file")) {
+        throw new Error(`Failed to render PDF: ${execaError.message}`)
       }
       // Success - Chrome wrote the PDF and reported to stderr
     }
@@ -217,7 +220,7 @@ export function shouldRenderToPdf(filePath: string): boolean {
   }
   // Extract extension using path.extname (returns '.md' or '')
   const ext = extname(filePath).slice(1).toLowerCase()
-  return MARKDOWN_EXTENSIONS.includes(ext as any)
+  return MARKDOWN_EXTENSIONS.includes(ext as MarkdownExtension)
 }
 
 /**

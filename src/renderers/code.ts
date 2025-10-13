@@ -222,7 +222,7 @@ function applySyntaxHighlighting(sourceCode: string, language: string): string {
     }
 
     return highlighted
-  } catch (error) {
+  } catch {
     // Language not recognized by highlight.js, fall back to auto-detect
     return hljs.highlightAuto(sourceCode).value
   }
@@ -245,7 +245,7 @@ function loadColorSchemeCSS(colorScheme: string): string {
       const minThemePath = join(stylesDir, `${colorScheme}.min.css`)
       return readFileSync(minThemePath, "utf-8")
     }
-  } catch (error) {
+  } catch {
     // Fall back to default theme
     try {
       const defaultPath = join(__dirname, "../../node_modules/highlight.js/styles/default.css")

@@ -1,18 +1,17 @@
 import { describe, it, expect, vi } from "vitest"
 import { existsSync, unlinkSync } from "fs"
-import { dirname, join } from "path"
-import { fileURLToPath } from "url"
-import { homedir } from "os"
 
 // Mock config to allow access to test directory
 vi.mock("../../src/config.js", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { dirname, join } = require("path")
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { fileURLToPath } = require("url")
-  const testDir = join(dirname(fileURLToPath(import.meta.url)), "..")
+  const mockTestDir = join(dirname(fileURLToPath(import.meta.url)), "..")
 
   return {
     config: {
-      allowedPaths: [testDir],
+      allowedPaths: [mockTestDir],
       deniedPaths: [],
       autoRenderMarkdown: true,
       chromePath: "",
@@ -22,10 +21,6 @@ vi.mock("../../src/config.js", () => {
 })
 
 import { renderMarkdownToPdf } from "../../src/renderers/markdown.js"
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const testDir = join(__dirname, "..")
 
 describe("renderMarkdownToPdf", () => {
   it("should render a simple markdown file to PDF", async () => {
@@ -195,7 +190,7 @@ Emoji: 🎉 ✨ 🚀`
   })
 
   it("should inject page numbering into markdown without front-matter", async () => {
-    const { writeFileSync, readFileSync } = await import("fs")
+    const { writeFileSync } = await import("fs")
     const { join, dirname } = await import("path")
     const { fileURLToPath } = await import("url")
 

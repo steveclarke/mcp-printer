@@ -5,7 +5,7 @@
  * Automatically adds page numbering to all rendered PDFs.
  */
 
-import { dirname, basename, join } from "path"
+import { basename, join } from "path"
 import { readFileSync, writeFileSync, mkdtempSync, unlinkSync } from "fs"
 import { tmpdir } from "os"
 import matter from "gray-matter"
@@ -152,14 +152,16 @@ export async function renderMarkdownToPdf(filePath: string): Promise<string> {
       fileType: "pdf",
       runAllCodeChunks: false, // Don't execute code chunks for security
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Clean up temp file before throwing
     try {
       unlinkSync(tempFilePath)
     } catch {
       // Ignore cleanup errors
     }
-    throw new Error(`Failed to render markdown with crossnote: ${error.message}`)
+    throw new Error(
+      `Failed to render markdown with crossnote: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 
   // Clean up temp markdown file (PDF is in a different location)

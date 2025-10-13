@@ -2,9 +2,7 @@
  * @fileoverview Unit tests for file type detection logic
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { shouldRenderToPdf } from "../../src/utils.js"
-import { shouldRenderCode } from "../../src/renderers/code.js"
+import { describe, it, expect, vi, beforeEach } from "vitest"
 
 // Mock the config module
 vi.mock("../../src/config.js", () => ({

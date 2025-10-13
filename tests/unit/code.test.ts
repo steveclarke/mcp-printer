@@ -2,20 +2,20 @@
  * @fileoverview Unit tests for code rendering functionality
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import { unlinkSync } from "fs"
-import { dirname, join } from "path"
-import { fileURLToPath } from "url"
 
 // Mock config to allow access to test directory
 vi.mock("../../src/config.js", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { dirname, join } = require("path")
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { fileURLToPath } = require("url")
-  const testDir = join(dirname(fileURLToPath(import.meta.url)), "..")
+  const mockTestDir = join(dirname(fileURLToPath(import.meta.url)), "..")
 
   return {
     config: {
-      allowedPaths: [testDir],
+      allowedPaths: [mockTestDir],
       deniedPaths: [],
       autoRenderCode: true,
       chromePath: "",
@@ -36,10 +36,6 @@ import {
   fixMultilineSpans,
   renderCodeToPdf,
 } from "../../src/renderers/code.js"
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const testDir = join(__dirname, "..")
 
 describe("getLanguageFromExtension", () => {
   it("should map whitelisted extensions to highlight.js language names", () => {

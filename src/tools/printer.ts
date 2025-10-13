@@ -6,7 +6,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
 import { execCommand } from "../utils.js"
-import { config, MARKDOWN_EXTENSIONS } from "../config.js"
+import { config } from "../config.js"
 import { execa } from "execa"
 
 /**
@@ -26,7 +26,7 @@ export function registerPrinterTools(server: McpServer) {
         "Get the current MCP Printer configuration settings. Returns environment variables and their current values.",
       inputSchema: {},
     },
-    async () => {
+    () => {
       const configData = {
         MCP_PRINTER_DEFAULT_PRINTER: config.defaultPrinter || "(not set)",
         MCP_PRINTER_AUTO_DUPLEX: config.autoDuplex ? "true" : "false",

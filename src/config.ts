@@ -51,6 +51,11 @@ export interface Config {
 export const MARKDOWN_EXTENSIONS = ["md", "markdown"] as const
 
 /**
+ * Type representing valid markdown file extensions.
+ */
+export type MarkdownExtension = (typeof MARKDOWN_EXTENSIONS)[number]
+
+/**
  * Default configuration values.
  * These are used when environment variables are not set.
  */

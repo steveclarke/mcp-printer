@@ -146,9 +146,10 @@ describe("validateFilePath", () => {
     try {
       validateFilePath("/tmp/test.txt")
       expect.fail("Should have thrown an error")
-    } catch (error: any) {
-      expect(error.message).toContain("outside allowed directories")
-      expect(error.message).toContain("MCP_PRINTER_ALLOWED_PATHS")
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(Error)
+      expect((error as Error).message).toContain("outside allowed directories")
+      expect((error as Error).message).toContain("MCP_PRINTER_ALLOWED_PATHS")
     }
 
     vi.doUnmock("../../src/config.js")

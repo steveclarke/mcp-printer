@@ -1,21 +1,21 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config"
 
 export default defineConfig({
   test: {
     // Test environment
-    environment: 'node',
-    
+    environment: "node",
+
     // Global test setup
     globals: true,
-    
+
     // Coverage configuration
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts'],
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      include: ["src/**/*.ts"],
       exclude: [
-        'src/**/*.d.ts',
-        'src/index.ts', // Entry point - just calls startServer
+        "src/**/*.d.ts",
+        "src/index.ts", // Entry point - just calls startServer
       ],
       // Coverage thresholds (optional - can be enabled later)
       // thresholds: {
@@ -25,10 +25,9 @@ export default defineConfig({
       //   statements: 80,
       // },
     },
-    
-    // Include and exclude patterns
-    include: ['tests/**/*.test.ts'],
-    exclude: ['node_modules', 'dist'],
-  },
-});
 
+    // Include and exclude patterns
+    include: ["tests/**/*.test.ts"],
+    exclude: ["node_modules", "dist"],
+  },
+})
