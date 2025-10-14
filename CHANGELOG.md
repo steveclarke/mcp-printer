@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.2.0] - 2025-10-14
 
 ### Added
 - New `get_page_meta` tool to get page count and metadata before printing
