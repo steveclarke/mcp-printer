@@ -31,7 +31,7 @@ function getPageNumberConfig(filename: string) {
       "width: 100%",
       "margin: 0",
       "padding: 0 1cm",
-      'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+      "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'",
       "display: flex",
       "justify-content: space-between",
       "align-items: center",
