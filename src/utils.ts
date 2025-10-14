@@ -449,14 +449,58 @@ export interface RenderOptions {
 }
 
 /**
- * Renders a file to PDF if needed (markdown or code files).
- * Handles validation, rendering logic, and error fallback.
+ * Prepares a file for printing by conditionally rendering it to PDF.
  *
- * @param options - Rendering options
- * @returns Render result with actualFilePath, renderedPdf, and renderType
- * @throws {Error} If validation fails or rendering fails without fallback enabled
+ * This is the core function used by both `print_file` and `preview_print_job` tools.
+ * It determines whether a file needs to be rendered to PDF (for enhanced formatting)
+ * or can be printed as-is.
+ *
+ * **Rendering Behavior:**
+ * - **Markdown files** (`.md`, `.markdown`): Rendered to PDF with full formatting, unless
+ *   auto-rendering is disabled or `forceMarkdownRender` is explicitly set to false
+ * - **Code files**: Rendered to PDF with syntax highlighting, unless auto-rendering is
+ *   disabled or `forceCodeRender` is explicitly set to false, or the extension is excluded
+ * - **PDF files**: Used as-is (no re-rendering)
+ * - **Other files** (text, images, etc.): Passed through without modification
+ *
+ * **Security:** All file paths are validated against allowed/denied paths before processing.
+ *
+ * **Error Handling:** If rendering fails and `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` is enabled,
+ * the original file is used. Otherwise, an error is thrown.
+ *
+ * @param options - File preparation options including path and rendering preferences
+ * @param options.filePath - Absolute or relative path to the file to prepare
+ * @param options.lineNumbers - Show line numbers in code rendering (overrides global setting)
+ * @param options.colorScheme - Syntax highlighting theme for code (e.g., "atom-one-light", "monokai")
+ * @param options.fontSize - Font size for code rendering (e.g., "10pt", "12pt")
+ * @param options.lineSpacing - Line spacing multiplier for code (e.g., "1", "1.5", "2")
+ * @param options.forceMarkdownRender - Explicitly enable/disable markdown rendering
+ * @param options.forceCodeRender - Explicitly enable/disable code rendering
+ *
+ * @returns Promise resolving to a RenderResult object
+ * @returns result.actualFilePath - The file path to actually print (original or rendered PDF)
+ * @returns result.renderedPdf - Path to temporary PDF if rendered, null if using original file
+ * @returns result.renderType - Human-readable description of rendering (e.g., "markdown → PDF"),
+ *                               empty string if no rendering occurred
+ *
+ * @throws {Error} If file path validation fails (security check)
+ * @throws {Error} If rendering fails and fallback is disabled
+ *
+ * @example
+ * // Prepare a markdown file (will be rendered to PDF)
+ * const result = await prepareFileForPrinting({ filePath: "README.md" })
+ * // result.actualFilePath = "/tmp/rendered-abc123.pdf"
+ * // result.renderedPdf = "/tmp/rendered-abc123.pdf"
+ * // result.renderType = "markdown → PDF"
+ *
+ * @example
+ * // Prepare a PDF file (used as-is)
+ * const result = await prepareFileForPrinting({ filePath: "document.pdf" })
+ * // result.actualFilePath = "document.pdf"
+ * // result.renderedPdf = null
+ * // result.renderType = ""
  */
-export async function renderFileIfNeeded(options: RenderOptions): Promise<RenderResult> {
+export async function prepareFileForPrinting(options: RenderOptions): Promise<RenderResult> {
   // Validate file path security
   validateFilePath(options.filePath)
 

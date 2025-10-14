@@ -378,9 +378,12 @@ Any valid CUPS/lpr options can be passed via the `options` parameter. Common exa
 - `landscape` - Print in landscape orientation
 - `sides=two-sided-long-edge` - Double-sided (long edge)
 - `sides=two-sided-short-edge` - Double-sided (short edge)
-- `page-ranges=1-5` - Print specific pages
+- `page-ranges=1-5` - Print specific pages (e.g., `page-ranges=3-5,7,10-12`)
 - `media=Letter` or `media=A4` - Paper size
 - `fit-to-page` - Scale to fit page
+- `number-up=2` - Print multiple pages per sheet
+
+**Natural Language Requests:** Thanks to the flexibility of the underlying CUPS printing system and the AI's knowledge of print options, you don't need to memorize these options. Simply ask naturally—*"print pages 3 to 5 in landscape on letter size paper"* or *"print this double-sided"*—and the AI will translate your request into the appropriate CUPS options automatically. Feel free to experiment with common printing scenarios; the AI is smart enough to figure out what you need.
 
 For a complete list of available options:
 - Run `lpoptions -l` in your terminal to see printer-specific options

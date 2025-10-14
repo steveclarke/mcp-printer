@@ -12,7 +12,7 @@ import {
   calculatePhysicalSheets,
   shouldTriggerConfirmation,
   formatPreviewResponse,
-  renderFileIfNeeded,
+  prepareFileForPrinting,
   isDuplexEnabled,
   cleanupRenderedPdf,
 } from "../utils.js"
@@ -108,7 +108,7 @@ export function registerPrintTools(server: McpServer) {
       force_code_render,
     }) => {
       // Use shared rendering function
-      const { actualFilePath, renderedPdf, renderType } = await renderFileIfNeeded({
+      const { actualFilePath, renderedPdf, renderType } = await prepareFileForPrinting({
         filePath: file_path,
         lineNumbers: line_numbers,
         colorScheme: color_scheme,
@@ -188,7 +188,7 @@ export function registerPrintTools(server: McpServer) {
       force_code_render,
     }) => {
       // Use shared rendering function
-      const { actualFilePath, renderedPdf, renderType } = await renderFileIfNeeded({
+      const { actualFilePath, renderedPdf, renderType } = await prepareFileForPrinting({
         filePath: file_path,
         lineNumbers: line_numbers,
         colorScheme: color_scheme,
