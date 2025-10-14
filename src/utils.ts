@@ -377,13 +377,14 @@ export function shouldTriggerConfirmation(physicalSheets: number): boolean {
 }
 
 /**
- * Formats a preview response when page count exceeds threshold.
+ * Formats a preview response with optional threshold warning.
  *
  * @param pdfPages - Total number of PDF pages
  * @param physicalSheets - Number of physical sheets needed
  * @param isDuplex - Whether duplex printing is enabled
  * @param sourceFile - Original file path
  * @param renderType - Optional rendering description (e.g., "markdown → PDF")
+ * @param isThresholdExceeded - Whether to include threshold warning (default: false)
  * @returns MCP response object with preview information
  */
 export function formatPreviewResponse(
@@ -391,51 +392,25 @@ export function formatPreviewResponse(
   physicalSheets: number,
   isDuplex: boolean,
   sourceFile: string,
-  renderType?: string
+  renderType?: string,
+  isThresholdExceeded = false
 ) {
   const duplexInfo = isDuplex ? ` (${physicalSheets} sheets, duplex)` : ""
   const renderedNote = renderType ? `\n  Rendered: ${renderType}` : ""
+
+  const baseMessage =
+    `📄 Preview: ${isThresholdExceeded ? "This document will print " : ""}${pdfPages} pages${duplexInfo}\n` +
+    `  File: ${sourceFile}${renderedNote}`
+
+  const warningMessage = isThresholdExceeded
+    ? `\n\n⚠️  This exceeds the configured page threshold.\nAsk the user if they want to proceed with printing.`
+    : ""
 
   return {
     content: [
       {
         type: "text" as const,
-        text:
-          `📄 Preview: This document will print ${pdfPages} pages${duplexInfo}\n` +
-          `  File: ${sourceFile}${renderedNote}\n\n` +
-          `⚠️  This exceeds the configured page threshold.\n` +
-          `Ask the user if they want to proceed with printing.`,
-      },
-    ],
-  }
-}
-
-/**
- * Formats a preview-only response (for explicit preview requests, without threshold warning).
- *
- * @param pdfPages - Total number of PDF pages
- * @param physicalSheets - Number of physical sheets needed
- * @param isDuplex - Whether duplex printing is enabled
- * @param sourceFile - Original file path
- * @param renderType - Optional rendering description (e.g., "markdown → PDF")
- * @returns MCP response object with preview information
- */
-export function formatPreviewOnlyResponse(
-  pdfPages: number,
-  physicalSheets: number,
-  isDuplex: boolean,
-  sourceFile: string,
-  renderType?: string
-) {
-  const duplexInfo = isDuplex ? ` (${physicalSheets} sheets, duplex)` : ""
-  const renderedNote = renderType ? `\n  Rendered: ${renderType}` : ""
-
-  return {
-    content: [
-      {
-        type: "text" as const,
-        text:
-          `📄 Preview: ${pdfPages} pages${duplexInfo}\n` + `  File: ${sourceFile}${renderedNote}`,
+        text: baseMessage + warningMessage,
       },
     ],
   }

@@ -12,7 +12,6 @@ import {
   calculatePhysicalSheets,
   shouldTriggerConfirmation,
   formatPreviewResponse,
-  formatPreviewOnlyResponse,
   renderFileIfNeeded,
   isDuplexEnabled,
   cleanupRenderedPdf,
@@ -135,7 +134,8 @@ export function registerPrintTools(server: McpServer) {
                 physicalSheets,
                 isDuplex,
                 file_path,
-                renderType
+                renderType,
+                true
               )
             }
           } catch {
@@ -204,8 +204,8 @@ export function registerPrintTools(server: McpServer) {
         const isDuplex = isDuplexEnabled(options)
         const physicalSheets = calculatePhysicalSheets(pdfPages, isDuplex)
 
-        // Return preview info
-        return formatPreviewOnlyResponse(pdfPages, physicalSheets, isDuplex, file_path, renderType)
+        // Return preview info (without threshold warning)
+        return formatPreviewResponse(pdfPages, physicalSheets, isDuplex, file_path, renderType)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         throw new Error(`Failed to preview file: ${message}`)
