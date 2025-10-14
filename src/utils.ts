@@ -4,12 +4,16 @@
  */
 
 import { execa, type ExecaError } from "execa"
-import { access } from "fs/promises"
+import { access, readFile } from "fs/promises"
 import { constants } from "fs"
 import { writeFileSync, mkdtempSync, unlinkSync } from "fs"
 import { extname, join } from "path"
 import { tmpdir } from "os"
 import { config, MARKDOWN_EXTENSIONS, type MarkdownExtension } from "./config.js"
+import { PDFParse } from "pdf-parse"
+import { validateFilePath } from "./file-security.js"
+import { renderMarkdownToPdf } from "./renderers/markdown.js"
+import { renderCodeToPdf, shouldRenderCode } from "./renderers/code.js"
 
 /**
  * Parse a delimited string into an array of strings.
@@ -328,5 +332,256 @@ export function formatPrintResponse(
           `  File: ${sourceFile}${renderedNote}`,
       },
     ],
+  }
+}
+
+/**
+ * Gets the page count from a PDF file using pdf-parse.
+ *
+ * @param filePath - Path to the PDF file
+ * @returns Number of pages in the PDF
+ * @throws {Error} If the file cannot be read or parsed
+ */
+export async function getPdfPageCount(filePath: string): Promise<number> {
+  const parser = new PDFParse({ data: await readFile(filePath) })
+  try {
+    const result = await parser.getInfo()
+    return result.total
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Failed to get PDF page count: ${message}`)
+  } finally {
+    await parser.destroy()
+  }
+}
+
+/**
+ * Calculates the number of physical sheets needed based on page count and duplex settings.
+ *
+ * @param pdfPages - Total number of PDF pages
+ * @param isDuplex - Whether duplex printing is enabled
+ * @returns Number of physical sheets that will be used
+ */
+export function calculatePhysicalSheets(pdfPages: number, isDuplex: boolean): number {
+  return isDuplex ? Math.ceil(pdfPages / 2) : pdfPages
+}
+
+/**
+ * Checks if the page count exceeds the confirmation threshold.
+ *
+ * @param physicalSheets - Number of physical sheets to print
+ * @returns True if confirmation is needed, false otherwise
+ */
+export function shouldTriggerConfirmation(physicalSheets: number): boolean {
+  return config.confirmIfOverPages > 0 && physicalSheets > config.confirmIfOverPages
+}
+
+/**
+ * Formats a preview response with optional threshold warning.
+ *
+ * @param pdfPages - Total number of PDF pages
+ * @param physicalSheets - Number of physical sheets needed
+ * @param isDuplex - Whether duplex printing is enabled
+ * @param sourceFile - Original file path
+ * @param renderType - Optional rendering description (e.g., "markdown → PDF")
+ * @param isThresholdExceeded - Whether to include threshold warning (default: false)
+ * @returns MCP response object with preview information
+ */
+export function formatPreviewResponse(
+  pdfPages: number,
+  physicalSheets: number,
+  isDuplex: boolean,
+  sourceFile: string,
+  renderType?: string,
+  isThresholdExceeded = false
+) {
+  const duplexInfo = isDuplex ? ` (${physicalSheets} sheets, duplex)` : ""
+  const renderedNote = renderType ? `\n  Rendered: ${renderType}` : ""
+
+  const baseMessage =
+    `📄 Preview: ${isThresholdExceeded ? "This document will print " : ""}${pdfPages} pages${duplexInfo}\n` +
+    `  File: ${sourceFile}${renderedNote}`
+
+  const warningMessage = isThresholdExceeded
+    ? `\n\n⚠️  This exceeds the configured page threshold.\nAsk the user if they want to proceed with printing.`
+    : ""
+
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: baseMessage + warningMessage,
+      },
+    ],
+  }
+}
+
+/**
+ * Result of file rendering operation.
+ */
+export interface RenderResult {
+  /** Path to the file to use (either original or rendered PDF) */
+  actualFilePath: string
+  /** Path to rendered PDF temp file (null if no rendering occurred) */
+  renderedPdf: string | null
+  /** Description of rendering performed (empty string if no rendering) */
+  renderType: string
+}
+
+/**
+ * Options for file rendering.
+ */
+export interface RenderOptions {
+  /** Path to the file to render */
+  filePath: string
+  /** Show line numbers when rendering code files */
+  lineNumbers?: boolean
+  /** Syntax highlighting color scheme for code files */
+  colorScheme?: string
+  /** Font size for code files */
+  fontSize?: string
+  /** Line spacing for code files */
+  lineSpacing?: string
+  /** Force markdown rendering to PDF */
+  forceMarkdownRender?: boolean
+  /** Force code rendering to PDF with syntax highlighting */
+  forceCodeRender?: boolean
+}
+
+/**
+ * Prepares a file for printing by conditionally rendering it to PDF.
+ *
+ * This is the core function used by both `print_file` and `get_page_meta` tools.
+ * It determines whether a file needs to be rendered to PDF (for enhanced formatting)
+ * or can be printed as-is.
+ *
+ * **Rendering Behavior:**
+ * - **Markdown files** (`.md`, `.markdown`): Rendered to PDF with full formatting, unless
+ *   auto-rendering is disabled or `forceMarkdownRender` is explicitly set to false
+ * - **Code files**: Rendered to PDF with syntax highlighting, unless auto-rendering is
+ *   disabled or `forceCodeRender` is explicitly set to false, or the extension is excluded
+ * - **PDF files**: Used as-is (no re-rendering)
+ * - **Other files** (text, images, etc.): Passed through without modification
+ *
+ * **Security:** All file paths are validated against allowed/denied paths before processing.
+ *
+ * **Error Handling:** If rendering fails and `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` is enabled,
+ * the original file is used. Otherwise, an error is thrown.
+ *
+ * @param options - File preparation options including path and rendering preferences
+ * @param options.filePath - Absolute or relative path to the file to prepare
+ * @param options.lineNumbers - Show line numbers in code rendering (overrides global setting)
+ * @param options.colorScheme - Syntax highlighting theme for code (e.g., "atom-one-light", "monokai")
+ * @param options.fontSize - Font size for code rendering (e.g., "10pt", "12pt")
+ * @param options.lineSpacing - Line spacing multiplier for code (e.g., "1", "1.5", "2")
+ * @param options.forceMarkdownRender - Explicitly enable/disable markdown rendering
+ * @param options.forceCodeRender - Explicitly enable/disable code rendering
+ *
+ * @returns Promise resolving to a RenderResult object
+ * @returns result.actualFilePath - The file path to actually print (original or rendered PDF)
+ * @returns result.renderedPdf - Path to temporary PDF if rendered, null if using original file
+ * @returns result.renderType - Human-readable description of rendering (e.g., "markdown → PDF"),
+ *                               empty string if no rendering occurred
+ *
+ * @throws {Error} If file path validation fails (security check)
+ * @throws {Error} If rendering fails and fallback is disabled
+ *
+ * @example
+ * // Prepare a markdown file (will be rendered to PDF)
+ * const result = await prepareFileForPrinting({ filePath: "README.md" })
+ * // result.actualFilePath = "/tmp/rendered-abc123.pdf"
+ * // result.renderedPdf = "/tmp/rendered-abc123.pdf"
+ * // result.renderType = "markdown → PDF"
+ *
+ * @example
+ * // Prepare a PDF file (used as-is)
+ * const result = await prepareFileForPrinting({ filePath: "document.pdf" })
+ * // result.actualFilePath = "document.pdf"
+ * // result.renderedPdf = null
+ * // result.renderType = ""
+ */
+export async function prepareFileForPrinting(options: RenderOptions): Promise<RenderResult> {
+  // Validate file path security
+  validateFilePath(options.filePath)
+
+  let actualFilePath = options.filePath
+  let renderedPdf: string | null = null
+  let renderType = ""
+
+  // Check if file should be auto-rendered to PDF (markdown)
+  const shouldRenderMarkdown =
+    options.forceMarkdownRender !== undefined
+      ? options.forceMarkdownRender &&
+        MARKDOWN_EXTENSIONS.some((ext) => options.filePath.toLowerCase().endsWith(`.${ext}`))
+      : shouldRenderToPdf(options.filePath)
+
+  if (shouldRenderMarkdown) {
+    try {
+      renderedPdf = await renderMarkdownToPdf(options.filePath)
+      actualFilePath = renderedPdf
+      renderType = "markdown → PDF"
+    } catch (error) {
+      // If fallback is enabled, use original file; otherwise throw error
+      if (config.fallbackOnRenderError) {
+        console.error(`Warning: Failed to render ${options.filePath}, using as-is:`, error)
+      } else {
+        throw error
+      }
+    }
+  }
+  // Check if file should be rendered as code with syntax highlighting
+  else if (
+    options.forceCodeRender !== undefined
+      ? options.forceCodeRender
+      : shouldRenderCode(options.filePath)
+  ) {
+    try {
+      renderedPdf = await renderCodeToPdf(options.filePath, {
+        lineNumbers: options.lineNumbers,
+        colorScheme: options.colorScheme,
+        fontSize: options.fontSize,
+        lineSpacing: options.lineSpacing,
+      })
+      actualFilePath = renderedPdf
+      renderType = "code → PDF (syntax highlighted)"
+    } catch (error) {
+      // If fallback is enabled, use original file; otherwise throw error
+      if (config.fallbackOnRenderError) {
+        console.error(`Warning: Failed to render code ${options.filePath}, using as-is:`, error)
+      } else {
+        throw error
+      }
+    }
+  }
+
+  return { actualFilePath, renderedPdf, renderType }
+}
+
+/**
+ * Determines if duplex printing is enabled based on configuration and options.
+ *
+ * @param options - CUPS options string (may contain sides= option)
+ * @returns True if duplex printing is enabled
+ */
+export function isDuplexEnabled(options?: string): boolean {
+  return (
+    config.autoDuplex ||
+    options?.includes("sides=two-sided") ||
+    config.defaultOptions.some((opt) => opt.includes("sides=two-sided"))
+  )
+}
+
+/**
+ * Cleans up a rendered PDF temp file if it exists.
+ *
+ * @param renderedPdf - Path to rendered PDF temp file (or null)
+ */
+export function cleanupRenderedPdf(renderedPdf: string | null): void {
+  if (renderedPdf) {
+    try {
+      unlinkSync(renderedPdf)
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 }
