@@ -5,12 +5,55 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
-import { unlinkSync } from "fs"
-import { shouldRenderToPdf, executePrintJob, formatPrintResponse } from "../utils.js"
-import { validateFilePath } from "../file-security.js"
-import { config, MARKDOWN_EXTENSIONS } from "../config.js"
-import { renderMarkdownToPdf } from "../renderers/markdown.js"
-import { renderCodeToPdf, shouldRenderCode } from "../renderers/code.js"
+import {
+  executePrintJob,
+  formatPrintResponse,
+  getPdfPageCount,
+  calculatePhysicalSheets,
+  shouldTriggerConfirmation,
+  formatPreviewResponse,
+  formatPreviewOnlyResponse,
+  renderFileIfNeeded,
+  isDuplexEnabled,
+  cleanupRenderedPdf,
+} from "../utils.js"
+import { config } from "../config.js"
+
+/**
+ * Shared parameter schema for rendering options used by both print_file and preview_print_job.
+ */
+const renderingParametersSchema = {
+  line_numbers: z
+    .boolean()
+    .optional()
+    .describe("Show line numbers when rendering code files (overrides global setting)"),
+  color_scheme: z
+    .string()
+    .optional()
+    .describe(
+      "Syntax highlighting color scheme for code files (e.g., 'github', 'monokai', 'atom-one-light')"
+    ),
+  font_size: z
+    .string()
+    .optional()
+    .describe("Font size for code files (e.g., '8pt', '10pt', '12pt')"),
+  line_spacing: z
+    .string()
+    .optional()
+    .describe("Line spacing for code files (e.g., '1', '1.5', '2')"),
+  force_markdown_render: z
+    .boolean()
+    .optional()
+    .describe(
+      "Force markdown rendering to PDF (true=always render, false=never render, undefined=use config)"
+    ),
+  force_code_render: z
+    .boolean()
+    .optional()
+    .describe(
+      "Force code rendering to PDF with syntax highlighting (true=always render, false=never render, undefined=use config)"
+    ),
+}
 
 /**
  * Registers the print_file tool with the MCP server.
@@ -43,36 +86,13 @@ export function registerPrintTools(server: McpServer) {
           .string()
           .optional()
           .describe("Additional CUPS options (e.g., 'landscape', 'sides=two-sided-long-edge')"),
-        line_numbers: z
-          .boolean()
-          .optional()
-          .describe("Show line numbers when rendering code files (overrides global setting)"),
-        color_scheme: z
-          .string()
-          .optional()
-          .describe(
-            "Syntax highlighting color scheme for code files (e.g., 'github', 'monokai', 'atom-one-light')"
-          ),
-        font_size: z
-          .string()
-          .optional()
-          .describe("Font size for code files (e.g., '8pt', '10pt', '12pt')"),
-        line_spacing: z
-          .string()
-          .optional()
-          .describe("Line spacing for code files (e.g., '1', '1.5', '2')"),
-        force_markdown_render: z
+        skip_confirmation: z
           .boolean()
           .optional()
           .describe(
-            "Force markdown rendering to PDF (true=always render, false=never render, undefined=use config)"
+            "Skip page count confirmation check (bypasses MCP_PRINTER_CONFIRM_IF_OVER_PAGES threshold)"
           ),
-        force_code_render: z
-          .boolean()
-          .optional()
-          .describe(
-            "Force code rendering to PDF with syntax highlighting (true=always render, false=never render, undefined=use config)"
-          ),
+        ...renderingParametersSchema,
       },
     },
     async ({
@@ -80,6 +100,7 @@ export function registerPrintTools(server: McpServer) {
       printer,
       copies = 1,
       options,
+      skip_confirmation,
       line_numbers,
       color_scheme,
       font_size,
@@ -87,57 +108,43 @@ export function registerPrintTools(server: McpServer) {
       force_markdown_render,
       force_code_render,
     }) => {
-      // Validate file path security
-      validateFilePath(file_path)
-
-      let actualFilePath = file_path
-      let renderedPdf: string | null = null
-      let renderType = ""
-
-      // Check if file should be auto-rendered to PDF (markdown)
-      // When forcing, check if it's a markdown file by extension
-      const shouldRenderMarkdown =
-        force_markdown_render !== undefined
-          ? force_markdown_render &&
-            MARKDOWN_EXTENSIONS.some((ext) => file_path.toLowerCase().endsWith(`.${ext}`))
-          : shouldRenderToPdf(file_path)
-
-      if (shouldRenderMarkdown) {
-        try {
-          renderedPdf = await renderMarkdownToPdf(file_path)
-          actualFilePath = renderedPdf
-          renderType = "markdown → PDF"
-        } catch (error) {
-          // If fallback is enabled, print original file; otherwise throw error
-          if (config.fallbackOnRenderError) {
-            console.error(`Warning: Failed to render ${file_path}, printing as-is:`, error)
-          } else {
-            throw error
-          }
-        }
-      }
-      // Check if file should be rendered as code with syntax highlighting
-      else if (force_code_render !== undefined ? force_code_render : shouldRenderCode(file_path)) {
-        try {
-          renderedPdf = await renderCodeToPdf(file_path, {
-            lineNumbers: line_numbers,
-            colorScheme: color_scheme,
-            fontSize: font_size,
-            lineSpacing: line_spacing,
-          })
-          actualFilePath = renderedPdf
-          renderType = "code → PDF (syntax highlighted)"
-        } catch (error) {
-          // If fallback is enabled, print original file; otherwise throw error
-          if (config.fallbackOnRenderError) {
-            console.error(`Warning: Failed to render code ${file_path}, printing as-is:`, error)
-          } else {
-            throw error
-          }
-        }
-      }
+      // Use shared rendering function
+      const { actualFilePath, renderedPdf, renderType } = await renderFileIfNeeded({
+        filePath: file_path,
+        lineNumbers: line_numbers,
+        colorScheme: color_scheme,
+        fontSize: font_size,
+        lineSpacing: line_spacing,
+        forceMarkdownRender: force_markdown_render,
+        forceCodeRender: force_code_render,
+      })
 
       try {
+        // Check if we need to trigger page count confirmation
+        // Try to parse as PDF - if it works, do the page count check. If it fails, it's not a PDF.
+        if (!skip_confirmation && config.confirmIfOverPages > 0) {
+          try {
+            const pdfPages = await getPdfPageCount(actualFilePath)
+            const isDuplex = isDuplexEnabled(options)
+            const physicalSheets = calculatePhysicalSheets(pdfPages, isDuplex)
+
+            // If exceeds threshold, return preview instead of printing
+            if (shouldTriggerConfirmation(physicalSheets)) {
+              return formatPreviewResponse(
+                pdfPages,
+                physicalSheets,
+                isDuplex,
+                file_path,
+                renderType
+              )
+            }
+          } catch {
+            // Not a PDF or failed to parse - just continue with normal print
+            // (This is expected for plain text files, images, etc.)
+          }
+        }
+
+        // Execute print job
         const { printerName, allOptions } = await executePrintJob(
           actualFilePath,
           printer,
@@ -147,13 +154,64 @@ export function registerPrintTools(server: McpServer) {
         return formatPrintResponse(printerName, copies, allOptions, file_path, renderType)
       } finally {
         // Clean up rendered PDF if it was created
-        if (renderedPdf) {
-          try {
-            unlinkSync(renderedPdf)
-          } catch {
-            // Ignore cleanup errors
-          }
-        }
+        cleanupRenderedPdf(renderedPdf)
+      }
+    }
+  )
+
+  // Register preview_print_job tool
+  server.registerTool(
+    "preview_print_job",
+    {
+      title: "Preview Print Job",
+      description:
+        "Preview how many pages a file would print without actually printing. Pre-renders the file (if needed) and returns page count and physical sheet information.",
+      inputSchema: {
+        file_path: z.string().describe("Full path to the file to preview"),
+        options: z
+          .string()
+          .optional()
+          .describe(
+            "Additional CUPS options for duplex detection (e.g., 'sides=two-sided-long-edge')"
+          ),
+        ...renderingParametersSchema,
+      },
+    },
+    async ({
+      file_path,
+      options,
+      line_numbers,
+      color_scheme,
+      font_size,
+      line_spacing,
+      force_markdown_render,
+      force_code_render,
+    }) => {
+      // Use shared rendering function
+      const { actualFilePath, renderedPdf, renderType } = await renderFileIfNeeded({
+        filePath: file_path,
+        lineNumbers: line_numbers,
+        colorScheme: color_scheme,
+        fontSize: font_size,
+        lineSpacing: line_spacing,
+        forceMarkdownRender: force_markdown_render,
+        forceCodeRender: force_code_render,
+      })
+
+      try {
+        // Get page count from the file
+        const pdfPages = await getPdfPageCount(actualFilePath)
+        const isDuplex = isDuplexEnabled(options)
+        const physicalSheets = calculatePhysicalSheets(pdfPages, isDuplex)
+
+        // Return preview info
+        return formatPreviewOnlyResponse(pdfPages, physicalSheets, isDuplex, file_path, renderType)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        throw new Error(`Failed to preview file: ${message}`)
+      } finally {
+        // Clean up rendered PDF if it was created
+        cleanupRenderedPdf(renderedPdf)
       }
     }
   )

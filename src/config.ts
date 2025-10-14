@@ -31,6 +31,8 @@ export interface Config {
   deniedPaths: string[]
   /** Maximum number of copies allowed per print job (0 or negative means unlimited) */
   maxCopies: number
+  /** Threshold for page count confirmation. If physical sheets exceed this, print job returns preview instead. 0 = disabled. */
+  confirmIfOverPages: number
   /** Code rendering configuration */
   code: {
     /** File extensions to exclude from code rendering. All enabled by default. */
@@ -70,6 +72,7 @@ const DEFAULT_ENABLE_MANAGEMENT = false
 const DEFAULT_ENABLE_PROMPTS = true
 const DEFAULT_FALLBACK_ON_RENDER_ERROR = false
 const DEFAULT_MAX_COPIES = 10
+const DEFAULT_CONFIRM_IF_OVER_PAGES = 10
 const DEFAULT_CODE_COLOR_SCHEME = "atom-one-light"
 const DEFAULT_CODE_AUTO_LINE_NUMBERS = true
 const DEFAULT_CODE_FONT_SIZE = "10pt"
@@ -161,6 +164,10 @@ export const config: Config = {
   allowedPaths: hasUserPaths ? userAllowedPaths : [...defaultAllowedPaths],
   deniedPaths: [...defaultDeniedPaths, ...userDeniedPaths],
   maxCopies: parseInt(process.env.MCP_PRINTER_MAX_COPIES || String(DEFAULT_MAX_COPIES), 10),
+  confirmIfOverPages: parseInt(
+    process.env.MCP_PRINTER_CONFIRM_IF_OVER_PAGES || String(DEFAULT_CONFIRM_IF_OVER_PAGES),
+    10
+  ),
   code: {
     excludeExtensions: parseDelimitedString(
       process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS,

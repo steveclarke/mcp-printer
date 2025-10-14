@@ -27,6 +27,7 @@ In the era of AI-assisted development, we're generating more documentation, spec
 - 📝 **Render markdown** - Convert markdown to beautifully formatted PDFs
 - 📊 **Mermaid diagrams** - Flowcharts, sequence diagrams, and more render as visual graphics in markdown
 - 💻 **Syntax-highlighted code** - Automatically render code files with syntax highlighting, line numbers, and proper formatting
+- 🔍 **Page count preview** - Check how many pages a document will print before sending to printer (prevents accidental 200-page printouts!)
 - 🖨️ **List printers** - See all available printers and their status
 - 📋 **Manage queue** - View and cancel print jobs
 - ⚙️ **Configure** - Set default printers
@@ -59,25 +60,26 @@ That's it! The package will be automatically downloaded from npm on first use.
 
 All configuration is optional. Add an `env` object to customize behavior:
 
-| Variable                               | Default                                   | Description                                                                                                                                   |
-| -------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MCP_PRINTER_DEFAULT_PRINTER`          | _(none)_                                  | Default printer to use when none specified (falls back to system default)                                                                     |
-| `MCP_PRINTER_AUTO_DUPLEX`              | `false`                                   | Set to `"true"` to automatically print double-sided by default (can be overridden per-call)                                                   |
-| `MCP_PRINTER_DEFAULT_OPTIONS`          | _(none)_                                  | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`)                                                                                |
-| `MCP_PRINTER_CHROME_PATH`              | _(auto-detected)_                         | Path to Chrome/Chromium for PDF rendering (override if auto-detection fails)                                                                  |
-| `MCP_PRINTER_AUTO_RENDER_MARKDOWN`     | `true`                                    | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`)                              |
-| `MCP_PRINTER_AUTO_RENDER_CODE`         | `true`                                    | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`)                                  |
-| `MCP_PRINTER_ENABLE_MANAGEMENT`        | `false`                                   | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` tools  |
-| `MCP_PRINTER_ENABLE_PROMPTS`           | `true`                                    | Enable prompts (workflow templates). Set to `"false"` to disable prompt registration if you don't want prompts in your MCP client             |
-| `MCP_PRINTER_ALLOWED_PATHS`            | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** default allowed directories when set (e.g., `"$HOME/Documents:$HOME/src"`)          |
-| `MCP_PRINTER_DENIED_PATHS`             | _(system dirs)_                           | Colon-separated paths denied for printing. **Merged with** system directory defaults like `/etc`, `/var`, etc. (e.g., `"/home/user/private"`) |
-| `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false`                                   | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead                      |
-| `MCP_PRINTER_MAX_COPIES`               | `10`                                      | Maximum copies allowed per print job (set to `0` for unlimited)                                                                               |
-| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS`  | _(none)_                                  | Extensions to exclude from code rendering (e.g., `"json,yaml,html"`) - only applies when code rendering is enabled                            |
-| `MCP_PRINTER_CODE_COLOR_SCHEME`        | `"atom-one-light"`                        | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes))                                                                |
-| `MCP_PRINTER_CODE_AUTO_LINE_NUMBERS`   | `true`                                    | Automatically show line numbers in code printouts (can be overridden per-call with the `line_numbers` parameter)                              |
-| `MCP_PRINTER_CODE_FONT_SIZE`           | `"10pt"`                                  | Font size for code (e.g., `"8pt"`, `"12pt"`)                                                                                                  |
-| `MCP_PRINTER_CODE_LINE_SPACING`        | `"1.5"`                                   | Line spacing multiplier for code (e.g., `"1"`, `"1.5"`, `"2"`)                                                                                |
+| Variable                               | Default                                   | Description                                                                                                                                             |
+| -------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MCP_PRINTER_DEFAULT_PRINTER`          | _(none)_                                  | Default printer to use when none specified (falls back to system default)                                                                               |
+| `MCP_PRINTER_AUTO_DUPLEX`              | `false`                                   | Set to `"true"` to automatically print double-sided by default (can be overridden per-call)                                                             |
+| `MCP_PRINTER_DEFAULT_OPTIONS`          | _(none)_                                  | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`)                                                                                          |
+| `MCP_PRINTER_CHROME_PATH`              | _(auto-detected)_                         | Path to Chrome/Chromium for PDF rendering (override if auto-detection fails)                                                                            |
+| `MCP_PRINTER_AUTO_RENDER_MARKDOWN`     | `true`                                    | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`)                                        |
+| `MCP_PRINTER_AUTO_RENDER_CODE`         | `true`                                    | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`)                                            |
+| `MCP_PRINTER_ENABLE_MANAGEMENT`        | `false`                                   | Management operations are **disabled by default** for security. Set to `"true"` to enable `set_default_printer` and `cancel_print_job` tools            |
+| `MCP_PRINTER_ENABLE_PROMPTS`           | `true`                                    | Enable prompts (workflow templates). Set to `"false"` to disable prompt registration if you don't want prompts in your MCP client                       |
+| `MCP_PRINTER_ALLOWED_PATHS`            | `~/Documents`, `~/Downloads`, `~/Desktop` | Colon-separated paths allowed for printing. **Overrides** default allowed directories when set (e.g., `"$HOME/Documents:$HOME/src"`)                    |
+| `MCP_PRINTER_DENIED_PATHS`             | _(system dirs)_                           | Colon-separated paths denied for printing. **Merged with** system directory defaults like `/etc`, `/var`, etc. (e.g., `"/home/user/private"`)           |
+| `MCP_PRINTER_FALLBACK_ON_RENDER_ERROR` | `false`                                   | Set to `"true"` to print original file if PDF rendering fails (markdown/code). When false, errors will be thrown instead                                |
+| `MCP_PRINTER_MAX_COPIES`               | `10`                                      | Maximum copies allowed per print job (set to `0` for unlimited)                                                                                         |
+| `MCP_PRINTER_CONFIRM_IF_OVER_PAGES`    | `0` _(disabled)_                          | If set > 0, print jobs exceeding this many physical sheets will return a preview instead of printing (user must confirm with `skip_confirmation: true`) |
+| `MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS`  | _(none)_                                  | Extensions to exclude from code rendering (e.g., `"json,yaml,html"`) - only applies when code rendering is enabled                                      |
+| `MCP_PRINTER_CODE_COLOR_SCHEME`        | `"atom-one-light"`                        | Syntax highlighting color scheme (see [Available Themes](#code-color-schemes))                                                                          |
+| `MCP_PRINTER_CODE_AUTO_LINE_NUMBERS`   | `true`                                    | Automatically show line numbers in code printouts (can be overridden per-call with the `line_numbers` parameter)                                        |
+| `MCP_PRINTER_CODE_FONT_SIZE`           | `"10pt"`                                  | Font size for code (e.g., `"8pt"`, `"12pt"`)                                                                                                            |
+| `MCP_PRINTER_CODE_LINE_SPACING`        | `"1.5"`                                   | Line spacing multiplier for code (e.g., `"1"`, `"1.5"`, `"2"`)                                                                                          |
 
 **Example configuration:**
 ```json
@@ -147,6 +149,7 @@ Print a file to a specified printer.
 - `printer` (optional) - Printer name
 - `copies` (optional) - Number of copies (default: 1)
 - `options` (optional) - CUPS options like `landscape`, `sides=two-sided-long-edge`
+- `skip_confirmation` (optional) - Skip page count confirmation check (bypasses `MCP_PRINTER_CONFIRM_IF_OVER_PAGES` threshold)
 - `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
 - `color_scheme` (optional) - Syntax highlighting theme for code files (e.g., `github`, `monokai`, `atom-one-light`)
 - `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
@@ -156,6 +159,8 @@ Print a file to a specified printer.
 
 **Note:** The code rendering parameters (`line_numbers`, `color_scheme`, `font_size`, `line_spacing`) only apply when printing code files that are automatically rendered to PDF with syntax highlighting.
 
+**Page Count Confirmation:** When `MCP_PRINTER_CONFIRM_IF_OVER_PAGES` is set, print jobs exceeding the threshold will return a preview with page count instead of printing. The AI assistant will then ask you to confirm before proceeding. If you confirm, it will automatically retry the print with the confirmation bypassed. This feature only works for PDF files (including auto-rendered markdown and code files).
+
 **Example:**
 ```
 User: Print README.md to my HP LaserJet, 2 copies
@@ -164,6 +169,40 @@ AI: *prints file*
   Copies: 2
   File: /path/to/README.md
 ```
+
+### `preview_print_job`
+Preview how many pages a file would print without actually printing. This tool pre-renders files (markdown, code) if needed and returns page count and physical sheet information.
+
+**Parameters:**
+- `file_path` (required) - Full path to file
+- `options` (optional) - CUPS options for duplex detection (e.g., `sides=two-sided-long-edge`)
+- `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
+- `color_scheme` (optional) - Syntax highlighting theme for code files
+- `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
+- `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
+- `force_markdown_render` (optional) - Force markdown rendering to PDF
+- `force_code_render` (optional) - Force code rendering to PDF with syntax highlighting
+
+**Note:** Page counting only works for PDF files, including:
+- Markdown files (auto-rendered to PDF)
+- Code files with syntax highlighting (auto-rendered to PDF)  
+- Existing PDF files
+
+Plain text files, images, and other non-PDF formats cannot be previewed and will print immediately without page count information.
+
+**Example:**
+```
+User: How many pages would README.md be?
+AI: *previews file*
+📄 Preview: 32 pages (16 sheets, duplex)
+  File: /path/to/README.md
+  Rendered: markdown → PDF
+```
+
+**Use cases:**
+- Check page count before printing large documents
+- Estimate paper usage for duplex vs single-sided printing
+- Preview rendered output of markdown or code files
 
 ### `get_print_queue`
 Check the print queue for pending jobs.
@@ -304,6 +343,32 @@ AI: You have 2 jobs:
 
 User: Cancel job 126
 AI: ✓ Cancelled job: 126
+```
+
+### Page Count Preview and Confirmation
+
+```
+User: How many pages would this markdown file be?
+AI: *previews file*
+📄 Preview: 32 pages (16 sheets, duplex)
+  File: /path/to/document.md
+  Rendered: markdown → PDF
+
+# With MCP_PRINTER_CONFIRM_IF_OVER_PAGES=10 set:
+User: Print document.md
+AI: *checks page count before printing*
+📄 Preview: This document will print 32 pages (16 sheets, duplex)
+  File: /path/to/document.md
+  Rendered: markdown → PDF
+
+⚠️  This exceeds the configured page threshold.
+This is a large document. Are you sure you want to print 32 pages?
+
+User: Yes, print it
+AI: *automatically retries print with confirmation bypassed*
+✓ File sent to printer: HP_LaserJet_4001
+  File: /path/to/document.md
+  Rendered: markdown → PDF
 ```
 
 ## CUPS Options
