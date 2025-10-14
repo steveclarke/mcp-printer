@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- New `get_page_meta` tool to get page count and metadata before printing
+- Page count confirmation prompt when print jobs exceed configurable threshold
+- `MCP_PRINTER_CONFIRM_IF_OVER_PAGES` environment variable (default: 10 physical sheets)
+
+### Fixed
+- Markdown PDF footer layout regression where filename and page numbers were misaligned
+- Footer font now matches GitHub's markdown rendering font stack for consistent typography
+
 ## [1.1.0] - 2025-10-13
 
 ### Added

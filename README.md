@@ -170,8 +170,8 @@ AI: *prints file*
   File: /path/to/README.md
 ```
 
-### `preview_print_job`
-Preview how many pages a file would print without actually printing. This tool pre-renders files (markdown, code) if needed and returns page count and physical sheet information.
+### `get_page_meta`
+Get page count and physical sheet information for a file before printing. This tool pre-renders files (markdown, code) if needed and returns page metadata.
 
 **Parameters:**
 - `file_path` (required) - Full path to file
@@ -188,12 +188,12 @@ Preview how many pages a file would print without actually printing. This tool p
 - Code files with syntax highlighting (auto-rendered to PDF)  
 - Existing PDF files
 
-Plain text files, images, and other non-PDF formats cannot be previewed and will print immediately without page count information.
+Plain text files, images, and other non-PDF formats cannot have their page count determined.
 
 **Example:**
 ```
 User: How many pages would README.md be?
-AI: *previews file*
+AI: *gets page metadata*
 📄 Preview: 32 pages (16 sheets, duplex)
   File: /path/to/README.md
   Rendered: markdown → PDF

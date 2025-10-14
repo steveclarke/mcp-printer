@@ -451,7 +451,7 @@ export interface RenderOptions {
 /**
  * Prepares a file for printing by conditionally rendering it to PDF.
  *
- * This is the core function used by both `print_file` and `preview_print_job` tools.
+ * This is the core function used by both `print_file` and `get_page_meta` tools.
  * It determines whether a file needs to be rendered to PDF (for enhanced formatting)
  * or can be printed as-is.
  *

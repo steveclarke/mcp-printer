@@ -19,7 +19,7 @@ import {
 import { config } from "../config.js"
 
 /**
- * Shared parameter schema for rendering options used by both print_file and preview_print_job.
+ * Shared parameter schema for rendering options used by both print_file and get_page_meta.
  */
 const renderingParametersSchema = {
   line_numbers: z
@@ -159,15 +159,15 @@ export function registerPrintTools(server: McpServer) {
     }
   )
 
-  // Register preview_print_job tool
+  // Register get_page_meta tool
   server.registerTool(
-    "preview_print_job",
+    "get_page_meta",
     {
-      title: "Preview Print Job",
+      title: "Get Page Metadata",
       description:
-        "Preview how many pages a file would print without actually printing. Pre-renders the file (if needed) and returns page count and physical sheet information.",
+        "Get page count and physical sheet information for a file before printing. Pre-renders the file (if needed) and returns page metadata including page count and physical sheets required.",
       inputSchema: {
-        file_path: z.string().describe("Full path to the file to preview"),
+        file_path: z.string().describe("Full path to the file to get page metadata for"),
         options: z
           .string()
           .optional()
@@ -208,7 +208,7 @@ export function registerPrintTools(server: McpServer) {
         return formatPreviewResponse(pdfPages, physicalSheets, isDuplex, file_path, renderType)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        throw new Error(`Failed to preview file: ${message}`)
+        throw new Error(`Failed to get page metadata: ${message}`)
       } finally {
         // Clean up rendered PDF if it was created
         cleanupRenderedPdf(renderedPdf)
