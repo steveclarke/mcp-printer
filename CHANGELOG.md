@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-10-15
+
+### Added
+- Shebang detection for automatic code file identification
+- Files without standard extensions that contain shebangs (`#!/bin/bash`, `#!/usr/bin/env python`, etc.) are now automatically rendered with syntax highlighting
+- Support for all line ending types: Unix (`\n`), Windows (`\r\n`), and old Mac (`\r`)
+- Four new test fixture files for shebang detection testing
+
+### Enhanced
+- `shouldRenderCode()` now checks for shebangs in the first 1024 bytes of files with unknown extensions
+- Code rendering now works seamlessly with shell scripts, Python scripts, and other executables without file extensions
+
 ## [1.2.0] - 2025-10-14
 
 ### Added
