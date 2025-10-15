@@ -169,7 +169,7 @@ export async function printFile(
     // Build print options for the library
     const printOptions: PrintJobOptions = {
       jobName: options.jobName || `MCP Print Job`,
-      waitForCompletion: options.waitForCompletion ?? false, // Default to false (like lpr)
+      waitForCompletion: options.waitForCompletion ?? true, // Wait for file to be sent to CUPS
     }
 
     // Add CUPS options if provided
