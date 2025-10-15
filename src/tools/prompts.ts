@@ -26,10 +26,19 @@ export function registerPrompts(server: McpServer) {
           .describe('What changed? Use "staged", "branch", "PR #X", or describe changes'),
 
         files: z.string().optional().describe("Specific files (comma-separated) or empty for all"),
+
+        auto_print: z
+          .string()
+          .optional()
+          .describe('Auto-print review doc? "true" or "false" (default: false)'),
       },
     },
-    ({ context, files }) => {
+    ({ context, files, auto_print }) => {
       const filesFilter = files ? `\nFOCUS ON: ${files}` : ""
+      const shouldAutoPrint = auto_print === "true"
+      const printInstruction = shouldAutoPrint
+        ? "use print_file on the review doc"
+        : "show the file path (DO NOT print automatically)"
 
       return {
         messages: [
@@ -80,9 +89,10 @@ INSTRUCTIONS:
    - Performance/breaking changes if any
    - Testing notes
 
-4. **Print the review document:**
-   - Save markdown to temp file
-   - Use print_file on the review doc
+4. **Handle the review document:**
+   - Save markdown to /Users/steve/src/mcp-printer/tmp/code-review-[timestamp].md
+   - ${printInstruction}
+   - User can review saved file and print manually if needed
 
 IMPORTANT:
 - New files = separate printouts (no grey backgrounds)
