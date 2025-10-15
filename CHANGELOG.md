@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **BREAKING:** Replaced `print-code-review` prompt with simpler `print-changed` prompt
+- New `print-changed` prompt focuses on batch printing changed files (staged, uncommitted, branch)
+- Removed complex code review document generation from prompts (stayed printer-focused)
+
+### Added
+- `code-review-prompt.md` - sophisticated code review prompt saved for personal use outside MCP printer
+
 ## [1.3.0] - 2025-10-15
 
 ### Added
