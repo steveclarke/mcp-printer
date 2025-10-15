@@ -5,7 +5,6 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
-import yn from "yn"
 
 /**
  * Registers prompts with the MCP server.
@@ -14,46 +13,22 @@ import yn from "yn"
  * @param server - The McpServer instance to register prompts with
  */
 export function registerPrompts(server: McpServer) {
-  // print-review-package - Print source code and documentation for offline review
+  // print-changed - Print files that have changed (staged, uncommitted, or in branch)
   server.registerPrompt(
-    "print-review-package",
+    "print-changed",
     {
-      title: "Print Review Package",
-      description: "Print source code and documentation for offline review",
+      title: "Print Changed Files",
+      description: "Print files that have changed (staged, uncommitted, or in branch)",
       argsSchema: {
-        directory: z
+        context: z
           .string()
-          .optional()
-          .describe(
-            'Directory to review (e.g., "src/", ".", "/path/to/project"). Defaults to current directory'
-          ),
+          .describe('What to print? "staged", "uncommitted", "branch", or branch name'),
 
-        include_source: z
-          .string()
-          .optional()
-          .describe("Include source code files? (yes/no, default: yes)"),
-
-        include_docs: z
-          .string()
-          .optional()
-          .describe("Include documentation files? (yes/no, default: yes)"),
-
-        include_tests: z.string().optional().describe("Include test files? (yes/no, default: no)"),
-
-        copies: z.string().optional().describe("Number of copies to print (default: 1)"),
+        options: z.string().optional().describe('Print options (e.g., "landscape", "two-sided")'),
       },
     },
-    ({
-      directory = ".",
-      include_source = "yes",
-      include_docs = "yes",
-      include_tests = "no",
-      copies = "1",
-    }) => {
-      const shouldIncludeSource = yn(include_source, { default: true })
-      const shouldIncludeDocs = yn(include_docs, { default: true })
-      const shouldIncludeTests = yn(include_tests, { default: false })
-      const numCopies = parseInt(copies) || 1
+    ({ context, options }) => {
+      const printOpts = options ? `\nPRINT OPTIONS: ${options}` : ""
 
       return {
         messages: [
@@ -61,38 +36,29 @@ export function registerPrompts(server: McpServer) {
             role: "user",
             content: {
               type: "text",
-              text: `I need to review code offline. Please prepare a review package from ${directory}:
+              text: `Print changed files for offline review.
 
-WHAT TO PRINT:
-${shouldIncludeSource ? "✓ Source code files (.ts, .js, .py, .go, .java, .cpp, .c, .rs, etc.)" : "✗ Skip source code"}
-${shouldIncludeDocs ? "✓ Documentation files (README.md, CONTRIBUTING.md, *.md)" : "✗ Skip documentation"}
-${shouldIncludeTests ? "✓ Test files (*test.*, *spec.*, __tests__/)" : "✗ Skip tests"}
+CONTEXT: ${context}${printOpts}
 
 INSTRUCTIONS:
-1. Find all matching files in ${directory}
-   - Exclude: node_modules/, dist/, build/, .git/, coverage/
-   - Source files: common code extensions
-   - Docs: README.md first, then other .md files alphabetically
 
-2. Print files in this order:
-   a) README.md (if exists and include_docs is true)
-   b) Other documentation files alphabetically
-   c) Source files organized by directory structure
-   d) Test files last (if included)
+1. Find changed files based on context:
+   - "staged": Use git diff --cached --name-only
+   - "uncommitted": Use git diff --name-only (unstaged changes)
+   - "branch": Use git diff main...HEAD --name-only
+   - [branch name]: Use git diff main...[branch] --name-only
 
-3. For each file:
-   - Use syntax highlighting for code files
-   - Use markdown rendering for .md files
-   - Add clear separators between files
-   - Include file path in header
+2. For each changed file:
+   - Use print_file tool
+   - Apply consistent print settings${printOpts ? ` (${options})` : ""}
+   - Example: print_file("src/server.ts"${options ? `, options="${options}"` : ""})
 
-4. Print settings:
-   - ${numCopies} cop${numCopies > 1 ? "ies" : "y"}
-   - Double-sided to save paper
-   - GitHub color scheme
-   - 8pt font for code compactness
+3. Report what was printed:
+   - List file names
+   - Count of files printed
+   - Any files skipped (if binary, too large, etc.)
 
-This should give me a complete review package I can read offline.`,
+Execute this now for: ${context}`,
             },
           },
         ],
