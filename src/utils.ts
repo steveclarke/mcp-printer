@@ -7,6 +7,11 @@ import { execa, type ExecaError } from "execa"
 import { access, readFile } from "fs/promises"
 import { constants } from "fs"
 import { writeFileSync, mkdtempSync, unlinkSync } from "fs"
+import {
+  printFile as adapterPrintFile,
+  getDefaultPrinter,
+  parseCupsOptions,
+} from "./adapters/printers-lib.js"
 import { extname, join } from "path"
 import { tmpdir } from "os"
 import { config, MARKDOWN_EXTENSIONS, type MarkdownExtension } from "./config.js"
@@ -269,7 +274,7 @@ export function shouldRenderToPdf(filePath: string): boolean {
 
 /**
  * Execute a print job with the given file and options.
- * Handles copy validation, lpr argument building, and execution.
+ * Handles copy validation, options parsing, and execution via the printing library.
  *
  * @param filePath - Path to the file to print
  * @param printer - Optional printer name
@@ -291,17 +296,8 @@ export async function executePrintJob(
     )
   }
 
-  const args: string[] = []
-
   // Use configured default printer if none specified
-  const targetPrinter = printer || config.defaultPrinter
-  if (targetPrinter) {
-    args.push("-P", targetPrinter)
-  }
-
-  if (copies > 1) {
-    args.push(`-#${copies}`)
-  }
+  const targetPrinter = printer || config.defaultPrinter || undefined
 
   // Build options with defaults
   let allOptions = []
@@ -321,19 +317,23 @@ export async function executePrintJob(
     allOptions.push(...options.split(/\s+/))
   }
 
-  // Add each option with -o flag
-  for (const option of allOptions) {
-    args.push("-o", option)
+  // Parse CUPS options for the library
+  const cupsOptionsString = allOptions.join(" ")
+  const cupsOptions = cupsOptionsString ? parseCupsOptions(cupsOptionsString) : {}
+
+  // Print using the library
+  const result = await adapterPrintFile(filePath, targetPrinter, {
+    copies,
+    cupsOptions,
+    jobName: `MCP Print: ${filePath.split("/").pop()}`,
+  })
+
+  // Determine the printer name used (from result or get default)
+  let printerName = result.printerName
+  if (!printerName) {
+    const defaultPrinter = getDefaultPrinter()
+    printerName = defaultPrinter?.name || "default"
   }
-
-  // Add file path
-  args.push(filePath)
-
-  await execa("lpr", args)
-
-  // Determine the printer name used
-  const printerName =
-    targetPrinter || (await execCommand("lpstat", ["-d"])).split(": ")[1] || "default"
 
   return { printerName, allOptions }
 }

@@ -11,6 +11,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.20.0
         version: 1.20.0
+      '@printers/printers':
+        specifier: ^0.7.4
+        version: 0.7.4
       crossnote:
         specifier: ^0.9.15
         version: 0.9.15
@@ -756,6 +759,46 @@ packages:
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
+
+  '@printers/printers-darwin-arm64@0.7.4':
+    resolution: {integrity: sha512-TtFEWH2WdyXlxil+7CyKpbErM5dZZPeuaMrEDYRfiVrUuR4krWv3MhJr63HC6UGd6rRRfw1a5C7EQS08omiz2A==}
+    engines: {node: '>= 20'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@printers/printers-darwin-x64@0.7.4':
+    resolution: {integrity: sha512-Hpqy/7/bFQNoLDDN3P/OIiDsNAjvfEq3xvJDRoZGpkFTJVge2JMQIdtJGLvEwiPBN0wjnC856OXUOsA+17ZaLA==}
+    engines: {node: '>= 20'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@printers/printers-linux-arm64-gnu@0.7.4':
+    resolution: {integrity: sha512-JSj+5ChAA2i/F/k8jxt13jwwnI+8YTmB8NS8oGhXBtTyC3vXcROQSk42wzY1BHzKxKx9jfyVKYGvLXavBcGTQA==}
+    engines: {node: '>= 20'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@printers/printers-linux-x64-gnu@0.7.4':
+    resolution: {integrity: sha512-5Md2hZDodwV/3nzRqn8uQ+OO2Hq9Lo85za9j66TBHSacV92KXyQlHSe4/unKHdbaqU6CHFeq+FOx0Ui4GyzSqw==}
+    engines: {node: '>= 20'}
+    cpu: [x64]
+    os: [linux]
+
+  '@printers/printers-win32-arm64-msvc@0.7.4':
+    resolution: {integrity: sha512-Vp2N7iunEq/l9AZw17sQwGRdIEJY/U2Cifhh/LuiV53H85URflvMtdkJdAwQSZIqyJdwJ2zDMCC9d8N4nUKSwg==}
+    engines: {node: '>= 20'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@printers/printers-win32-x64-msvc@0.7.4':
+    resolution: {integrity: sha512-AZUcglQj6/UDyIaWcGL+GTIs1QLLACiSE/xjstnacH/DdsjqMFfYA0xBfsgwk5BT9rUbWm5Ym1BfG13oWxieow==}
+    engines: {node: '>= 20'}
+    cpu: [x64]
+    os: [win32]
+
+  '@printers/printers@0.7.4':
+    resolution: {integrity: sha512-CladRhE1w6YDqM98fLkz9IiKbP5ST9tQxxk4IXJKqjsy+Mh3FLe7m44mt1S+8xxlRwvarTZ6VswWXA/eUwgLTw==}
+    engines: {node: '>= 20'}
 
   '@puppeteer/browsers@2.10.12':
     resolution: {integrity: sha512-mP9iLFZwH+FapKJLeA7/fLqOlSUwYpMwjR1P5J23qd4e7qGJwecJccJqHYrjw33jmIZYV4dtiTHPD/J+1e7cEw==}
@@ -5278,6 +5321,33 @@ snapshots:
       config-chain: 1.1.13
 
   '@polka/url@1.0.0-next.29': {}
+
+  '@printers/printers-darwin-arm64@0.7.4':
+    optional: true
+
+  '@printers/printers-darwin-x64@0.7.4':
+    optional: true
+
+  '@printers/printers-linux-arm64-gnu@0.7.4':
+    optional: true
+
+  '@printers/printers-linux-x64-gnu@0.7.4':
+    optional: true
+
+  '@printers/printers-win32-arm64-msvc@0.7.4':
+    optional: true
+
+  '@printers/printers-win32-x64-msvc@0.7.4':
+    optional: true
+
+  '@printers/printers@0.7.4':
+    optionalDependencies:
+      '@printers/printers-darwin-arm64': 0.7.4
+      '@printers/printers-darwin-x64': 0.7.4
+      '@printers/printers-linux-arm64-gnu': 0.7.4
+      '@printers/printers-linux-x64-gnu': 0.7.4
+      '@printers/printers-win32-arm64-msvc': 0.7.4
+      '@printers/printers-win32-x64-msvc': 0.7.4
 
   '@puppeteer/browsers@2.10.12':
     dependencies:

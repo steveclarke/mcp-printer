@@ -7,6 +7,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerAllTools } from "./tools/index.js"
 import packageJson from "../package.json" with { type: "json" }
+import { listAllPrinters } from "./adapters/printers-lib.js"
 
 /**
  * MCP Server instance for printing via CUPS.
@@ -38,6 +39,27 @@ export async function startServer() {
 
   // Log platform information
   console.error(`MCP Printer Server starting on ${process.platform}...`)
+
+  // Health check: verify the printing library can load and enumerate printers
+  try {
+    console.error("Running printer library health check...")
+    listAllPrinters()
+    console.error("✓ Printer library initialized successfully")
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error("✗ Failed to initialize @printers/printers library")
+    console.error(`  Error: ${message}`)
+    console.error(`  Platform: ${process.platform} ${process.arch}`)
+    console.error(`  Node version: ${process.version}`)
+    console.error("")
+    console.error("The native printing library could not be loaded. This may indicate:")
+    console.error("  - Missing system dependencies (CUPS on macOS/Linux)")
+    console.error("  - Incompatible platform or architecture")
+    console.error("  - Native addon build issues")
+    console.error("")
+    console.error("Please check the documentation for troubleshooting steps.")
+    throw new Error(`Printer library initialization failed: ${message}`)
+  }
 
   const transport = new StdioServerTransport()
   await mcpServer.connect(transport)

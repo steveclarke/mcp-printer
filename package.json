@@ -62,6 +62,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
+    "@printers/printers": "^0.7.4",
     "crossnote": "^0.9.15",
     "execa": "^9.6.0",
     "gray-matter": "^4.0.3",
