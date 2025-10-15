@@ -5,7 +5,6 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
-import yn from "yn"
 
 /**
  * Registers prompts with the MCP server.
@@ -14,46 +13,23 @@ import yn from "yn"
  * @param server - The McpServer instance to register prompts with
  */
 export function registerPrompts(server: McpServer) {
-  // print-review-package - Print source code and documentation for offline review
+  // print-code-review - Print code review with new files separately and modified file excerpts
   server.registerPrompt(
-    "print-review-package",
+    "print-code-review",
     {
-      title: "Print Review Package",
-      description: "Print source code and documentation for offline review",
+      title: "Print Code Review",
+      description:
+        "Print new files separately + create review doc with modified file excerpts for offline review",
       argsSchema: {
-        directory: z
+        context: z
           .string()
-          .optional()
-          .describe(
-            'Directory to review (e.g., "src/", ".", "/path/to/project"). Defaults to current directory'
-          ),
+          .describe('What changed? Use "staged", "branch", "PR #X", or describe changes'),
 
-        include_source: z
-          .string()
-          .optional()
-          .describe("Include source code files? (yes/no, default: yes)"),
-
-        include_docs: z
-          .string()
-          .optional()
-          .describe("Include documentation files? (yes/no, default: yes)"),
-
-        include_tests: z.string().optional().describe("Include test files? (yes/no, default: no)"),
-
-        copies: z.string().optional().describe("Number of copies to print (default: 1)"),
+        files: z.string().optional().describe("Specific files (comma-separated) or empty for all"),
       },
     },
-    ({
-      directory = ".",
-      include_source = "yes",
-      include_docs = "yes",
-      include_tests = "no",
-      copies = "1",
-    }) => {
-      const shouldIncludeSource = yn(include_source, { default: true })
-      const shouldIncludeDocs = yn(include_docs, { default: true })
-      const shouldIncludeTests = yn(include_tests, { default: false })
-      const numCopies = parseInt(copies) || 1
+    ({ context, files }) => {
+      const filesFilter = files ? `\nFOCUS ON: ${files}` : ""
 
       return {
         messages: [
@@ -61,38 +37,61 @@ export function registerPrompts(server: McpServer) {
             role: "user",
             content: {
               type: "text",
-              text: `I need to review code offline. Please prepare a review package from ${directory}:
+              text: `Print a code review package for offline review.
 
-WHAT TO PRINT:
-${shouldIncludeSource ? "✓ Source code files (.ts, .js, .py, .go, .java, .cpp, .c, .rs, etc.)" : "✗ Skip source code"}
-${shouldIncludeDocs ? "✓ Documentation files (README.md, CONTRIBUTING.md, *.md)" : "✗ Skip documentation"}
-${shouldIncludeTests ? "✓ Test files (*test.*, *spec.*, __tests__/)" : "✗ Skip tests"}
+CONTEXT: ${context}${filesFilter}
 
 INSTRUCTIONS:
-1. Find all matching files in ${directory}
-   - Exclude: node_modules/, dist/, build/, .git/, coverage/
-   - Source files: common code extensions
-   - Docs: README.md first, then other .md files alphabetically
 
-2. Print files in this order:
-   a) README.md (if exists and include_docs is true)
-   b) Other documentation files alphabetically
-   c) Source files organized by directory structure
-   d) Test files last (if included)
+1. **Determine what changed:**
+   - If context is "staged": use git diff --cached
+   - If context is "branch" or branch name: use git diff main...HEAD
+   - If PR #X: analyze that PR's changes
+   - Otherwise: use the description to find relevant files
 
-3. For each file:
-   - Use syntax highlighting for code files
-   - Use markdown rendering for .md files
-   - Add clear separators between files
-   - Include file path in header
+2. **Print NEW files separately (avoid grey backgrounds):**
+   - For EACH new file, use print_file tool individually
+   - Example: print_file("src/adapters/printers-lib.ts")
+   - These will get proper code highlighting without markdown backgrounds
+   - DO NOT include full new file contents in the review doc
 
-4. Print settings:
-   - ${numCopies} cop${numCopies > 1 ? "ies" : "y"}
-   - Double-sided to save paper
-   - GitHub color scheme
-   - 8pt font for code compactness
+3. **Create ONE markdown review document with:**
 
-This should give me a complete review package I can read offline.`,
+   ## Header
+   - Title describing the changes
+   - Context and date
+   
+   ## New Files Section
+   - List files that were printed separately
+   - Note: "See separate printouts for full content"
+   - Include file paths and line counts
+   
+   ## Modified Files Section
+   For each modified file, show ONLY changed sections:
+   - Function/method name with line numbers
+   - Mark changes: "⚠️ CHANGE:", "← NEW:", "← REMOVED:"
+   - 3-5 lines context before/after
+   - Explanation of WHY it changed
+   - Keep it focused - no full files!
+   
+   ## Summary
+   - Count of new/modified files
+   - Key changes overview
+   - Performance/breaking changes if any
+   - Testing notes
+
+4. **Print the review document:**
+   - Save markdown to temp file
+   - Use print_file on the review doc
+
+IMPORTANT:
+- New files = separate printouts (no grey backgrounds)
+- Modified files = excerpts only in review doc
+- Keep review doc focused and printer-friendly
+- Reference new files from review doc
+- Explain WHY changes were made
+
+Execute this now for: ${context}`,
             },
           },
         ],
