@@ -257,40 +257,41 @@ AI: ✓ Set default printer to: HP_LaserJet_4001
 
 Prompts are workflow templates that appear as slash commands in your AI assistant (e.g., Cursor). They provide guided workflows for common printing tasks.
 
-### `/print-review-package`
-Print a complete code review package for offline review.
+### `/print-changed`
+Print files that have changed in your git repository for offline review.
 
 **What it does:**
-- Finds all source code and documentation files in a directory
-- Organizes them logically (docs first, then source files)
-- Prints everything with proper syntax highlighting and formatting
-- Perfect for reviewing code on paper or away from your computer
+- Finds files that have changed based on git context (staged, uncommitted, or in a branch)
+- Prints all changed files with consistent settings
+- Perfect for reviewing code changes on paper before committing or merging
 
 **Parameters:**
-- `directory` - Directory to review (default: current directory `.`)
-- `include_source` - Include source code files (default: yes)
-- `include_docs` - Include documentation files (default: yes)
-- `include_tests` - Include test files (default: no)
-- `copies` - Number of copies to print (default: 1)
+- `context` - What to print: `"staged"`, `"uncommitted"`, `"branch"`, or a specific branch name
+- `options` (optional) - Print options (e.g., `"landscape"`, `"two-sided"`)
 
-**Example:**
+**Examples:**
 ```
-User: /print-review-package
-[Form appears with defaults]
-directory: .
-include_source: yes
-include_docs: yes
-copies: 1
+User: /print-changed
+[Form appears]
+context: staged
+options: 
 
-AI: [Finds all files, prints README.md, then all .ts files with syntax highlighting]
-✓ Printed 15 files: 2 docs + 13 source files
+AI: [Finds staged files using git diff --cached --name-only, prints each file]
+✓ Printed 3 files: src/server.ts, src/config.ts, README.md
+
+User: /print-changed
+context: branch
+options: two-sided
+
+AI: [Finds files changed in current branch vs main]
+✓ Printed 8 files with duplex printing enabled
 ```
 
 **Use cases:**
-- Review your entire codebase before release
-- Prepare documentation for offline reading
-- Create review packages for code reviews
-- Print feature code for offline debugging
+- Review staged changes before committing
+- Print uncommitted work for offline debugging
+- Review all changes in a feature branch
+- Create paper copies for code review meetings
 
 ## Usage Examples
 
