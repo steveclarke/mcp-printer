@@ -79,6 +79,46 @@ export async function fileExists(filePath: string): Promise<boolean> {
 }
 
 /**
+ * Checks if a file contains a shebang (#!) in the first 1024 bytes.
+ * Used to detect executable scripts without standard file extensions.
+ *
+ * @param filePath - Path to the file to check
+ * @returns True if shebang found, false otherwise
+ */
+export async function hasShebang(filePath: string): Promise<boolean> {
+  try {
+    // Read first 1024 bytes of the file
+    const buffer = Buffer.alloc(1024)
+    const { open } = await import("fs/promises")
+    const fileHandle = await open(filePath, "r")
+
+    try {
+      const { bytesRead } = await fileHandle.read(buffer, 0, 1024, 0)
+      await fileHandle.close()
+
+      if (bytesRead === 0) {
+        return false
+      }
+
+      // Convert buffer to string and check for shebang
+      const content = buffer.toString("utf-8", 0, bytesRead)
+      // Handle all line ending types: Unix (\n), Windows (\r\n), old Mac (\r)
+      const lines = content.split(/\r?\n|\r/)
+
+      // Check if any line starts with #!
+      // Note: Trim handles extra whitespace, though technically shebangs
+      // must be the first two bytes. We're lenient to catch more cases.
+      return lines.some((line) => line.trim().startsWith("#!"))
+    } catch {
+      await fileHandle.close()
+      return false
+    }
+  } catch {
+    return false
+  }
+}
+
+/**
  * Checks if a command-line tool is available in the system PATH.
  *
  * @param command - The command to check (e.g., "pandoc")
@@ -533,7 +573,7 @@ export async function prepareFileForPrinting(options: RenderOptions): Promise<Re
   else if (
     options.forceCodeRender !== undefined
       ? options.forceCodeRender
-      : shouldRenderCode(options.filePath)
+      : await shouldRenderCode(options.filePath)
   ) {
     try {
       renderedPdf = await renderCodeToPdf(options.filePath, {

@@ -27,7 +27,7 @@ import { basename, dirname, extname, join } from "path"
 import { fileURLToPath } from "url"
 import hljs from "highlight.js"
 import he from "he"
-import { convertHtmlToPdf } from "../utils.js"
+import { convertHtmlToPdf, hasShebang } from "../utils.js"
 import { validateFilePath } from "../file-security.js"
 import { config } from "../config.js"
 
@@ -35,11 +35,12 @@ import { config } from "../config.js"
  * Determines if a file should be rendered with syntax highlighting.
  * Uses strict whitelist approach - only known extensions and special extensionless
  * files will be auto-rendered. Unknown extensions require force_code_render=true.
+ * Falls back to shebang detection for files without recognized extensions.
  *
  * @param filePath - Path to the file to check
  * @returns True if the file should be syntax-highlighted, false otherwise
  */
-export function shouldRenderCode(filePath: string): boolean {
+export async function shouldRenderCode(filePath: string): Promise<boolean> {
   // Master switch check
   if (!config.autoRenderCode) {
     return false
@@ -56,7 +57,12 @@ export function shouldRenderCode(filePath: string): boolean {
 
   // Check if language is recognized (whitelist check)
   const language = getLanguageFromExtension(filePath)
-  return language !== ""
+  if (language !== "") {
+    return true
+  }
+
+  // Fall back to shebang detection for unknown extensions
+  return await hasShebang(filePath)
 }
 
 // Get the directory of the current module for resolving relative paths

@@ -465,7 +465,7 @@ Code files are automatically rendered to PDF with syntax highlighting, line numb
 
 ### Supported Languages
 
-The system uses a **strict whitelist approach** - only files with recognized extensions are automatically rendered as code. This prevents false positives on plain text files like LICENSE or README.
+The system uses a **strict whitelist approach** - only files with recognized extensions or shebangs are automatically rendered as code. This prevents false positives on plain text files like LICENSE or README.
 
 **Programming Languages:**
 JavaScript (`.js`, `.jsx`), TypeScript (`.ts`, `.tsx`), Python (`.py`), Java (`.java`), C (`.c`, `.h`), C++ (`.cpp`, `.cc`, `.cxx`, `.hpp`), C# (`.cs`), Go (`.go`), Rust (`.rs`), Swift (`.swift`), Kotlin (`.kt`), Ruby (`.rb`), PHP (`.php`), Scala (`.scala`), Perl (`.pl`, `.perl`), Lua (`.lua`), R (`.r`)
@@ -479,8 +479,13 @@ HTML (`.html`), CSS (`.css`), SCSS (`.scss`), Sass (`.sass` - uses SCSS highligh
 **Special Files (no extension):**
 `Makefile`, `Dockerfile`, `Gemfile`, `Rakefile`, `Vagrantfile`
 
+**Shebang Detection:**
+Files without recognized extensions that contain a shebang (`#!/bin/bash`, `#!/usr/bin/env python3`, etc.) in the first 1024 bytes are automatically detected as code. This enables syntax-highlighted rendering of shell scripts and other executable files without extensions.
+
 **Unknown Extensions:**
-Files with unknown extensions (like `.txt`, `.bak`, `.weird`) will NOT be automatically rendered. To render these files with syntax highlighting, the AI can use the `force_code_render=true` parameter in the `print_file` tool call.
+Files with unknown extensions (like `.txt`, `.bak`, `.weird`) and no shebang will NOT be automatically rendered. To render these files with syntax highlighting, the AI can use the `force_code_render=true` parameter in the `print_file` tool call.
+
+**💡 Tip:** You don't need to know the technical parameter names! Simply ask your AI assistant in natural language: *"Print this file and render it as code"* or *"Make sure to render that shell script with syntax highlighting"*. The AI will understand and use the `force_code_render` parameter automatically. This is especially useful for shell scripts without `.sh` extensions or other code files with non-standard names.
 
 **Configuration:**
 - To enable/disable automatic code rendering: Set `MCP_PRINTER_AUTO_RENDER_CODE` to `"true"` or `"false"` (default: true)

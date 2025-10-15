@@ -1,0 +1,34 @@
+#!/bin/bash
+# Test fixture: Shell script with shebang on first line
+# This file has no extension and should be auto-detected as code
+
+set -e
+
+# Configuration
+LOG_DIR="/var/log/myapp"
+MAX_LOG_SIZE=1048576  # 1MB in bytes
+
+# Function to rotate logs
+rotate_logs() {
+    local log_file="$1"
+    
+    if [ -f "$log_file" ]; then
+        local size=$(stat -f%z "$log_file" 2>/dev/null || stat -c%s "$log_file" 2>/dev/null)
+        
+        if [ "$size" -gt "$MAX_LOG_SIZE" ]; then
+            echo "Rotating $log_file (size: $size bytes)"
+            mv "$log_file" "${log_file}.old"
+            touch "$log_file"
+        fi
+    fi
+}
+
+# Main execution
+echo "Starting log rotation check..."
+for log in "$LOG_DIR"/*.log; do
+    [ -e "$log" ] || continue
+    rotate_logs "$log"
+done
+
+echo "Log rotation complete"
+

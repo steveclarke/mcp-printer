@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+// Test fixture: Node.js script with env-style shebang
+// This file has no extension and should be auto-detected as code
+
+const fs = require('fs');
+const path = require('path');
+
+class ConfigManager {
+  constructor(configPath) {
+    this.configPath = configPath;
+    this.config = {};
+  }
+
+  load() {
+    try {
+      const data = fs.readFileSync(this.configPath, 'utf8');
+      this.config = JSON.parse(data);
+      console.log('Configuration loaded successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to load config:', error.message);
+      return false;
+    }
+  }
+
+  get(key, defaultValue = null) {
+    return this.config[key] !== undefined ? this.config[key] : defaultValue;
+  }
+
+  set(key, value) {
+    this.config[key] = value;
+  }
+
+  save() {
+    try {
+      fs.writeFileSync(
+        this.configPath,
+        JSON.stringify(this.config, null, 2),
+        'utf8'
+      );
+      console.log('Configuration saved');
+      return true;
+    } catch (error) {
+      console.error('Failed to save config:', error.message);
+      return false;
+    }
+  }
+}
+
+// Main execution
+const configFile = process.argv[2] || './config.json';
+const manager = new ConfigManager(configFile);
+
+if (manager.load()) {
+  console.log('Server:', manager.get('server', 'localhost'));
+  console.log('Port:', manager.get('port', 3000));
+}
+

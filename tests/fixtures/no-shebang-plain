@@ -1,0 +1,33 @@
+Test Fixture: Plain Text File Without Shebang
+==============================================
+
+This file has no extension and no shebang.
+It should NOT be auto-detected as code.
+
+This is just a plain text document that happens to have no file extension.
+It should be printed as plain text, not rendered with syntax highlighting.
+
+Project Notes
+-------------
+
+1. The quick brown fox jumps over the lazy dog.
+2. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+3. The system should handle files without extensions gracefully.
+
+Important Considerations:
+- Not all files without extensions are code files
+- Some are just plain text documents
+- License files, READMEs, and changelogs often lack extensions
+- The shebang detection helps distinguish executable scripts
+
+Example without code:
+If this were code, it would look different.
+But it's not, so it doesn't.
+
+Final Notes:
+This file serves as a control case for our shebang detection feature.
+It ensures we don't accidentally render plain text files as code just
+because they lack a file extension.
+
+End of document.
+

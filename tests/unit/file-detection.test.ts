@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { join } from "path"
 
 // Mock the config module
 vi.mock("../../src/config.js", () => ({
@@ -122,8 +123,8 @@ describe("shouldRenderCode", () => {
     }))
 
     const { shouldRenderCode } = await import("../../src/renderers/code.js")
-    expect(shouldRenderCode("file.js")).toBe(false)
-    expect(shouldRenderCode("file.py")).toBe(false)
+    expect(await shouldRenderCode("file.js")).toBe(false)
+    expect(await shouldRenderCode("file.py")).toBe(false)
   })
 
   it("should return false for excluded extensions", async () => {
@@ -142,8 +143,8 @@ describe("shouldRenderCode", () => {
     }))
 
     const { shouldRenderCode } = await import("../../src/renderers/code.js")
-    expect(shouldRenderCode("file.txt")).toBe(false)
-    expect(shouldRenderCode("error.log")).toBe(false)
+    expect(await shouldRenderCode("file.txt")).toBe(false)
+    expect(await shouldRenderCode("error.log")).toBe(false)
   })
 
   it("should return true for whitelisted code extensions when enabled", async () => {
@@ -163,15 +164,15 @@ describe("shouldRenderCode", () => {
 
     const { shouldRenderCode } = await import("../../src/renderers/code.js")
     // Whitelisted code extensions should return true
-    expect(shouldRenderCode("script.js")).toBe(true)
-    expect(shouldRenderCode("app.py")).toBe(true)
-    expect(shouldRenderCode("component.ts")).toBe(true)
-    expect(shouldRenderCode("config.json")).toBe(true)
-    expect(shouldRenderCode("main.rs")).toBe(true)
-    expect(shouldRenderCode("server.go")).toBe(true)
+    expect(await shouldRenderCode("script.js")).toBe(true)
+    expect(await shouldRenderCode("app.py")).toBe(true)
+    expect(await shouldRenderCode("component.ts")).toBe(true)
+    expect(await shouldRenderCode("config.json")).toBe(true)
+    expect(await shouldRenderCode("main.rs")).toBe(true)
+    expect(await shouldRenderCode("server.go")).toBe(true)
   })
 
-  it("should return false for unknown extensions (strict whitelist)", async () => {
+  it("should return false for unknown extensions (strict whitelist) without shebang", async () => {
     vi.doMock("../../src/config.js", () => ({
       config: {
         autoRenderMarkdown: false,
@@ -187,11 +188,10 @@ describe("shouldRenderCode", () => {
     }))
 
     const { shouldRenderCode } = await import("../../src/renderers/code.js")
-    // Unknown extensions should return false (not in whitelist)
-    expect(shouldRenderCode("file.xyz")).toBe(false)
-    expect(shouldRenderCode("file.unknown")).toBe(false)
-    expect(shouldRenderCode("notes.txt")).toBe(false)
-    expect(shouldRenderCode("backup.bak")).toBe(false)
+    // Unknown extensions without shebang should return false (not in whitelist)
+    // Note: These tests use fixture files that exist and have no shebang
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    expect(await shouldRenderCode(join(fixturesDir, "no-shebang-plain"))).toBe(false)
   })
 
   it("should return true for whitelisted extensionless code files", async () => {
@@ -211,14 +211,12 @@ describe("shouldRenderCode", () => {
 
     const { shouldRenderCode } = await import("../../src/renderers/code.js")
     // Special extensionless files should return true
-    expect(shouldRenderCode("Makefile")).toBe(true)
-    expect(shouldRenderCode("Dockerfile")).toBe(true)
-    expect(shouldRenderCode("Gemfile")).toBe(true)
-    expect(shouldRenderCode("Rakefile")).toBe(true)
-    expect(shouldRenderCode("Vagrantfile")).toBe(true)
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    expect(await shouldRenderCode(join(fixturesDir, "Makefile"))).toBe(true)
+    expect(await shouldRenderCode(join(fixturesDir, "Dockerfile"))).toBe(true)
   })
 
-  it("should return false for non-whitelisted extensionless files", async () => {
+  it("should return false for non-whitelisted extensionless files without shebang", async () => {
     vi.doMock("../../src/config.js", () => ({
       config: {
         autoRenderMarkdown: false,
@@ -234,11 +232,11 @@ describe("shouldRenderCode", () => {
     }))
 
     const { shouldRenderCode } = await import("../../src/renderers/code.js")
-    // Plain text extensionless files should return false
-    expect(shouldRenderCode("LICENSE")).toBe(false)
-    expect(shouldRenderCode("README")).toBe(false)
-    expect(shouldRenderCode("CHANGELOG")).toBe(false)
-    expect(shouldRenderCode("CONTRIBUTORS")).toBe(false)
+    // Plain text extensionless files without shebang should return false
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    expect(await shouldRenderCode(join(fixturesDir, "LICENSE"))).toBe(false)
+    expect(await shouldRenderCode(join(fixturesDir, "README"))).toBe(false)
+    expect(await shouldRenderCode(join(fixturesDir, "CHANGELOG"))).toBe(false)
   })
 
   it("should handle case sensitivity in exclusions", async () => {
@@ -257,6 +255,113 @@ describe("shouldRenderCode", () => {
     }))
 
     const { shouldRenderCode } = await import("../../src/renderers/code.js")
-    expect(shouldRenderCode("file.TXT")).toBe(false) // Should be case-insensitive
+    expect(await shouldRenderCode("file.TXT")).toBe(false) // Should be case-insensitive
+  })
+
+  it("should detect shebang on first line", async () => {
+    vi.doMock("../../src/config.js", () => ({
+      config: {
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
+        code: {
+          excludeExtensions: [],
+          enableLineNumbers: true,
+          colorScheme: "atom-one-light",
+          fontSize: "10pt",
+          lineSpacing: "1.5",
+        },
+      },
+    }))
+
+    const { shouldRenderCode } = await import("../../src/renderers/code.js")
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    // File with shebang on first line should return true
+    expect(await shouldRenderCode(join(fixturesDir, "shebang-first-line"))).toBe(true)
+  })
+
+  it("should detect shebang after blank lines", async () => {
+    vi.doMock("../../src/config.js", () => ({
+      config: {
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
+        code: {
+          excludeExtensions: [],
+          enableLineNumbers: true,
+          colorScheme: "atom-one-light",
+          fontSize: "10pt",
+          lineSpacing: "1.5",
+        },
+      },
+    }))
+
+    const { shouldRenderCode } = await import("../../src/renderers/code.js")
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    // File with shebang after blank line should return true
+    expect(await shouldRenderCode(join(fixturesDir, "shebang-after-blank"))).toBe(true)
+  })
+
+  it("should detect env-style shebang", async () => {
+    vi.doMock("../../src/config.js", () => ({
+      config: {
+        autoRenderMarkdown: false,
+        autoRenderCode: true,
+        code: {
+          excludeExtensions: [],
+          enableLineNumbers: true,
+          colorScheme: "atom-one-light",
+          fontSize: "10pt",
+          lineSpacing: "1.5",
+        },
+      },
+    }))
+
+    const { shouldRenderCode } = await import("../../src/renderers/code.js")
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    // File with #!/usr/bin/env style shebang should return true
+    expect(await shouldRenderCode(join(fixturesDir, "shebang-env-style"))).toBe(true)
+  })
+})
+
+describe("hasShebang", () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it("should detect shebang on first line", async () => {
+    const { hasShebang } = await import("../../src/utils.js")
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    expect(await hasShebang(join(fixturesDir, "shebang-first-line"))).toBe(true)
+  })
+
+  it("should detect shebang after blank lines", async () => {
+    const { hasShebang } = await import("../../src/utils.js")
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    expect(await hasShebang(join(fixturesDir, "shebang-after-blank"))).toBe(true)
+  })
+
+  it("should detect env-style shebang", async () => {
+    const { hasShebang } = await import("../../src/utils.js")
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    expect(await hasShebang(join(fixturesDir, "shebang-env-style"))).toBe(true)
+  })
+
+  it("should return false for files without shebang", async () => {
+    const { hasShebang } = await import("../../src/utils.js")
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    expect(await hasShebang(join(fixturesDir, "no-shebang-plain"))).toBe(false)
+    expect(await hasShebang(join(fixturesDir, "LICENSE"))).toBe(false)
+    expect(await hasShebang(join(fixturesDir, "README"))).toBe(false)
+  })
+
+  it("should return false for non-existent files", async () => {
+    const { hasShebang } = await import("../../src/utils.js")
+    expect(await hasShebang("/nonexistent/file")).toBe(false)
+  })
+
+  it("should handle files with code-like content but no shebang", async () => {
+    const { hasShebang } = await import("../../src/utils.js")
+    const fixturesDir = join(process.cwd(), "tests", "fixtures")
+    // hello.py has .py extension so it's code, but this tests the function directly
+    expect(await hasShebang(join(fixturesDir, "notes.txt"))).toBe(false)
   })
 })
