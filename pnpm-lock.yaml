@@ -28,7 +28,7 @@ importers:
         version: 11.11.1
       pdf-parse:
         specifier: ^2.3.5
-        version: 2.3.5
+        version: 2.3.11
       yn:
         specifier: ^5.1.0
         version: 5.1.0
@@ -3537,8 +3537,8 @@ packages:
   pause-stream@0.0.11:
     resolution: {integrity: sha512-e3FBlXLmN/D1S+zHzanP4E/4Z60oFAa3O051qt1pxa7DEJWKAyil6upYVXCWadEnuoqa4Pkc9oUx9zsxYeRv8A==}
 
-  pdf-parse@2.3.5:
-    resolution: {integrity: sha512-pVTccZbylkEY3dCU6MGPgBPYlsH0kiTty2h7yopQnm/BiZ/RhAnT2wLV6keZwjZ2mE5HGbVAMhzXe7bP5kdhHA==}
+  pdf-parse@2.3.11:
+    resolution: {integrity: sha512-sO53dhj0xqHi30/QMxFe6f8k6amuxzv4yo0VMc2Iv2YjnHvByPxZPVpgpL+x9RScj5NTclkGkESdcW3lXS0mZg==}
     engines: {node: '>=20.16.0 <21 || >=22.3.0'}
 
   pdfjs-dist@5.4.296:
@@ -8283,7 +8283,7 @@ snapshots:
     dependencies:
       through: 2.3.8
 
-  pdf-parse@2.3.5:
+  pdf-parse@2.3.11:
     dependencies:
       pdfjs-dist: 5.4.296
     optionalDependencies:
