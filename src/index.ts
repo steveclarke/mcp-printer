@@ -2,7 +2,7 @@
 
 /**
  * @fileoverview Entry point for the MCP Printer server.
- * Starts the Model Context Protocol server for printing operations via CUPS.
+ * Starts the Model Context Protocol server for printing operations.
  */
 
 import { startServer } from "./server.js"

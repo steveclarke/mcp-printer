@@ -84,7 +84,7 @@ export function registerPrintTools(server: McpServer) {
         options: z
           .string()
           .optional()
-          .describe("Additional CUPS options (e.g., 'landscape', 'sides=two-sided-long-edge')"),
+          .describe("Additional print options (e.g., 'landscape', 'sides=two-sided-long-edge')"),
         skip_confirmation: z
           .boolean()
           .optional()
@@ -172,7 +172,7 @@ export function registerPrintTools(server: McpServer) {
           .string()
           .optional()
           .describe(
-            "Additional CUPS options for duplex detection (e.g., 'sides=two-sided-long-edge')"
+            "Additional print options for duplex detection (e.g., 'sides=two-sided-long-edge')"
           ),
         ...renderingParametersSchema,
       },

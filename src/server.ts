@@ -1,6 +1,6 @@
 /**
  * @fileoverview MCP Server implementation for printing operations.
- * Provides a Model Context Protocol server that exposes printing tools via CUPS.
+ * Provides a Model Context Protocol server that exposes printing tools.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
@@ -10,7 +10,7 @@ import packageJson from "../package.json" with { type: "json" }
 import { listAllPrinters } from "./adapters/printers-lib.js"
 
 /**
- * MCP Server instance for printing via CUPS.
+ * MCP Server instance for printing operations.
  * Handles printer management, print jobs, and document rendering.
  */
 const mcpServer = new McpServer({
@@ -32,7 +32,7 @@ export async function startServer() {
   if (process.platform === "win32") {
     throw new Error(
       "MCP Printer is not supported on Windows. " +
-        "This server requires CUPS printing system, which is only available on macOS and Linux. " +
+        "The native printing library is currently only available on macOS and Linux. " +
         "Windows uses a different printing architecture that is not currently supported."
     )
   }
@@ -53,7 +53,7 @@ export async function startServer() {
     console.error(`  Node version: ${process.version}`)
     console.error("")
     console.error("The native printing library could not be loaded. This may indicate:")
-    console.error("  - Missing system dependencies (CUPS on macOS/Linux)")
+    console.error("  - Missing system dependencies (printing system on macOS/Linux)")
     console.error("  - Incompatible platform or architecture")
     console.error("  - Native addon build issues")
     console.error("")

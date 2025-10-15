@@ -11,7 +11,7 @@ export interface Config {
   defaultPrinter: string
   /** Automatically enable duplex (two-sided) printing by default (can be overridden per-call) */
   autoDuplex: boolean
-  /** Default CUPS printing options (array of option strings) */
+  /** Default printing options (array of option strings) */
   defaultOptions: string[]
   /** Path to Chrome/Chromium executable for PDF rendering */
   chromePath: string
