@@ -1,6 +1,6 @@
 {
   "name": "mcp-printer",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "MCP server for printing documents on macOS/Linux via CUPS. Gives AI assistants the ability to print files, manage print queues, and control printers.",
   "author": "Stephen Clarke",
   "license": "MIT",
