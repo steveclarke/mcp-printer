@@ -73,24 +73,19 @@ describe("config", () => {
   })
 
   it("should parse array configs with appropriate delimiters and lowercasing", async () => {
-    // Space-delimited array (defaultOptions)
-    process.env.MCP_PRINTER_DEFAULT_OPTIONS = "landscape color=true"
     // Comma-delimited arrays with lowercasing
     process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS = "TXT,Log"
 
     const { config } = await import("../../src/config.js")
 
-    expect(config.defaultOptions).toEqual(["landscape", "color=true"])
     expect(config.code.excludeExtensions).toEqual(["txt", "log"])
 
     vi.resetModules()
 
     // Test empty arrays
-    delete process.env.MCP_PRINTER_DEFAULT_OPTIONS
     delete process.env.MCP_PRINTER_CODE_EXCLUDE_EXTENSIONS
 
     const { config: emptyConfig } = await import("../../src/config.js")
-    expect(emptyConfig.defaultOptions).toEqual([])
     expect(emptyConfig.code.excludeExtensions).toEqual([])
   })
 
@@ -180,13 +175,10 @@ describe("config", () => {
   })
 
   it("should handle whitespace in delimited strings", async () => {
-    process.env.MCP_PRINTER_DEFAULT_OPTIONS =
-      "  landscape    sides=two-sided-long-edge   color=true  "
     process.env.MCP_PRINTER_ALLOWED_PATHS = " /path/one : /path/two "
 
     const { config } = await import("../../src/config.js")
 
-    expect(config.defaultOptions).toEqual(["landscape", "sides=two-sided-long-edge", "color=true"])
     expect(config.allowedPaths).toContain("/path/one")
     expect(config.allowedPaths).toContain("/path/two")
   })
