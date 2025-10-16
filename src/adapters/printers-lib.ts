@@ -10,6 +10,7 @@ import {
   type Printer,
   type PrinterJob,
   type PrintJobOptions,
+  type SimplePrintOptions,
 } from "@printers/printers"
 
 /**
@@ -63,6 +64,47 @@ export function parseCupsOptions(optionsStr: string): ParsedCupsOptions {
   }
 
   return options
+}
+
+/**
+ * Translate CUPS options to Windows SimplePrintOptions format.
+ * Handles common printing options and logs warnings for unsupported ones.
+ *
+ * @param cupsOptions - Parsed CUPS options object
+ * @returns SimplePrintOptions object compatible with Windows printing
+ */
+export function translateCupsToSimple(cupsOptions: ParsedCupsOptions): Partial<SimplePrintOptions> {
+  const simple: Partial<SimplePrintOptions> = {}
+
+  // Duplex (two-sided printing)
+  if (cupsOptions["sides"]) {
+    simple.duplex = cupsOptions["sides"].includes("two-sided")
+  }
+
+  // Color vs grayscale
+  if (cupsOptions["ColorModel"]) {
+    const colorModel = cupsOptions["ColorModel"].toLowerCase()
+    simple.color = !(colorModel === "gray" || colorModel === "grayscale")
+  }
+
+  // Orientation
+  if (cupsOptions["landscape"] === "true" || cupsOptions["orientation-requested"] === "4") {
+    simple.landscape = true
+  }
+
+  // Paper size (may need refinement based on Windows printer drivers)
+  if (cupsOptions["media"]) {
+    simple.paperSize = cupsOptions["media"]
+  }
+
+  // Log unsupported options
+  const supported = ["sides", "ColorModel", "landscape", "orientation-requested", "media", "copies"]
+  const unsupported = Object.keys(cupsOptions).filter((k) => !supported.includes(k))
+  if (unsupported.length > 0) {
+    console.warn(`Windows does not support CUPS options: ${unsupported.join(", ")}`)
+  }
+
+  return simple
 }
 
 /**
@@ -172,18 +214,28 @@ export async function printFile(
       waitForCompletion: options.waitForCompletion ?? true, // Wait for file to be sent to CUPS
     }
 
-    // Add CUPS options if provided
-    if (options.cupsOptions && Object.keys(options.cupsOptions).length > 0) {
-      printOptions.cups = options.cupsOptions
+    // Platform-specific options handling
+    if (process.platform === "win32") {
+      // Windows: translate CUPS to SimpleOptions
+      if (options.cupsOptions && Object.keys(options.cupsOptions).length > 0) {
+        printOptions.simple = translateCupsToSimple(options.cupsOptions)
+      }
+    } else {
+      // macOS/Linux: use CUPS directly
+      if (options.cupsOptions && Object.keys(options.cupsOptions).length > 0) {
+        printOptions.cups = options.cupsOptions
+      }
     }
 
-    // Handle copies - can be in cupsOptions or as separate parameter
+    // Handle copies (works on all platforms)
     if (options.copies && options.copies > 1) {
-      // Add copies to CUPS options
-      if (!printOptions.cups) {
-        printOptions.cups = {}
+      if (process.platform === "win32") {
+        if (!printOptions.simple) printOptions.simple = {}
+        printOptions.simple.copies = options.copies
+      } else {
+        if (!printOptions.cups) printOptions.cups = {}
+        printOptions.cups.copies = options.copies
       }
-      printOptions.cups.copies = options.copies
     }
 
     // Print the file
@@ -211,6 +263,10 @@ export async function printFile(
  * @throws {Error} If cancellation fails or is not supported
  */
 export async function cancelJob(jobId: string, printerName?: string): Promise<void> {
+  if (process.platform === "win32") {
+    throw new Error("Job cancellation is not yet supported on Windows")
+  }
+
   // The library doesn't expose a cancel method on jobs
   // We'll need to use system commands as a fallback
   const { execa } = await import("execa")
@@ -241,6 +297,10 @@ export async function cancelJob(jobId: string, printerName?: string): Promise<vo
  * @throws {Error} If cancellation fails
  */
 export async function cancelAllJobs(printerName: string): Promise<void> {
+  if (process.platform === "win32") {
+    throw new Error("Bulk job cancellation is not yet supported on Windows")
+  }
+
   const { execa } = await import("execa")
 
   try {
@@ -269,6 +329,12 @@ export async function cancelAllJobs(printerName: string): Promise<void> {
  * @throws {Error} If setting default printer fails
  */
 export async function setDefaultPrinter(printerName: string): Promise<void> {
+  if (process.platform === "win32") {
+    throw new Error(
+      "Setting default printer is not yet supported on Windows. Use Windows Settings."
+    )
+  }
+
   const { execa } = await import("execa")
 
   try {

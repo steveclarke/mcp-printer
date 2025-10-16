@@ -7,11 +7,7 @@ import { execa, type ExecaError } from "execa"
 import { access, readFile } from "fs/promises"
 import { constants } from "fs"
 import { writeFileSync, mkdtempSync, unlinkSync } from "fs"
-import {
-  printFile as adapterPrintFile,
-  getDefaultPrinter,
-  parseCupsOptions,
-} from "./adapters/printers-lib.js"
+import { printFile, getDefaultPrinter, parseCupsOptions } from "./adapters/printers-lib.js"
 import { extname, join } from "path"
 import { tmpdir } from "os"
 import { config, MARKDOWN_EXTENSIONS, type MarkdownExtension } from "./config.js"
@@ -183,6 +179,23 @@ export async function findChrome(): Promise<string> {
     }
   }
 
+  // Check Windows paths
+  if (process.platform === "win32") {
+    const windowsPaths = [
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+      process.env.LOCALAPPDATA
+        ? process.env.LOCALAPPDATA + "\\Google\\Chrome\\Application\\chrome.exe"
+        : undefined,
+    ].filter((path): path is string => typeof path === "string")
+
+    for (const path of windowsPaths) {
+      if (await fileExists(path)) {
+        return path
+      }
+    }
+  }
+
   throw new Error(
     "Chrome not found. Install Google Chrome or set MCP_PRINTER_CHROME_PATH environment variable."
   )
@@ -322,7 +335,7 @@ export async function executePrintJob(
   const cupsOptions = cupsOptionsString ? parseCupsOptions(cupsOptionsString) : {}
 
   // Print using the library
-  const result = await adapterPrintFile(filePath, targetPrinter, {
+  const result = await printFile(filePath, targetPrinter, {
     copies,
     cupsOptions,
     jobName: `MCP Print: ${filePath.split("/").pop()}`,

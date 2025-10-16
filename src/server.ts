@@ -28,15 +28,6 @@ registerAllTools(mcpServer)
  * @throws {Error} If server connection fails or unsupported OS detected
  */
 export async function startServer() {
-  // Check for unsupported operating systems
-  if (process.platform === "win32") {
-    throw new Error(
-      "MCP Printer is not supported on Windows. " +
-        "The native printing library is currently only available on macOS and Linux. " +
-        "Windows uses a different printing architecture that is not currently supported."
-    )
-  }
-
   // Log platform information
   console.error(`MCP Printer Server starting on ${process.platform}...`)
 
@@ -53,7 +44,9 @@ export async function startServer() {
     console.error(`  Node version: ${process.version}`)
     console.error("")
     console.error("The native printing library could not be loaded. This may indicate:")
-    console.error("  - Missing system dependencies (printing system on macOS/Linux)")
+    console.error("  - Missing system dependencies")
+    console.error("    * macOS/Linux: CUPS printing system")
+    console.error("    * Windows: WinSpool drivers")
     console.error("  - Incompatible platform or architecture")
     console.error("  - Native addon build issues")
     console.error("")

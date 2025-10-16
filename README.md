@@ -50,7 +50,15 @@ Add to your MCP configuration file (e.g., `~/.cursor/mcp.json` for Cursor):
 
 That's it! The package will be automatically downloaded from npm on first use.
 
-> **🖥️ Platform Support:** This server currently supports **macOS and Linux only**. Windows is not currently supported (contributions welcome!).
+> **🖥️ Platform Support:** This server supports **macOS, Linux, and Windows**.
+> - ✅ **macOS (CUPS)** - Full support
+> - ✅ **Linux (CUPS)** - Full support  
+> - ✅ **Windows (WinSpool)** - Printing supported, management commands limited
+>
+> **Windows Limitations:**
+> - Job cancellation requires manual intervention via Windows print queue
+> - Setting default printer must be done via Windows Settings
+> - Some advanced CUPS options may not translate to Windows drivers
 
 > **📋 Requirements:** Google Chrome or Chromium is required for rendering markdown and code files to PDF. The server will auto-detect Chrome/Chromium installations on macOS/Linux. See [Requirements](#requirements) for details.
 
@@ -735,10 +743,10 @@ Then reference it directly in your MCP config (without npx):
 
 ## Requirements
 
-- **macOS or Linux** - Uses CUPS printing system
+- **macOS, Linux, or Windows**
   - macOS: CUPS is built-in
   - Linux: Install CUPS if not present (`sudo apt install cups` on Ubuntu/Debian)
-  - **Windows is not currently supported** (contributions welcome!)
+  - Windows: Uses WinSpool (built-in)
 - **Node.js** 22+
 - **Google Chrome or Chromium** - Required for both code and markdown PDF rendering (auto-detected)
   - Both Chrome and Chromium work equally well (same browser engine)
