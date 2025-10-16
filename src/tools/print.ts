@@ -5,6 +5,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
+import type { SimplePrintOptions, NumberUp } from "@printers/printers"
 import {
   executePrintJob,
   formatPrintResponse,
@@ -81,10 +82,22 @@ export function registerPrintTools(server: McpServer) {
           .optional()
           .default(1)
           .describe("Number of copies to print (default: 1)"),
-        options: z
+        duplex: z.boolean().optional().describe("Print on both sides of paper (double-sided)"),
+        color: z.boolean().optional().describe("Print in color (true) or black and white (false)"),
+        landscape: z.boolean().optional().describe("Print in landscape orientation"),
+        paper_size: z
           .string()
           .optional()
-          .describe("Additional print options (e.g., 'landscape', 'sides=two-sided-long-edge')"),
+          .describe("Paper size (e.g., 'Letter', 'A4', 'Legal', 'A3')"),
+        quality: z.enum(["draft", "normal", "high"]).optional().describe("Print quality"),
+        page_range: z
+          .string()
+          .optional()
+          .describe("Page range to print (e.g., '1-5', '1,3,5', '1-3,7,10-15')"),
+        pages_per_sheet: z
+          .number()
+          .optional()
+          .describe("Number of pages per sheet (1, 2, 4, 6, 9, or 16)"),
         skip_confirmation: z
           .boolean()
           .optional()
@@ -98,7 +111,13 @@ export function registerPrintTools(server: McpServer) {
       file_path,
       printer,
       copies = 1,
-      options,
+      duplex,
+      color,
+      landscape,
+      paper_size,
+      quality,
+      page_range,
+      pages_per_sheet,
       skip_confirmation,
       line_numbers,
       color_scheme,
@@ -118,13 +137,23 @@ export function registerPrintTools(server: McpServer) {
         forceCodeRender: force_code_render,
       })
 
+      // Build simple options from parameters
+      const simpleOptions: Partial<SimplePrintOptions> = {}
+      if (duplex !== undefined) simpleOptions.duplex = duplex
+      if (color !== undefined) simpleOptions.color = color
+      if (landscape !== undefined) simpleOptions.landscape = landscape
+      if (paper_size) simpleOptions.paperSize = paper_size
+      if (quality) simpleOptions.quality = quality
+      if (page_range) simpleOptions.pageRange = page_range
+      if (pages_per_sheet) simpleOptions.pagesPerSheet = pages_per_sheet as NumberUp
+
       try {
         // Check if we need to trigger page count confirmation
         // Try to parse as PDF - if it works, do the page count check. If it fails, it's not a PDF.
         if (!skip_confirmation && config.confirmIfOverPages > 0) {
           try {
             const pdfPages = await getPdfPageCount(actualFilePath)
-            const isDuplex = isDuplexEnabled(options)
+            const isDuplex = isDuplexEnabled(simpleOptions)
             const physicalSheets = calculatePhysicalSheets(pdfPages, isDuplex)
 
             // If exceeds threshold, return preview instead of printing
@@ -149,7 +178,7 @@ export function registerPrintTools(server: McpServer) {
           actualFilePath,
           printer,
           copies,
-          options
+          simpleOptions
         )
         return formatPrintResponse(printerName, copies, allOptions, file_path, renderType)
       } finally {
@@ -168,18 +197,13 @@ export function registerPrintTools(server: McpServer) {
         "Get page count and physical sheet information for a file before printing. Pre-renders the file (if needed) and returns page metadata including page count and physical sheets required.",
       inputSchema: {
         file_path: z.string().describe("Full path to the file to get page metadata for"),
-        options: z
-          .string()
-          .optional()
-          .describe(
-            "Additional print options for duplex detection (e.g., 'sides=two-sided-long-edge')"
-          ),
+        duplex: z.boolean().optional().describe("Check for duplex printing (affects sheet count)"),
         ...renderingParametersSchema,
       },
     },
     async ({
       file_path,
-      options,
+      duplex,
       line_numbers,
       color_scheme,
       font_size,
@@ -198,10 +222,14 @@ export function registerPrintTools(server: McpServer) {
         forceCodeRender: force_code_render,
       })
 
+      // Build simple options for duplex detection
+      const simpleOptions: Partial<SimplePrintOptions> = {}
+      if (duplex !== undefined) simpleOptions.duplex = duplex
+
       try {
         // Get page count from the file
         const pdfPages = await getPdfPageCount(actualFilePath)
-        const isDuplex = isDuplexEnabled(options)
+        const isDuplex = isDuplexEnabled(simpleOptions)
         const physicalSheets = calculatePhysicalSheets(pdfPages, isDuplex)
 
         // Return preview info (without threshold warning)

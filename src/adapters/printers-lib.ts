@@ -14,18 +14,11 @@ import {
 } from "@printers/printers"
 
 /**
- * Parsed CUPS options as key-value pairs.
- */
-export interface ParsedCupsOptions {
-  [key: string]: string
-}
-
-/**
  * Options for printing a file.
  */
 export interface PrintOptions {
   copies?: number
-  cupsOptions?: ParsedCupsOptions
+  simpleOptions?: Partial<SimplePrintOptions>
   jobName?: string
   waitForCompletion?: boolean
 }
@@ -37,74 +30,6 @@ export interface PrintResult {
   jobId?: string | number
   printerName: string
   success: boolean
-}
-
-/**
- * Parse CUPS option strings into key-value objects.
- * Examples:
- *   "sides=two-sided-long-edge" -> { sides: "two-sided-long-edge" }
- *   "landscape" -> { landscape: "true" }
- *   "sides=two-sided-long-edge landscape" -> { sides: "two-sided-long-edge", landscape: "true" }
- *
- * @param optionsStr - Space-separated CUPS options string
- * @returns Parsed options as key-value pairs
- */
-export function parseCupsOptions(optionsStr: string): ParsedCupsOptions {
-  const options: ParsedCupsOptions = {}
-  const parts = optionsStr.trim().split(/\s+/).filter(Boolean)
-
-  for (const opt of parts) {
-    if (opt.includes("=")) {
-      const [key, ...valueParts] = opt.split("=")
-      options[key] = valueParts.join("=") // Handle values with = in them
-    } else {
-      // Flags without values (like "landscape")
-      options[opt] = "true"
-    }
-  }
-
-  return options
-}
-
-/**
- * Translate CUPS options to Windows SimplePrintOptions format.
- * Handles common printing options and logs warnings for unsupported ones.
- *
- * @param cupsOptions - Parsed CUPS options object
- * @returns SimplePrintOptions object compatible with Windows printing
- */
-export function translateCupsToSimple(cupsOptions: ParsedCupsOptions): Partial<SimplePrintOptions> {
-  const simple: Partial<SimplePrintOptions> = {}
-
-  // Duplex (two-sided printing)
-  if (cupsOptions["sides"]) {
-    simple.duplex = cupsOptions["sides"].includes("two-sided")
-  }
-
-  // Color vs grayscale
-  if (cupsOptions["ColorModel"]) {
-    const colorModel = cupsOptions["ColorModel"].toLowerCase()
-    simple.color = !(colorModel === "gray" || colorModel === "grayscale")
-  }
-
-  // Orientation
-  if (cupsOptions["landscape"] === "true" || cupsOptions["orientation-requested"] === "4") {
-    simple.landscape = true
-  }
-
-  // Paper size (may need refinement based on Windows printer drivers)
-  if (cupsOptions["media"]) {
-    simple.paperSize = cupsOptions["media"]
-  }
-
-  // Log unsupported options
-  const supported = ["sides", "ColorModel", "landscape", "orientation-requested", "media", "copies"]
-  const unsupported = Object.keys(cupsOptions).filter((k) => !supported.includes(k))
-  if (unsupported.length > 0) {
-    console.warn(`Windows does not support CUPS options: ${unsupported.join(", ")}`)
-  }
-
-  return simple
 }
 
 /**
@@ -211,31 +136,18 @@ export async function printFile(
     // Build print options for the library
     const printOptions: PrintJobOptions = {
       jobName: options.jobName || `MCP Print Job`,
-      waitForCompletion: options.waitForCompletion ?? true, // Wait for file to be sent to CUPS
+      waitForCompletion: options.waitForCompletion ?? true,
     }
 
-    // Platform-specific options handling
-    if (process.platform === "win32") {
-      // Windows: translate CUPS to SimpleOptions
-      if (options.cupsOptions && Object.keys(options.cupsOptions).length > 0) {
-        printOptions.simple = translateCupsToSimple(options.cupsOptions)
-      }
-    } else {
-      // macOS/Linux: use CUPS directly
-      if (options.cupsOptions && Object.keys(options.cupsOptions).length > 0) {
-        printOptions.cups = options.cupsOptions
-      }
+    // Use SimplePrintOptions for all platforms
+    if (options.simpleOptions && Object.keys(options.simpleOptions).length > 0) {
+      printOptions.simple = options.simpleOptions
     }
 
-    // Handle copies (works on all platforms)
+    // Handle copies
     if (options.copies && options.copies > 1) {
-      if (process.platform === "win32") {
-        if (!printOptions.simple) printOptions.simple = {}
-        printOptions.simple.copies = options.copies
-      } else {
-        if (!printOptions.cups) printOptions.cups = {}
-        printOptions.cups.copies = options.copies
-      }
+      if (!printOptions.simple) printOptions.simple = {}
+      printOptions.simple.copies = options.copies
     }
 
     // Print the file

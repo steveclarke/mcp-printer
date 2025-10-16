@@ -1,6 +1,6 @@
 # MCP Printer Server 🖨️
 
-An MCP server for printing documents on macOS/Linux. Provides AI assistants with the ability to print files, manage print queues, and control printers via the CUPS printing system.
+An MCP server for printing documents across platforms. Provides AI assistants with the ability to print files, manage print queues, and control printers on macOS, Linux, and Windows.
 
 ## Why?
 
@@ -12,7 +12,7 @@ In the era of AI-assisted development, we're generating more documentation, spec
 - [Available Tools](#available-tools)
 - [Available Prompts](#available-prompts)
 - [Usage Examples](#usage-examples)
-- [CUPS Options](#cups-options)
+- [Print Options](#print-options)
 - [Supported File Types](#supported-file-types)
 - [Code Rendering](#code-rendering)
 - [Troubleshooting](#troubleshooting)
@@ -51,14 +51,13 @@ Add to your MCP configuration file (e.g., `~/.cursor/mcp.json` for Cursor):
 That's it! The package will be automatically downloaded from npm on first use.
 
 > **🖥️ Platform Support:** This server supports **macOS, Linux, and Windows**.
-> - ✅ **macOS (CUPS)** - Full support
-> - ✅ **Linux (CUPS)** - Full support  
-> - ✅ **Windows (WinSpool)** - Printing supported, management commands limited
+> - ✅ **macOS** - Full support
+> - ✅ **Linux** - Full support  
+> - ✅ **Windows** - Full support (management commands limited)
 >
 > **Windows Limitations:**
 > - Job cancellation requires manual intervention via Windows print queue
 > - Setting default printer must be done via Windows Settings
-> - Some advanced CUPS options may not translate to Windows drivers
 
 > **📋 Requirements:** Google Chrome or Chromium is required for rendering markdown and code files to PDF. The server will auto-detect Chrome/Chromium installations on macOS/Linux. See [Requirements](#requirements) for details.
 
@@ -71,8 +70,7 @@ All configuration is optional. Add an `env` object to customize behavior:
 | Variable                               | Default                                   | Description                                                                                                                                                        |
 | -------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `MCP_PRINTER_DEFAULT_PRINTER`          | _(none)_                                  | Default printer to use when none specified (falls back to system default)                                                                                          |
-| `MCP_PRINTER_AUTO_DUPLEX`              | `false`                                   | Set to `"true"` to automatically print double-sided by default (can be overridden per-call)                                                                        |
-| `MCP_PRINTER_DEFAULT_OPTIONS`          | _(none)_                                  | Additional CUPS options (e.g., `"fit-to-page"`, `"landscape"`)                                                                                                     |
+| `MCP_PRINTER_AUTO_DUPLEX`              | `false`                                   | Set to `"true"` to automatically enable duplex (double-sided) printing by default (can be overridden per-call)                                                     |
 | `MCP_PRINTER_CHROME_PATH`              | _(auto-detected)_                         | Path to Chrome/Chromium for PDF rendering (override if auto-detection fails)                                                                                       |
 | `MCP_PRINTER_AUTO_RENDER_MARKDOWN`     | `true`                                    | Automatically render markdown files (`.md`, `.markdown`) to PDF (can be overridden with `force_markdown_render`)                                                   |
 | `MCP_PRINTER_AUTO_RENDER_CODE`         | `true`                                    | Automatically render code files to PDF with syntax highlighting (can be overridden with `force_code_render`)                                                       |
@@ -99,7 +97,6 @@ All configuration is optional. Add an `env` object to customize behavior:
       "env": {
         "MCP_PRINTER_DEFAULT_PRINTER": "HP_LaserJet_Pro",
         "MCP_PRINTER_AUTO_DUPLEX": "true",
-        "MCP_PRINTER_DEFAULT_OPTIONS": "fit-to-page",
         "MCP_PRINTER_AUTO_RENDER_MARKDOWN": "true",
         "MCP_PRINTER_AUTO_RENDER_CODE": "true",
         "MCP_PRINTER_ENABLE_PROMPTS": "true",
@@ -130,7 +127,6 @@ AI: Current MCP Printer Configuration:
 
 MCP_PRINTER_DEFAULT_PRINTER: HP_LaserJet_4001
 MCP_PRINTER_AUTO_DUPLEX: true
-MCP_PRINTER_DEFAULT_OPTIONS: (not set)
 MCP_PRINTER_CHROME_PATH: (auto-detected)
 MCP_PRINTER_AUTO_RENDER_MARKDOWN: true
 MCP_PRINTER_AUTO_RENDER_CODE: true
@@ -156,14 +152,15 @@ Print a file to a specified printer.
 - `file_path` (required) - Full path to file
 - `printer` (optional) - Printer name
 - `copies` (optional) - Number of copies (default: 1)
-- `options` (optional) - CUPS options like `landscape`, `sides=two-sided-long-edge`
+- `duplex` (optional) - Print double-sided (boolean)
+- `color` (optional) - Print in color (true) or grayscale (false)
+- `landscape` (optional) - Print in landscape orientation (boolean)
+- `paper_size` (optional) - Paper size (e.g., "Letter", "A4", "Legal", "A3")
+- `quality` (optional) - Print quality: "draft", "normal", or "high"
+- `page_range` (optional) - Pages to print (e.g., "1-5", "1,3,5", "1-3,7,10-15")
+- `pages_per_sheet` (optional) - Multiple pages per sheet (1, 2, 4, 6, 9, or 16)
 - `skip_confirmation` (optional) - Skip page count confirmation check (bypasses `MCP_PRINTER_CONFIRM_IF_OVER_PAGES` threshold)
-- `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
-- `color_scheme` (optional) - Syntax highlighting theme for code files (e.g., `github`, `monokai`, `atom-one-light`)
-- `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
-- `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
-- `force_markdown_render` (optional) - Force markdown rendering to PDF (boolean: `true`=always render, `false`=never render, `undefined`=use config)
-- `force_code_render` (optional) - Force code rendering to PDF with syntax highlighting (boolean: `true`=always render, `false`=never render, `undefined`=use config)
+- Rendering parameters: `line_numbers`, `color_scheme`, `font_size`, `line_spacing`, `force_markdown_render`, `force_code_render`
 
 **Note:** The code rendering parameters (`line_numbers`, `color_scheme`, `font_size`, `line_spacing`) only apply when printing code files that are automatically rendered to PDF with syntax highlighting.
 
@@ -183,13 +180,8 @@ Get page count and physical sheet information for a file before printing. This t
 
 **Parameters:**
 - `file_path` (required) - Full path to file
-- `options` (optional) - CUPS options for duplex detection (e.g., `sides=two-sided-long-edge`)
-- `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
-- `color_scheme` (optional) - Syntax highlighting theme for code files
-- `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
-- `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
-- `force_markdown_render` (optional) - Force markdown rendering to PDF
-- `force_code_render` (optional) - Force code rendering to PDF with syntax highlighting
+- `duplex` (optional) - Check for duplex printing (affects sheet count calculation)
+- Rendering parameters: `line_numbers`, `color_scheme`, `font_size`, `line_spacing`, `force_markdown_render`, `force_code_render`
 
 **Note:** Page counting only works for PDF files, including:
 - Markdown files (auto-rendered to PDF)
@@ -339,7 +331,13 @@ AI: *prints with force_markdown_render=true*
 
 ```
 User: Print this PDF in landscape, double-sided
-AI: *prints with options: landscape, sides=two-sided-long-edge*
+AI: *prints with duplex=true, landscape=true*
+
+User: Print pages 2-4 in grayscale
+AI: *prints with page_range="2-4", color=false*
+
+User: Print this in high quality on A4 paper
+AI: *prints with quality="high", paper_size="A4"*
 ```
 
 ### Manage Queue
@@ -380,28 +378,23 @@ AI: *automatically retries print with confirmation bypassed*
   Rendered: markdown → PDF
 ```
 
-## CUPS Options
+## Print Options
 
-Any valid CUPS/lpr options can be passed via the `options` parameter. Common examples:
+The server supports common printing options through structured parameters:
 
-- `landscape` - Print in landscape orientation
-- `sides=two-sided-long-edge` - Double-sided (long edge)
-- `sides=two-sided-short-edge` - Double-sided (short edge)
-- `page-ranges=1-5` - Print specific pages (e.g., `page-ranges=3-5,7,10-12`)
-- `media=Letter` or `media=A4` - Paper size
-- `fit-to-page` - Scale to fit page
-- `number-up=2` - Print multiple pages per sheet
+- **Duplex** - Double-sided printing (long-edge binding)
+- **Color** - Color or grayscale output
+- **Landscape** - Portrait or landscape orientation
+- **Paper Size** - Letter, A4, Legal, A3, A5, etc.
+- **Quality** - Draft, normal, or high quality
+- **Page Range** - Print specific pages (e.g., "1-5", "1,3,5", "1-3,7,10-15")
+- **Pages per Sheet** - 1, 2, 4, 6, 9, or 16 pages per sheet
 
-**Natural Language Requests:** Thanks to the flexibility of the underlying CUPS printing system and the AI's knowledge of print options, you don't need to memorize these options. Simply ask naturally—*"print pages 3 to 5 in landscape on letter size paper"* or *"print this double-sided"*—and the AI will translate your request into the appropriate CUPS options automatically. Feel free to experiment with common printing scenarios; the AI is smart enough to figure out what you need.
-
-For a complete list of available options:
-- Run `lpoptions -l` in your terminal to see printer-specific options
-- See the [CUPS documentation](https://www.cups.org/doc/options.html) for standard printing options
-- Check `man lpr` for command-line options
+**Natural Language Requests:** Simply ask naturally—*"print this double-sided in color"* or *"print pages 3-7 in landscape"*—and the AI will use the appropriate parameters automatically. The AI understands printing terminology and will translate your natural language request into the correct structured options.
 
 ## Supported File Types
 
-The server uses CUPS, which supports:
+The server supports:
 - ✅ PDF
 - ✅ Plain text
 - ✅ Images (JPEG, PNG)
@@ -517,10 +510,7 @@ The following light themes are recommended for printing (set via `MCP_PRINTER_CO
 ## Troubleshooting
 
 ### "Printer not found"
-Run `lpstat -p` in terminal to see exact printer names. They often have underscores instead of spaces.
-
-### "Permission denied"
-Ensure CUPS is running: `sudo cupsctl`
+Use the `list_printers` tool to see exact printer names. They often have underscores instead of spaces.
 
 ### "File format not supported"
 Some file formats need to be converted to PDF before printing. Export to PDF from the original application or use a conversion tool.
@@ -744,9 +734,9 @@ Then reference it directly in your MCP config (without npx):
 ## Requirements
 
 - **macOS, Linux, or Windows**
-  - macOS: CUPS is built-in
-  - Linux: Install CUPS if not present (`sudo apt install cups` on Ubuntu/Debian)
-  - Windows: Uses WinSpool (built-in)
+  - macOS: System printing (built-in)
+  - Linux: CUPS printing system (`sudo apt install cups` on Ubuntu/Debian if not present)
+  - Windows: System printing (built-in)
 - **Node.js** 22+
 - **Google Chrome or Chromium** - Required for both code and markdown PDF rendering (auto-detected)
   - Both Chrome and Chromium work equally well (same browser engine)
@@ -758,8 +748,8 @@ Then reference it directly in your MCP config (without npx):
 ## Contributing
 
 Contributions welcome! Areas for improvement:
-- Windows support (using Windows Print Spooler)
-- More print options
+- Additional print options
+- Enhanced cross-platform testing
 
 ## License
 
