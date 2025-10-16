@@ -24,7 +24,7 @@ export function registerPrompts(server: McpServer) {
           .string()
           .describe('What to print? "staged", "uncommitted", "branch", or branch name'),
 
-        options: z.string().optional().describe('Print options (e.g., "landscape", "two-sided")'),
+        options: z.string().optional().describe('Print options (e.g., "landscape duplex")'),
       },
     },
     ({ context, options }) => {

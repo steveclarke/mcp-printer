@@ -7,6 +7,8 @@ import { execa, type ExecaError } from "execa"
 import { access, readFile } from "fs/promises"
 import { constants } from "fs"
 import { writeFileSync, mkdtempSync, unlinkSync } from "fs"
+import type { SimplePrintOptions } from "@printers/printers"
+import { printFile, getDefaultPrinter } from "./adapters/printers-lib.js"
 import { extname, join } from "path"
 import { tmpdir } from "os"
 import { config, MARKDOWN_EXTENSIONS, type MarkdownExtension } from "./config.js"
@@ -178,6 +180,23 @@ export async function findChrome(): Promise<string> {
     }
   }
 
+  // Check Windows paths
+  if (process.platform === "win32") {
+    const windowsPaths = [
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+      process.env.LOCALAPPDATA
+        ? process.env.LOCALAPPDATA + "\\Google\\Chrome\\Application\\chrome.exe"
+        : undefined,
+    ].filter((path): path is string => typeof path === "string")
+
+    for (const path of windowsPaths) {
+      if (await fileExists(path)) {
+        return path
+      }
+    }
+  }
+
   throw new Error(
     "Chrome not found. Install Google Chrome or set MCP_PRINTER_CHROME_PATH environment variable."
   )
@@ -269,19 +288,19 @@ export function shouldRenderToPdf(filePath: string): boolean {
 
 /**
  * Execute a print job with the given file and options.
- * Handles copy validation, lpr argument building, and execution.
+ * Handles copy validation and execution via the printing library.
  *
  * @param filePath - Path to the file to print
  * @param printer - Optional printer name
  * @param copies - Number of copies to print
- * @param options - Optional CUPS options string
+ * @param simpleOptions - Optional SimplePrintOptions for print settings
  * @returns Object with printer name and formatted options
  */
 export async function executePrintJob(
   filePath: string,
   printer?: string,
   copies: number = 1,
-  options?: string
+  simpleOptions?: Partial<SimplePrintOptions>
 ): Promise<{ printerName: string; allOptions: string[] }> {
   // Validate copy count against configured maximum
   if (config.maxCopies > 0 && copies > config.maxCopies) {
@@ -291,49 +310,40 @@ export async function executePrintJob(
     )
   }
 
-  const args: string[] = []
-
   // Use configured default printer if none specified
-  const targetPrinter = printer || config.defaultPrinter
-  if (targetPrinter) {
-    args.push("-P", targetPrinter)
+  const targetPrinter = printer || config.defaultPrinter || undefined
+
+  // Build options - apply auto-duplex if configured
+  const options: Partial<SimplePrintOptions> = { ...simpleOptions }
+
+  // Add auto-duplex if configured and not already set
+  if (config.autoDuplex && options.duplex === undefined) {
+    options.duplex = true
   }
 
-  if (copies > 1) {
-    args.push(`-#${copies}`)
+  // Print using the library
+  const result = await printFile(filePath, targetPrinter, {
+    copies,
+    simpleOptions: options,
+    jobName: `MCP Print: ${filePath.split("/").pop()}`,
+  })
+
+  // Format options for display
+  const allOptions: string[] = []
+  if (options.duplex) allOptions.push("duplex")
+  if (options.color === false) allOptions.push("grayscale")
+  if (options.landscape) allOptions.push("landscape")
+  if (options.paperSize) allOptions.push(`paper=${options.paperSize}`)
+  if (options.quality) allOptions.push(`quality=${options.quality}`)
+  if (options.pageRange) allOptions.push(`pages=${options.pageRange}`)
+  if (options.pagesPerSheet) allOptions.push(`${options.pagesPerSheet}-up`)
+
+  // Determine the printer name used (from result or get default)
+  let printerName = result.printerName
+  if (!printerName) {
+    const defaultPrinter = getDefaultPrinter()
+    printerName = defaultPrinter?.name || "default"
   }
-
-  // Build options with defaults
-  let allOptions = []
-
-  // Add default duplex if auto-enabled in config and not already specified
-  if (config.autoDuplex && !options?.includes("sides=")) {
-    allOptions.push("sides=two-sided-long-edge")
-  }
-
-  // Add default options if configured
-  if (config.defaultOptions.length > 0) {
-    allOptions.push(...config.defaultOptions)
-  }
-
-  // Add user-specified options (these override defaults, split by spaces)
-  if (options) {
-    allOptions.push(...options.split(/\s+/))
-  }
-
-  // Add each option with -o flag
-  for (const option of allOptions) {
-    args.push("-o", option)
-  }
-
-  // Add file path
-  args.push(filePath)
-
-  await execa("lpr", args)
-
-  // Determine the printer name used
-  const printerName =
-    targetPrinter || (await execCommand("lpstat", ["-d"])).split(": ")[1] || "default"
 
   return { printerName, allOptions }
 }
@@ -600,15 +610,11 @@ export async function prepareFileForPrinting(options: RenderOptions): Promise<Re
 /**
  * Determines if duplex printing is enabled based on configuration and options.
  *
- * @param options - CUPS options string (may contain sides= option)
+ * @param simpleOptions - SimplePrintOptions that may specify duplex setting
  * @returns True if duplex printing is enabled
  */
-export function isDuplexEnabled(options?: string): boolean {
-  return (
-    config.autoDuplex ||
-    options?.includes("sides=two-sided") ||
-    config.defaultOptions.some((opt) => opt.includes("sides=two-sided"))
-  )
+export function isDuplexEnabled(simpleOptions?: Partial<SimplePrintOptions>): boolean {
+  return config.autoDuplex || simpleOptions?.duplex === true
 }
 
 /**

@@ -5,9 +5,17 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
-import { execCommand } from "../utils.js"
 import { config } from "../config.js"
-import { execa } from "execa"
+import {
+  listAllPrinters,
+  getDefaultPrinter,
+  getPrinterQueue,
+  cancelJob,
+  cancelAllJobs,
+  setDefaultPrinter,
+  formatPrinterList,
+  formatPrintQueue,
+} from "../adapters/printers-lib.js"
 
 /**
  * Registers printer management tools with the MCP server.
@@ -30,8 +38,6 @@ export function registerPrinterTools(server: McpServer) {
       const configData = {
         MCP_PRINTER_DEFAULT_PRINTER: config.defaultPrinter || "(not set)",
         MCP_PRINTER_AUTO_DUPLEX: config.autoDuplex ? "true" : "false",
-        MCP_PRINTER_DEFAULT_OPTIONS:
-          config.defaultOptions.length > 0 ? config.defaultOptions.join(" ") : "(not set)",
         MCP_PRINTER_CHROME_PATH: config.chromePath || "(auto-detected)",
         MCP_PRINTER_AUTO_RENDER_MARKDOWN: config.autoRenderMarkdown ? "true" : "false",
         MCP_PRINTER_AUTO_RENDER_CODE: config.autoRenderCode ? "true" : "false",
@@ -75,13 +81,14 @@ export function registerPrinterTools(server: McpServer) {
         "List all available printers on the system with their status. Returns printer names, states, and whether they're accepting jobs.",
       inputSchema: {},
     },
-    async () => {
-      const output = await execCommand("lpstat", ["-p", "-d"])
+    () => {
+      const printers = listAllPrinters()
+      const output = formatPrinterList(printers)
       return {
         content: [
           {
             type: "text",
-            text: output || "No printers found",
+            text: output,
           },
         ],
       }
@@ -102,18 +109,14 @@ export function registerPrinterTools(server: McpServer) {
           .describe("Printer name to check queue for (optional, checks all if not specified)"),
       },
     },
-    async ({ printer }) => {
-      const lpqArgs: string[] = []
-      if (printer) {
-        lpqArgs.push("-P", printer)
-      }
-
-      const output = await execCommand("lpq", lpqArgs)
+    ({ printer }) => {
+      const jobs = getPrinterQueue(printer)
+      const output = formatPrintQueue(jobs, printer)
       return {
         content: [
           {
             type: "text",
-            text: output || "No print jobs in queue",
+            text: output,
           },
         ],
       }
@@ -128,14 +131,14 @@ export function registerPrinterTools(server: McpServer) {
       description: "Get the name of the default printer",
       inputSchema: {},
     },
-    async () => {
-      const output = await execCommand("lpstat", ["-d"])
-      const defaultPrinter = output.split(": ")[1] || "No default printer set"
+    () => {
+      const defaultPrinter = getDefaultPrinter()
+      const printerName = defaultPrinter?.name || "No default printer set"
       return {
         content: [
           {
             type: "text",
-            text: `Default printer: ${defaultPrinter}`,
+            text: `Default printer: ${printerName}`,
           },
         ],
       }
@@ -160,30 +163,28 @@ export function registerPrinterTools(server: McpServer) {
         },
       },
       async ({ job_id, printer, cancel_all }) => {
-        const lprmArgs: string[] = []
-
         if (cancel_all && printer) {
-          lprmArgs.push("-P", printer, "-")
-        } else if (job_id) {
-          if (printer) {
-            lprmArgs.push("-P", printer)
+          await cancelAllJobs(printer)
+          return {
+            content: [
+              {
+                type: "text",
+                text: `✓ Cancelled all jobs for printer: ${printer}`,
+              },
+            ],
           }
-          lprmArgs.push(job_id)
+        } else if (job_id) {
+          await cancelJob(job_id, printer)
+          return {
+            content: [
+              {
+                type: "text",
+                text: `✓ Cancelled job: ${job_id}`,
+              },
+            ],
+          }
         } else {
           throw new Error("Must provide either job_id or set cancel_all=true with printer")
-        }
-
-        await execa("lprm", lprmArgs)
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: cancel_all
-                ? `✓ Cancelled all jobs for printer: ${printer}`
-                : `✓ Cancelled job: ${job_id}`,
-            },
-          ],
         }
       }
     )
@@ -201,7 +202,7 @@ export function registerPrinterTools(server: McpServer) {
         },
       },
       async ({ printer }) => {
-        await execa("lpoptions", ["-d", printer])
+        await setDefaultPrinter(printer)
         return {
           content: [
             {

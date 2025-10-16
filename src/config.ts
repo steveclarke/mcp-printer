@@ -11,8 +11,6 @@ export interface Config {
   defaultPrinter: string
   /** Automatically enable duplex (two-sided) printing by default (can be overridden per-call) */
   autoDuplex: boolean
-  /** Default CUPS printing options (array of option strings) */
-  defaultOptions: string[]
   /** Path to Chrome/Chromium executable for PDF rendering */
   chromePath: string
   /** Automatically render markdown files to PDF (can be overridden per-call) */
@@ -143,7 +141,6 @@ const userDeniedPaths = parseDelimitedString(process.env.MCP_PRINTER_DENIED_PATH
 export const config: Config = {
   defaultPrinter: process.env.MCP_PRINTER_DEFAULT_PRINTER || DEFAULT_PRINTER,
   autoDuplex: yn(process.env.MCP_PRINTER_AUTO_DUPLEX, { default: DEFAULT_AUTO_DUPLEX }),
-  defaultOptions: parseDelimitedString(process.env.MCP_PRINTER_DEFAULT_OPTIONS, /\s+/),
   chromePath: process.env.MCP_PRINTER_CHROME_PATH || DEFAULT_CHROME_PATH,
   autoRenderMarkdown: yn(process.env.MCP_PRINTER_AUTO_RENDER_MARKDOWN, {
     default: DEFAULT_AUTO_RENDER_MARKDOWN,
