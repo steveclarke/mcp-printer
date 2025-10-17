@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.20.0
-        version: 1.20.0
+        version: 1.20.1
       crossnote:
         specifier: ^0.9.15
         version: 0.9.15
@@ -28,7 +28,7 @@ importers:
         version: 11.11.1
       pdf-parse:
         specifier: ^2.3.12
-        version: 2.3.12
+        version: 2.4.3
       yn:
         specifier: ^5.1.0
         version: 5.1.0
@@ -644,8 +644,8 @@ packages:
   '@mermaid-js/parser@0.6.3':
     resolution: {integrity: sha512-lnjOhe7zyHjc+If7yT4zoedx2vo4sHaTmtkl1+or8BRTnCtDmcTpAjpzDSfCZrshM5bCoz0GyidzadJAH1xobA==}
 
-  '@modelcontextprotocol/sdk@1.20.0':
-    resolution: {integrity: sha512-kOQ4+fHuT4KbR2iq2IjeV32HiihueuOf1vJkq18z08CLZ1UQrTc8BXJpVfxZkq45+inLLD+D4xx4nBjUelJa4Q==}
+  '@modelcontextprotocol/sdk@1.20.1':
+    resolution: {integrity: sha512-j/P+yuxXfgxb+mW7OEoRCM3G47zCTDqUPivJo/VzpjbG8I9csTXtOprCf5FfOfHK4whOJny0aHuBEON+kS7CCA==}
     engines: {node: '>=18'}
 
   '@monaco-editor/loader@1.6.1':
@@ -3537,8 +3537,8 @@ packages:
   pause-stream@0.0.11:
     resolution: {integrity: sha512-e3FBlXLmN/D1S+zHzanP4E/4Z60oFAa3O051qt1pxa7DEJWKAyil6upYVXCWadEnuoqa4Pkc9oUx9zsxYeRv8A==}
 
-  pdf-parse@2.3.12:
-    resolution: {integrity: sha512-9PR0+8uUcsyJY/BW+v2H4oGMO3T1LZ/V6HUQjBafNgBkRyT15qepUek4Mx3tsDGN2z2LVPelsoqmu4LB82F0CQ==}
+  pdf-parse@2.4.3:
+    resolution: {integrity: sha512-bXbmnrgWa5yHNKi9GxLDtYro9jpzL0bxnU7ObxhbeSEXtqKJ/FGSkgQg2MgCImHDOuMAD3cOgIAb3+NDDpKLmw==}
     engines: {node: '>=20.16.0 <21 || >=22.3.0'}
 
   pdfjs-dist@5.4.296:
@@ -5176,7 +5176,7 @@ snapshots:
     dependencies:
       langium: 3.3.1
 
-  '@modelcontextprotocol/sdk@1.20.0':
+  '@modelcontextprotocol/sdk@1.20.1':
     dependencies:
       ajv: 6.12.6
       content-type: 1.0.5
@@ -5246,7 +5246,6 @@ snapshots:
       '@napi-rs/canvas-linux-x64-gnu': 0.1.80
       '@napi-rs/canvas-linux-x64-musl': 0.1.80
       '@napi-rs/canvas-win32-x64-msvc': 0.1.80
-    optional: true
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -8283,11 +8282,10 @@ snapshots:
     dependencies:
       through: 2.3.8
 
-  pdf-parse@2.3.12:
+  pdf-parse@2.4.3:
     dependencies:
-      pdfjs-dist: 5.4.296
-    optionalDependencies:
       '@napi-rs/canvas': 0.1.80
+      pdfjs-dist: 5.4.296
 
   pdfjs-dist@5.4.296:
     optionalDependencies:
