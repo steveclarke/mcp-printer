@@ -150,41 +150,36 @@ export function registerPrinterTools(server: McpServer) {
         title: "Cancel Print Job",
         description: "Cancel a specific print job by job ID or cancel all jobs for a printer.",
         inputSchema: {
-          job_id: z.string().optional().describe("Job ID to cancel (get from get_print_queue)"),
-          printer: z.string().optional().describe("Printer name (required if canceling all jobs)"),
-          cancel_all: z
-            .boolean()
-            .optional()
-            .default(false)
-            .describe("Cancel all jobs for the specified printer"),
+          jobs: z
+            .array(
+              z.object({
+                job_id: z
+                  .string()
+                  .optional()
+                  .describe("Job ID to cancel (get from get_print_queue)"),
+                printer: z
+                  .string()
+                  .optional()
+                  .describe("Printer name (required if canceling all jobs)"),
+                cancel_all: z
+                  .boolean()
+                  .optional()
+                  .default(false)
+                  .describe("Cancel all jobs for the specified printer"),
+              })
+            )
+            .describe("Array of job cancellations (use single-element array for one job)"),
         },
       },
-      async ({ job_id, printer, cancel_all }) => {
-        const lprmArgs: string[] = []
-
-        if (cancel_all && printer) {
-          lprmArgs.push("-P", printer, "-")
-        } else if (job_id) {
-          if (printer) {
-            lprmArgs.push("-P", printer)
-          }
-          lprmArgs.push(job_id)
-        } else {
-          throw new Error("Must provide either job_id or set cancel_all=true with printer")
+      async ({ jobs }) => {
+        // Process each cancellation in the batch
+        const results: CancelJobResult[] = []
+        for (const jobSpec of jobs) {
+          const result = await processSingleCancellation(jobSpec)
+          results.push(result)
         }
 
-        await execa("lprm", lprmArgs)
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: cancel_all
-                ? `✓ Cancelled all jobs for printer: ${printer}`
-                : `✓ Cancelled job: ${job_id}`,
-            },
-          ],
-        }
+        return formatBatchCancelResponse(results)
       }
     )
   }
@@ -212,5 +207,106 @@ export function registerPrinterTools(server: McpServer) {
         }
       }
     )
+  }
+}
+
+/**
+ * Type for a single job cancellation specification.
+ */
+interface JobCancelSpec {
+  job_id?: string
+  printer?: string
+  cancel_all?: boolean
+}
+
+/**
+ * Type for job cancellation result.
+ */
+interface CancelJobResult {
+  success: boolean
+  message: string
+  error?: string
+}
+
+/**
+ * Process a single job cancellation operation.
+ */
+async function processSingleCancellation(spec: JobCancelSpec): Promise<CancelJobResult> {
+  const { job_id, printer, cancel_all = false } = spec
+
+  try {
+    const lprmArgs: string[] = []
+
+    if (cancel_all && printer) {
+      lprmArgs.push("-P", printer, "-")
+    } else if (job_id) {
+      if (printer) {
+        lprmArgs.push("-P", printer)
+      }
+      lprmArgs.push(job_id)
+    } else {
+      return {
+        success: false,
+        message: "Invalid parameters",
+        error: "Must provide either job_id or set cancel_all=true with printer",
+      }
+    }
+
+    await execa("lprm", lprmArgs)
+
+    return {
+      success: true,
+      message: cancel_all
+        ? `Cancelled all jobs for printer: ${printer}`
+        : `Cancelled job: ${job_id}`,
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return {
+      success: false,
+      message: cancel_all
+        ? `Failed to cancel jobs for printer: ${printer}`
+        : `Failed to cancel job: ${job_id}`,
+      error: message,
+    }
+  }
+}
+
+/**
+ * Format batch job cancellation results into a readable response.
+ */
+function formatBatchCancelResponse(results: CancelJobResult[]): {
+  content: Array<{ type: "text"; text: string }>
+} {
+  const successful = results.filter((r) => r.success)
+  const failed = results.filter((r) => !r.success)
+
+  let text = `Cancel Results: ${successful.length}/${results.length} successful`
+  if (failed.length > 0) {
+    text += `, ${failed.length} failed`
+  }
+  text += "\n\n"
+
+  // Show successful cancellations
+  for (const result of successful) {
+    text += `✓ ${result.message}\n\n`
+  }
+
+  // Show failed cancellations
+  for (const result of failed) {
+    text += `✗ ${result.message}`
+    if (result.error) {
+      text += `: ${result.error}`
+    }
+    text += "\n\n"
+  }
+
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: text.trim(),
+      },
+    ],
   }
 }

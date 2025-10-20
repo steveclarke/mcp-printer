@@ -142,46 +142,67 @@ AI: Let me check what printers you have...
 ```
 
 ### `print_file`
-Print a file to a specified printer.
+Print one or more files to a specified printer. Supports batch operations to reduce tool call costs.
 
 **Parameters:**
-- `file_path` (required) - Full path to file
-- `printer` (optional) - Printer name
-- `copies` (optional) - Number of copies (default: 1)
-- `options` (optional) - CUPS options like `landscape`, `sides=two-sided-long-edge`
-- `skip_confirmation` (optional) - Skip page count confirmation check (bypasses `MCP_PRINTER_CONFIRM_IF_OVER_PAGES` threshold)
-- `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
-- `color_scheme` (optional) - Syntax highlighting theme for code files (e.g., `github`, `monokai`, `atom-one-light`)
-- `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
-- `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
-- `force_markdown_render` (optional) - Force markdown rendering to PDF (boolean: `true`=always render, `false`=never render, `undefined`=use config)
-- `force_code_render` (optional) - Force code rendering to PDF with syntax highlighting (boolean: `true`=always render, `false`=never render, `undefined`=use config)
+- `files` (required) - Array of file specifications (use single-element array for one file):
+  - `file_path` (required) - Full path to file
+  - `printer` (optional) - Printer name
+  - `copies` (optional) - Number of copies (default: 1)
+  - `options` (optional) - CUPS options like `landscape`, `sides=two-sided-long-edge`
+  - `skip_confirmation` (optional) - Skip page count confirmation check (bypasses `MCP_PRINTER_CONFIRM_IF_OVER_PAGES` threshold)
+  - `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
+  - `color_scheme` (optional) - Syntax highlighting theme for code files (e.g., `github`, `monokai`, `atom-one-light`)
+  - `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
+  - `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
+  - `force_markdown_render` (optional) - Force markdown rendering to PDF (boolean: `true`=always render, `false`=never render, `undefined`=use config)
+  - `force_code_render` (optional) - Force code rendering to PDF with syntax highlighting (boolean: `true`=always render, `false`=never render, `undefined`=use config)
 
 **Note:** The code rendering parameters (`line_numbers`, `color_scheme`, `font_size`, `line_spacing`) only apply when printing code files that are automatically rendered to PDF with syntax highlighting.
 
+**Batch Operations:** To print multiple files efficiently, pass an array of file specifications. Each file is processed independently, and the operation continues even if individual files fail. The response shows success/failure status for each file.
+
 **Page Count Confirmation:** By default, print jobs exceeding 10 physical sheets will trigger a confirmation prompt from the AI before printing. You can adjust this threshold with `MCP_PRINTER_CONFIRM_IF_OVER_PAGES` or set it to `0` to disable. If you confirm, the AI will automatically retry the print with the confirmation bypassed. This feature only works for PDF files (including auto-rendered markdown and code files).
 
-**Example:**
+**Example (single file):**
 ```
 User: Print README.md to my HP LaserJet, 2 copies
 AI: *prints file*
-✓ File sent to printer: HP_LaserJet_4001
-  Copies: 2
-  File: /path/to/README.md
+Print Results: 1/1 successful
+
+✓ /path/to/README.md
+  Printed to HP_LaserJet_4001 × 2 copies (rendered: markdown → PDF)
+```
+
+**Example (batch):**
+```
+User: Print all markdown files in docs/
+AI: *prints multiple files in one tool call*
+Print Results: 3/3 successful
+
+✓ /path/to/docs/setup.md
+  Printed to HP_LaserJet_4001 (rendered: markdown → PDF)
+
+✓ /path/to/docs/guide.md
+  Printed to HP_LaserJet_4001 (rendered: markdown → PDF)
+
+✓ /path/to/docs/reference.md
+  Printed to HP_LaserJet_4001 (rendered: markdown → PDF)
 ```
 
 ### `get_page_meta`
-Get page count and physical sheet information for a file before printing. This tool pre-renders files (markdown, code) if needed and returns page metadata.
+Get page count and physical sheet information for one or more files before printing. This tool pre-renders files (markdown, code) if needed and returns page metadata. Supports batch operations.
 
 **Parameters:**
-- `file_path` (required) - Full path to file
-- `options` (optional) - CUPS options for duplex detection (e.g., `sides=two-sided-long-edge`)
-- `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
-- `color_scheme` (optional) - Syntax highlighting theme for code files
-- `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
-- `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
-- `force_markdown_render` (optional) - Force markdown rendering to PDF
-- `force_code_render` (optional) - Force code rendering to PDF with syntax highlighting
+- `files` (required) - Array of file specifications (use single-element array for one file):
+  - `file_path` (required) - Full path to file
+  - `options` (optional) - CUPS options for duplex detection (e.g., `sides=two-sided-long-edge`)
+  - `line_numbers` (optional) - Show line numbers when rendering code files (boolean, overrides global setting)
+  - `color_scheme` (optional) - Syntax highlighting theme for code files
+  - `font_size` (optional) - Font size for code files (e.g., `8pt`, `10pt`, `12pt`)
+  - `line_spacing` (optional) - Line spacing for code files (e.g., `1`, `1.5`, `2`)
+  - `force_markdown_render` (optional) - Force markdown rendering to PDF
+  - `force_code_render` (optional) - Force code rendering to PDF with syntax highlighting
 
 **Note:** Page counting only works for PDF files, including:
 - Markdown files (auto-rendered to PDF)
@@ -190,19 +211,39 @@ Get page count and physical sheet information for a file before printing. This t
 
 Plain text files, images, and other non-PDF formats cannot have their page count determined.
 
-**Example:**
+**Batch Operations:** Check page counts for multiple files in a single tool call. Each file is processed independently, and the operation continues even if individual files fail.
+
+**Example (single file):**
 ```
 User: How many pages would README.md be?
 AI: *gets page metadata*
-📄 Preview: 32 pages (16 sheets, duplex)
-  File: /path/to/README.md
-  Rendered: markdown → PDF
+Page Metadata Results: 1/1 successful
+
+✓ /path/to/README.md
+  32 pages (16 sheets, duplex) (rendered: markdown → PDF)
+```
+
+**Example (batch):**
+```
+User: How many pages would all the markdown files in docs/ be?
+AI: *gets metadata for multiple files*
+Page Metadata Results: 3/3 successful
+
+✓ /path/to/docs/setup.md
+  8 pages (4 sheets, duplex) (rendered: markdown → PDF)
+
+✓ /path/to/docs/guide.md
+  24 pages (12 sheets, duplex) (rendered: markdown → PDF)
+
+✓ /path/to/docs/reference.md
+  16 pages (8 sheets, duplex) (rendered: markdown → PDF)
 ```
 
 **Use cases:**
 - Check page count before printing large documents
 - Estimate paper usage for duplex vs single-sided printing
 - Preview rendered output of markdown or code files
+- Calculate total pages across multiple documents
 
 ### `get_print_queue`
 Check the print queue for pending jobs.
@@ -219,17 +260,34 @@ AI: Let me check your print queue...
 ```
 
 ### `cancel_print_job`
-Cancel a print job.
+Cancel one or more print jobs. Supports batch operations.
 
 **Parameters:**
-- `job_id` (optional) - Specific job to cancel
-- `printer` (optional) - Printer name
-- `cancel_all` (optional) - Cancel all jobs for printer
+- `jobs` (required) - Array of job cancellation specifications (use single-element array for one job):
+  - `job_id` (optional) - Specific job to cancel
+  - `printer` (optional) - Printer name
+  - `cancel_all` (optional) - Cancel all jobs for printer
 
-**Example:**
+**Batch Operations:** Cancel multiple jobs in a single tool call. Each cancellation is processed independently, and the operation continues even if individual cancellations fail.
+
+**Example (single job):**
 ```
 User: Cancel job 123
-AI: ✓ Cancelled job: 123
+AI: Cancel Results: 1/1 successful
+
+✓ Cancelled job: 123
+```
+
+**Example (batch):**
+```
+User: Cancel jobs 123, 124, and 125
+AI: Cancel Results: 3/3 successful
+
+✓ Cancelled job: 123
+
+✓ Cancelled job: 124
+
+✓ Cancelled job: 125
 ```
 
 ### `get_default_printer`
@@ -304,15 +362,21 @@ AI: *automatically renders with syntax highlighting*
   Rendered: code → PDF (syntax highlighted)
 ```
 
-### Print Documentation
+### Print Documentation (Batch)
 
 ```
 User: Print all the markdown files in docs/
-AI: Let me do that for you...
-*prints setup.md (rendered to PDF)*
-*prints guide.md (rendered to PDF)*
-*prints reference.md (rendered to PDF)*
-✓ Printed 3 files to HP_LaserJet_Pro
+AI: *prints all files in one batch operation*
+Print Results: 3/3 successful
+
+✓ /path/to/docs/setup.md
+  Printed to HP_LaserJet_Pro (rendered: markdown → PDF)
+
+✓ /path/to/docs/guide.md
+  Printed to HP_LaserJet_Pro (rendered: markdown → PDF)
+
+✓ /path/to/docs/reference.md
+  Printed to HP_LaserJet_Pro (rendered: markdown → PDF)
 ```
 
 ### Force Rendering
