@@ -6,10 +6,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
 import {
-  processSinglePrint,
-  formatBatchPrintResponse,
-  processSinglePageMeta,
-  formatBatchPageMetaResponse,
+  handlePrint,
+  formatPrintResults,
+  handlePageMeta,
+  formatPageMetaResults,
   checkBatchSizeLimit,
   type PrintResult,
   type PageMetaResult,
@@ -110,11 +110,11 @@ export function registerPrintTools(server: McpServer) {
       // Process each file in the batch
       const results: PrintResult[] = []
       for (const fileSpec of files) {
-        const result = await processSinglePrint(fileSpec)
+        const result = await handlePrint(fileSpec)
         results.push(result)
       }
 
-      return formatBatchPrintResponse(results)
+      return formatPrintResults(results)
     }
   )
 
@@ -152,11 +152,11 @@ export function registerPrintTools(server: McpServer) {
       // Process each file in the batch
       const results: PageMetaResult[] = []
       for (const fileSpec of files) {
-        const result = await processSinglePageMeta(fileSpec)
+        const result = await handlePageMeta(fileSpec)
         results.push(result)
       }
 
-      return formatBatchPageMetaResponse(results)
+      return formatPageMetaResults(results)
     }
   )
 }

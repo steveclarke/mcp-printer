@@ -9,8 +9,8 @@ import { execCommand } from "../utils.js"
 import { config } from "../config.js"
 import { execa } from "execa"
 import {
-  processSingleCancellation,
-  formatBatchCancelResponse,
+  handleCancel,
+  formatCancelResults,
   checkBatchSizeLimit,
   type CancelJobResult,
 } from "./batch-helpers.js"
@@ -187,11 +187,11 @@ export function registerPrinterTools(server: McpServer) {
         // Process each cancellation in the batch
         const results: CancelJobResult[] = []
         for (const jobSpec of jobs) {
-          const result = await processSingleCancellation(jobSpec)
+          const result = await handleCancel(jobSpec)
           results.push(result)
         }
 
-        return formatBatchCancelResponse(results)
+        return formatCancelResults(results)
       }
     )
   }

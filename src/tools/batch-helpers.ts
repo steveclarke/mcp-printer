@@ -87,7 +87,7 @@ export interface PrintResult {
 }
 
 /**
- * Process a single file print operation within a batch.
+ * Handle a file print operation within a batch.
  *
  * This function handles the complete print workflow for one file:
  * - Prepares the file for printing (renders markdown/code if needed)
@@ -104,7 +104,7 @@ export interface PrintResult {
  * - Temporary rendered PDFs are automatically cleaned up in finally block
  * - Page count check only applies to PDF files (including rendered markdown/code)
  */
-export async function processSinglePrint(spec: FilePrintSpec): Promise<PrintResult> {
+export async function handlePrint(spec: FilePrintSpec): Promise<PrintResult> {
   const {
     file_path,
     printer,
@@ -182,7 +182,7 @@ export async function processSinglePrint(spec: FilePrintSpec): Promise<PrintResu
 }
 
 /**
- * Format batch print results into a readable MCP response.
+ * Format print results into a readable MCP response.
  *
  * Creates a summary showing success/failure counts and detailed results for each file.
  * Distinguishes between regular errors and confirmation-required errors in the output.
@@ -195,7 +195,7 @@ export async function processSinglePrint(spec: FilePrintSpec): Promise<PrintResu
  * - Failed prints show cross (✗) with error details
  * - Confirmation-required errors are shown without full error stack
  */
-export function formatBatchPrintResponse(results: PrintResult[]): {
+export function formatPrintResults(results: PrintResult[]): {
   content: Array<{ type: "text"; text: string }>
 } {
   const successful = results.filter((r) => r.success)
@@ -263,7 +263,7 @@ export interface PageMetaResult {
 }
 
 /**
- * Process a single file page metadata operation within a batch.
+ * Handle a file page metadata operation within a batch.
  *
  * This function:
  * - Prepares the file for printing (renders if needed)
@@ -282,7 +282,7 @@ export interface PageMetaResult {
  * - Page count is the total number of pages in the PDF
  * - Sheets is the physical paper count (pages/2 for duplex)
  */
-export async function processSinglePageMeta(spec: FilePageMetaSpec): Promise<PageMetaResult> {
+export async function handlePageMeta(spec: FilePageMetaSpec): Promise<PageMetaResult> {
   const {
     file_path,
     options,
@@ -335,7 +335,7 @@ export async function processSinglePageMeta(spec: FilePageMetaSpec): Promise<Pag
 }
 
 /**
- * Format batch page metadata results into a readable MCP response.
+ * Format page metadata results into a readable MCP response.
  *
  * Creates a summary showing success/failure counts and detailed metadata for each file.
  *
@@ -347,7 +347,7 @@ export async function processSinglePageMeta(spec: FilePageMetaSpec): Promise<Pag
  * - Failed results show cross (✗) with error details
  * - Render type is shown for files that were auto-rendered (markdown, code)
  */
-export function formatBatchPageMetaResponse(results: PageMetaResult[]): {
+export function formatPageMetaResults(results: PageMetaResult[]): {
   content: Array<{ type: "text"; text: string }>
 } {
   const successful = results.filter((r) => r.success)
@@ -402,7 +402,7 @@ export interface CancelJobResult {
 }
 
 /**
- * Process a single job cancellation operation within a batch.
+ * Handle a job cancellation operation within a batch.
  *
  * This function handles cancellation of either:
  * - A specific print job by job ID
@@ -417,7 +417,7 @@ export interface CancelJobResult {
  * - Invalid parameters return success=false with error message
  * - Uses lprm command for cancellation
  */
-export async function processSingleCancellation(spec: JobCancelSpec): Promise<CancelJobResult> {
+export async function handleCancel(spec: JobCancelSpec): Promise<CancelJobResult> {
   const { job_id, printer, cancel_all = false } = spec
 
   // Determine the action description for consistent messaging
@@ -458,7 +458,7 @@ export async function processSingleCancellation(spec: JobCancelSpec): Promise<Ca
 }
 
 /**
- * Format batch job cancellation results into a readable MCP response.
+ * Format job cancellation results into a readable MCP response.
  *
  * Creates a summary showing success/failure counts and details for each cancellation.
  *
@@ -469,7 +469,7 @@ export async function processSingleCancellation(spec: JobCancelSpec): Promise<Ca
  * - Successful cancellations show checkmark (✓) with job ID or printer name
  * - Failed cancellations show cross (✗) with error details
  */
-export function formatBatchCancelResponse(results: CancelJobResult[]): {
+export function formatCancelResults(results: CancelJobResult[]): {
   content: Array<{ type: "text"; text: string }>
 } {
   const successful = results.filter((r) => r.success)
