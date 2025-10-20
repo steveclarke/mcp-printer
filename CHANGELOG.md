@@ -21,11 +21,6 @@ All notable changes to this project will be documented in this file.
 - New `print-changed` prompt focuses on batch printing changed files (staged, uncommitted, branch)
 - Removed complex code review document generation from prompts (stayed printer-focused)
 
-### Internal
-- Refactored batch operation logic into shared `batch-helpers.ts` module
-- Improved function naming consistency (removed confusing "single" prefixes)
-- Added formatting helper functions for consistent output rendering
-
 ## [1.3.0] - 2025-10-15
 
 ### Added
