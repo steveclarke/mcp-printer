@@ -1,6 +1,6 @@
 /**
- * @fileoverview Printer management tools implementation.
- * Provides tools for querying printers, managing print queues, and configuring defaults.
+ * @fileoverview Printer management tools registration.
+ * Registers printer query, management, and job cancellation tools with the MCP server.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
@@ -8,6 +8,12 @@ import { z } from "zod"
 import { execCommand } from "../utils.js"
 import { config } from "../config.js"
 import { execa } from "execa"
+import {
+  processSingleCancellation,
+  formatBatchCancelResponse,
+  checkBatchSizeLimit,
+  type CancelJobResult,
+} from "./batch-helpers.js"
 
 /**
  * Registers printer management tools with the MCP server.
@@ -172,6 +178,12 @@ export function registerPrinterTools(server: McpServer) {
         },
       },
       async ({ jobs }) => {
+        // Check for large batch size
+        const batchSizeWarning = checkBatchSizeLimit(jobs.length, "jobs")
+        if (batchSizeWarning) {
+          return batchSizeWarning
+        }
+
         // Process each cancellation in the batch
         const results: CancelJobResult[] = []
         for (const jobSpec of jobs) {
@@ -207,106 +219,5 @@ export function registerPrinterTools(server: McpServer) {
         }
       }
     )
-  }
-}
-
-/**
- * Type for a single job cancellation specification.
- */
-interface JobCancelSpec {
-  job_id?: string
-  printer?: string
-  cancel_all?: boolean
-}
-
-/**
- * Type for job cancellation result.
- */
-interface CancelJobResult {
-  success: boolean
-  message: string
-  error?: string
-}
-
-/**
- * Process a single job cancellation operation.
- */
-async function processSingleCancellation(spec: JobCancelSpec): Promise<CancelJobResult> {
-  const { job_id, printer, cancel_all = false } = spec
-
-  try {
-    const lprmArgs: string[] = []
-
-    if (cancel_all && printer) {
-      lprmArgs.push("-P", printer, "-")
-    } else if (job_id) {
-      if (printer) {
-        lprmArgs.push("-P", printer)
-      }
-      lprmArgs.push(job_id)
-    } else {
-      return {
-        success: false,
-        message: "Invalid parameters",
-        error: "Must provide either job_id or set cancel_all=true with printer",
-      }
-    }
-
-    await execa("lprm", lprmArgs)
-
-    return {
-      success: true,
-      message: cancel_all
-        ? `Cancelled all jobs for printer: ${printer}`
-        : `Cancelled job: ${job_id}`,
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    return {
-      success: false,
-      message: cancel_all
-        ? `Failed to cancel jobs for printer: ${printer}`
-        : `Failed to cancel job: ${job_id}`,
-      error: message,
-    }
-  }
-}
-
-/**
- * Format batch job cancellation results into a readable response.
- */
-function formatBatchCancelResponse(results: CancelJobResult[]): {
-  content: Array<{ type: "text"; text: string }>
-} {
-  const successful = results.filter((r) => r.success)
-  const failed = results.filter((r) => !r.success)
-
-  let text = `Cancel Results: ${successful.length}/${results.length} successful`
-  if (failed.length > 0) {
-    text += `, ${failed.length} failed`
-  }
-  text += "\n\n"
-
-  // Show successful cancellations
-  for (const result of successful) {
-    text += `✓ ${result.message}\n\n`
-  }
-
-  // Show failed cancellations
-  for (const result of failed) {
-    text += `✗ ${result.message}`
-    if (result.error) {
-      text += `: ${result.error}`
-    }
-    text += "\n\n"
-  }
-
-  return {
-    content: [
-      {
-        type: "text" as const,
-        text: text.trim(),
-      },
-    ],
   }
 }
