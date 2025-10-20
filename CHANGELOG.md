@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.0.0] - 2025-10-20
 
 ### Added
 - Batch operation support: AI agents can now print multiple files, check multiple page counts, or cancel multiple jobs in a single MCP tool call
@@ -11,11 +11,20 @@ All notable changes to this project will be documented in this file.
 - `cancel_print_job` now accepts `jobs` array parameter for batch cancellations
 - All batch operations support partial success - processing continues on individual failures
 - Detailed batch operation results showing success/failure status for each item
+- Batch size validation with recommended limit of 50 items per operation
 
 ### Changed
+- **BREAKING**: `print_file` API signature changed to accept `files` array instead of individual file parameters
+- **BREAKING**: `get_page_meta` API signature changed to accept `files` array instead of individual file parameters
+- **BREAKING**: `cancel_print_job` API signature changed to accept `jobs` array instead of individual job parameters
 - Replaced `print-code-review` prompt with simpler `print-changed` prompt
 - New `print-changed` prompt focuses on batch printing changed files (staged, uncommitted, branch)
 - Removed complex code review document generation from prompts (stayed printer-focused)
+
+### Internal
+- Refactored batch operation logic into shared `batch-helpers.ts` module
+- Improved function naming consistency (removed confusing "single" prefixes)
+- Added formatting helper functions for consistent output rendering
 
 ## [1.3.0] - 2025-10-15
 
@@ -73,5 +82,7 @@ All notable changes to this project will be documented in this file.
 - Security documentation
 - MIT License
 
+[2.0.0]: https://github.com/steveclarke/mcp-printer/releases/tag/v2.0.0
+[1.3.0]: https://github.com/steveclarke/mcp-printer/releases/tag/v1.3.0
 [1.0.0]: https://github.com/steveclarke/mcp-printer/releases/tag/v1.0.0
 
