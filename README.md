@@ -162,6 +162,8 @@ Print one or more files to a specified printer. Supports batch operations to red
 
 **Batch Operations:** To print multiple files efficiently, pass an array of file specifications. Each file is processed independently, and the operation continues even if individual files fail. The response shows success/failure status for each file.
 
+**Batch Size Limit:** Batches are limited to 50 items per operation for reliability. If you need to process more items, the AI will automatically split them into multiple tool calls.
+
 **Page Count Confirmation:** By default, print jobs exceeding 10 physical sheets will trigger a confirmation prompt from the AI before printing. You can adjust this threshold with `MCP_PRINTER_CONFIRM_IF_OVER_PAGES` or set it to `0` to disable. If you confirm, the AI will automatically retry the print with the confirmation bypassed. This feature only works for PDF files (including auto-rendered markdown and code files).
 
 **Example (single file):**
@@ -212,6 +214,8 @@ Get page count and physical sheet information for one or more files before print
 Plain text files, images, and other non-PDF formats cannot have their page count determined.
 
 **Batch Operations:** Check page counts for multiple files in a single tool call. Each file is processed independently, and the operation continues even if individual files fail.
+
+**Batch Size Limit:** Batches are limited to 50 items per operation for reliability. If you need to process more items, the AI will automatically split them into multiple tool calls.
 
 **Example (single file):**
 ```
@@ -269,6 +273,8 @@ Cancel one or more print jobs. Supports batch operations.
   - `cancel_all` (optional) - Cancel all jobs for printer
 
 **Batch Operations:** Cancel multiple jobs in a single tool call. Each cancellation is processed independently, and the operation continues even if individual cancellations fail.
+
+**Batch Size Limit:** Batches are limited to 50 items per operation for reliability. If you need to process more items, the AI will automatically split them into multiple tool calls.
 
 **Example (single job):**
 ```
