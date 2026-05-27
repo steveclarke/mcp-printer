@@ -13,7 +13,6 @@ import he from "he"
 import { findChrome } from "../utils.js"
 import { validateFilePath } from "../file-security.js"
 import { config } from "../config.js"
-import { Notebook } from "crossnote"
 
 /**
  * Page numbering configuration function for Puppeteer PDF generation.
@@ -118,6 +117,13 @@ export async function renderMarkdownToPdf(filePath: string): Promise<string> {
   let outputPath: string
 
   try {
+    // Lazy-load crossnote so that disabling markdown rendering
+    // (MCP_PRINTER_AUTO_RENDER_MARKDOWN=false) avoids paying its
+    // ESM module-load cost. Keeping the import inside this try also
+    // ensures any failure during module load is captured by the catch
+    // and the temp file gets cleaned up.
+    const { Notebook } = await import("crossnote")
+
     // Initialize crossnote notebook with configuration, pointing to temp directory
     const notebook = await Notebook.init({
       notebookPath: tempDir,
