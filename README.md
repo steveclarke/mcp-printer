@@ -817,6 +817,8 @@ Then reference it directly in your MCP config (without npx):
   - You can specify a custom path by setting `MCP_PRINTER_CHROME_PATH`
 - Printers configured in your system
 
+> **Tip:** [presswork](https://github.com/vindeckyy/presswork) works as a drop-in CUPS server for development - see [docs/testing-with-presswork.md](docs/testing-with-presswork.md) and `dev/compose.yaml` for a zero-install test environment.
+
 ## Contributing
 
 Contributions welcome! Areas for improvement:
