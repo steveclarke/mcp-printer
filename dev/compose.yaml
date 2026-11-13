@@ -1,0 +1,12 @@
+services:
+  presswork:
+    image: ghcr.io/vindeckyy/presswork:latest
+    ports:
+      - "631:631"
+    volumes:
+      - presswork-etc:/etc/cups
+      - presswork-spool:/var/spool/cups
+
+volumes:
+  presswork-etc:
+  presswork-spool:
